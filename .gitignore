@@ -4,3 +4,4 @@ web/public/flags/
 *.mp4
 
 .DS_Store
+web/public/fonts/

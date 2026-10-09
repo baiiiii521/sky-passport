@@ -5,9 +5,7 @@
 <meta name="theme-color" content="#2a0b12">
 <title>航迹护照 Sky Passport</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%235a1424%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2218%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%223%22/%3E%3Cpath d=%22M14 32h36M32 14c-8 10-8 26 0 36M32 14c8 10 8 26 0 36%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%222.5%22/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Space+Mono:wght@400;700&family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css"><!-- self-hosted (npm run build:fonts): Google Fonts is blocked in mainland China -->
 <style>
 /* Layout: passport-cover dark studio; controls column left, phone-frame preview right; stacks on phones */
 :root{
@@ -242,12 +240,12 @@ details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(
 </div>
 <div class="mcta" id="mcta"><button type="button" class="primary" id="btnMakeM">生成视频</button></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script defer src="/_vercel/insights/script.js"></script><!-- Vercel Web Analytics: page views only, no cookies; enable it in the project dashboard -->
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/mp4-muxer.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script>if(/\.vercel\.app$/.test(location.hostname)){const s=document.createElement('script');s.defer=true;s.src='/_vercel/insights/script.js';document.head.appendChild(s);}</script><!-- Vercel Web Analytics only where it exists -->
 <script src="js/core.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/music.js"></script>

@@ -1,6 +1,7 @@
 "use strict";
 /* ================= sharing extras: QR end card, achievements, long poster, cover image ================= */
-const SITE_URL='https://sky-passport.vercel.app'; // printed on the end card and the poster; change when a custom domain is live
+// printed on the end card and the poster: the https domain the page was opened from (falls back to the Vercel address locally)
+const SITE_URL=typeof location!=='undefined'&&location.protocol==='https:'&&!/^(localhost|127\.)/.test(location.hostname)?location.origin:'https://sky-passport.vercel.app';
 const SITE_HOST=SITE_URL.replace(/^https?:\/\//,'');
 
 /* ---------- QR code (qrcode-generator), cached as a crisp canvas ---------- */

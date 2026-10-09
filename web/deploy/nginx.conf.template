@@ -1,0 +1,35 @@
+# /etc/nginx/conf.d/sky-passport.conf — generated from deploy/nginx.conf.template (DOMAIN, CERT, KEY filled in by setup)
+limit_req_zone $binary_remote_addr zone=skyapi:10m rate=30r/m;
+server {
+  listen 80;
+  server_name __DOMAIN__;
+  location /.well-known/acme-challenge/ { root /srv/sky-passport/acme; }
+  location / { return 301 https://$host$request_uri; }
+}
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name __DOMAIN__;
+  ssl_certificate     __CERT__;
+  ssl_certificate_key __KEY__;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  root /srv/sky-passport/public;
+  index index.html;
+  charset utf-8;
+  gzip on; gzip_types text/css application/javascript application/json image/svg+xml; gzip_min_length 1024;
+
+  # page + scripts: always revalidate so a deploy shows up at once
+  location = /index.html { add_header Cache-Control "no-cache"; }
+  location /js/ { add_header Cache-Control "no-cache"; }
+  # data, fonts, flags, vendored libraries: cache for a week
+  location ~* \.(json|woff2|svg|js)$ { add_header Cache-Control "public, max-age=604800"; }
+
+  location /api/ {
+    proxy_pass http://127.0.0.1:3100;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    client_max_body_size 256k;
+    limit_req zone=skyapi burst=10 nodelay;
+  }
+}
