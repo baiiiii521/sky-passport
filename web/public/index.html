@@ -104,6 +104,7 @@ details.guide ol{margin:10px 0 2px;padding-left:20px;font-size:14px;line-height:
 .imgout{margin-top:12px}.imgout img{width:100%;max-width:360px;border-radius:10px;border:1px solid var(--line);display:block}
 .badges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
 .badge{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(227,189,132,.05);min-width:0}
+.chkrow{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px}.chkhead{margin-top:12px;font-size:13px;color:var(--muted)}
 .badge .k{font-size:12px;color:var(--muted)}.badge .v{font-size:16px;font-weight:700;color:var(--gold);overflow-wrap:anywhere}.badge .d{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
 @media (max-width:520px){.badges{grid-template-columns:minmax(0,1fr)}}
 details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(--gold);font-size:14px;padding:6px 0}
@@ -218,7 +219,8 @@ details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(
         <div class="extras">
           <h3 class="sub">晒图更方便</h3>
           <p class="hint">朋友圈、小红书发图比发视频更容易被转发。</p>
-          <div class="row"><button type="button" id="btnLong">生成长图海报</button><button type="button" id="btnCoverImg">导出视频封面图</button></div>
+          <details class="more" id="posterOpts"><summary>长图显示哪些内容</summary><div id="posterChecks"></div></details>
+          <div class="row" style="margin-top:12px"><button type="button" id="btnLong">生成长图海报</button><button type="button" id="btnCoverImg">导出视频封面图</button></div>
           <div class="imgout" id="imgOut" hidden><img id="imgPrev" alt="生成的图片预览"><div class="row"><button type="button" class="primary" id="btnSaveImg">⬇ 保存图片</button></div></div>
           <h3 class="sub">你的飞行成就</h3>
           <div class="badges" id="badges"></div>

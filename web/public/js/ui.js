@@ -29,7 +29,7 @@ function renderSummary(){
   const ys=[...new Set(all.map(f=>f.y))].sort();const keepF=RESET_YEARS?'':$('yFrom').value,keepT=RESET_YEARS?'':$('yTo').value;const wasReset=RESET_YEARS;RESET_YEARS=false;
   for(const [id,keep,def] of [['yFrom',keepF,ys[0]],['yTo',keepT,ys[ys.length-1]]]){const sel=$(id);sel.innerHTML='';ys.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});sel.value=ys.includes(+keep)?keep:def;}
   if(wasReset&&S.ok===false&&ys.length){rebuild();}
-  renderYearQuick(ys);if(typeof renderBadges==='function')renderBadges();
+  renderYearQuick(ys);if(typeof renderBadges==='function'){renderBadges();if($('posterOpts').open)renderPosterChecks();}
   renderCheck();
 }
 /* ================= table check: code finds the problems, Jev makes the judgment calls ================= */
