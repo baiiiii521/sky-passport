@@ -9,8 +9,9 @@ const OUT = path.join(__dirname, '..', 'public', 'fonts');
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  let css = await (await fetch('https://fonts.googleapis.com/css2?' + FAMILIES, { headers: { 'User-Agent': UA } })).text();
-  const urls = [...new Set(css.match(/https:\/\/fonts\.gstatic\.com\/[^)]+/g) || [])];
+  // FONTS_CSS_BASE=https://fonts.googleapis.cn when running inside mainland China (same files, served from fonts.gstatic.cn)
+  let css = await (await fetch((process.env.FONTS_CSS_BASE || 'https://fonts.googleapis.com') + '/css2?' + FAMILIES, { headers: { 'User-Agent': UA } })).text();
+  const urls = [...new Set(css.match(/https:\/\/fonts\.gstatic\.(com|cn)\/[^)]+/g) || [])];
   let bytes = 0, i = 0;
   const queue = [...urls];
   await Promise.all(Array.from({ length: 8 }, async () => {

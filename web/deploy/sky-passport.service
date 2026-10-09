@@ -5,7 +5,7 @@ After=network.target
 [Service]
 EnvironmentFile=/etc/sky-passport.env
 WorkingDirectory=/srv/sky-passport
-ExecStart=/usr/bin/env node server/server.js
+ExecStart=/opt/node20/bin/node server/server.js
 Restart=always
 User=nobody
 NoNewPrivileges=true

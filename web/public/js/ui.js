@@ -34,7 +34,7 @@ function renderSummary(){
 }
 /* ================= table check: code finds the problems, Jev makes the judgment calls ================= */
 const AI_HIGH=0.85,AI_MID=0.5; // ≥ HIGH: offered for one-click apply; MID–HIGH: shown as the leaning; below: alternatives only
-let AIR={ap:{},st:{},row:{},cols:null,model:''},AI_BUSY=false; // answers keyed by content, so they survive rebuilds
+let AIR={ap:{},st:{},row:{},cols:null,model:''},AI_BUSY=false,AI_OFF=false; // AI_OFF: the server has no AI (e.g. the mainland deployment) // answers keyed by content, so they survive rebuilds
 const top1=a=>a&&a.top&&a.top[0]?a.top[0][1]:0,pct=p=>Math.round(p*100)+'%';
 function resetFixes(){STFIX={};EXCL=new Set();KEEP=new Set();AIR={ap:{},st:{},row:{},cols:null,model:''};}
 // candidate airports for a name the dictionary missed: n-gram overlap against Chinese keywords, city and airport names
@@ -69,12 +69,13 @@ function aiPayload(){const d=S.res.diag,p={airports:[],statuses:[],rows:[]},idx=
   if(needColumns()&&!AIR.cols){const c=columnsPayload();if(c){p.columns=c;idx.colSheet=c.sheet;}}
   return {p,idx};}
 function aiPending(){if(!S||!S.res)return 0;const d=S.res.diag;return [...d.refs.keys()].filter(n=>!manual[n]&&!AIR.ap[n]).length+[...d.unknownSt.keys()].filter(s=>!AIR.st[s]).length+d.suspect.filter(r=>!AIR.row[rkey(r)]).length+(needColumns()&&!AIR.cols?1:0);}
+let AI_PROBED=false; // one probe per page: does this server offer the AI check?
 function aiMsg(m,err){const s=$('aiStatus');s.textContent=m;s.classList.toggle('err',!!err);}
 async function runAI(){if(AI_BUSY||!S)return;const {p,idx}=aiPayload();
   if(!p.airports.length&&!p.statuses.length&&!p.rows.length&&!p.columns){aiMsg('没有需要 AI 判断的内容。');renderCheck();return;}
   AI_BUSY=true;$('btnAI').disabled=true;aiMsg('正在请 Jev 判断…');
   try{const r=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===404||r.status===405?'当前环境没有 AI 服务，请在线上网站使用':r.status===429?'请求太频繁，请稍等几分钟再试':j.error==='not_configured'?'服务器还没配置 API key':'AI 服务暂时不可用（'+r.status+'）');}
+    if(!r.ok){const j=await r.json().catch(()=>({}));if(j.error==='disabled'||j.status===451){AI_OFF=true;aiMsg('当前站点没有 AI 检查（服务商不支持该地区）。下面已给出本地建议，也可以手动填写。');return;}throw new Error(r.status===404||r.status===405?'当前环境没有 AI 服务，请在线上网站使用':r.status===429?'请求太频繁，请稍等几分钟再试':j.error==='not_configured'?'服务器还没配置 API key':'AI 服务暂时不可用（'+r.status+'）');}
     const j=await r.json(),A=j.answers||{};AIR.model=j.model||'';
     for(const [id,name] of Object.entries(idx.a))if(A['ap_'+id])AIR.ap[name]=A['ap_'+id];
     for(const [id,s] of Object.entries(idx.s))if(A['st_'+id])AIR.st[s]=A['st_'+id];
@@ -135,6 +136,7 @@ function renderCheck(){
       if(a&&a.nocand)sug=el('div',{cls:'sug'},'词典里没有相近的机场名：请在表格里改成机场三字码，或在右边直接填写。');
       else if(a&&a.choice==='none')sug=el('div',{cls:'sug'},`Jev 判断这不像一个能确定的机场（${pct(top1(a))}）。请在表格里改正，或者删掉这一行。`);
       else if(a)sug=lean(a,c=>apShort(c)+' · '+AP[c].name);
+      else{const loc=apCandidates(name,3);if(loc.length){sug=el('div',{cls:'sug'},'可能是（本地匹配）：');picks.push(...loc.map(c=>btn(apShort(c),()=>{manual[name]=c;rebuild();})));}}
       items.push(el('div',{cls:'item'},el('div',{},el('label',{htmlFor:'un'+i},`「${name}」`),el('span',{cls:'where'},'  '+where(e.rows.map(x=>x.r),e.roles.has('from')?'from':'to'))),
         sug,el('div',{cls:'acts'},inp,st,a&&a.choice&&a.choice!=='none'&&top1(a)>=AI_MID&&AP[a.choice]?btn('采用 '+a.choice,()=>{manual[name]=a.choice;rebuild();}):null,...picks.slice(top1(a)>=AI_MID?1:0,4))));});
     issue('bad',`${d.refs.size} 个地名没认出来，${lost} 处航班会缺失`,'在右边填机场三字码（例如曼谷素万那普 BKK），或点「AI 检查」让 Jev 给建议。想一劳永逸：把表格里这些单元格改成三字码，或下载修正后的表格。',items);}
@@ -167,6 +169,8 @@ function renderCheck(){
     if(SEG_OPEN){det.open=true;fill();}box.append(det);}
   head.className='check-head '+(!ok||(bad&&needColumns())?'bad':bad||warn?'warn':'ok');
   head.textContent=!ok?'⛔ 还不能生成视频：先处理下面「必须修改」的问题。':bad?'⚠️ 可以生成，但有航班会缺失，建议先按下面的提示修改。':warn?'⚠️ 可以生成，有几处建议确认一下。':'✅ 表格没有问题，可以直接生成视频。';
+  if(!AI_PROBED){AI_PROBED=true;fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.status===503?r.json():null).then(j=>{if(j&&(j.error==='disabled'||j.error==='not_configured')){AI_OFF=true;renderCheck();}}).catch(()=>{});}
+  $('btnAI').hidden=AI_OFF;$('aiNote').hidden=AI_OFF;
   const n=aiPending(),hf=highFixes().length;$('btnAI').disabled=AI_BUSY||!n;$('btnAI').textContent=n?`AI 检查（Jev · ${n} 项）`:'AI 检查（Jev）';
   $('btnApplyAll').hidden=!hf;$('btnApplyAll').textContent=`采用全部高把握建议（${hf}）`;$('btnToMake').hidden=!ok;$('btnFixedCsv').disabled=!RAW.length;
 }

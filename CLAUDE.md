@@ -64,7 +64,7 @@ ffmpeg -i ../out/out_noaudio.mp4 -i ../out/music.wav -c:v copy -c:a aac -shortes
 2. Individual rows can be excluded only when flagged as suspicious; a general per-segment toggle is still missing.
 3. Chinese airport dictionary covers ~738 keywords; unresolved names fall back to manual IATA entry. Grow it from real uploads.
 4. Export speed: ~7 s for a 31 s film with hardware H.264 on a Mac; slower machines/software encoders still take minutes. OffscreenCanvas + Worker remains an option.
-5. ~~Deploy outside claude.ai~~ Done 2026-10-09: Vercel project `baiiiii521s-projects/sky-passport`, deployed via CLI from `web/` (no Git integration yet; `flags.json` is git-ignored, so a Git-connected build would need `npm run build:data`).
+5. ~~Deploy outside claude.ai~~ Done: Vercel (`sky-passport.vercel.app`, AI check on) and **mainland production `https://passport.nybbq.art`** (Tencent Cloud Lighthouse 49.233.168.199, ICP-filed nybbq.art; same server hosts the 炭火现烤 ordering site — never touch `/etc/nginx/sites-available/bbq-shop`). Mainland notes: TypeSafe answers 451 from China, so the server runs with `TYPESAFE_DISABLED=1` and the page falls back to local airport suggestions; vercel.app, Google Fonts and jsDelivr are unreachable there, so fonts/vendor/flags/data are built on the server by `deploy/fetch_assets.sh` from npmmirror/DataV/fonts.googleapis.cn; updates: `cd web && DEPLOY_HOST=ubuntu@49.233.168.199 ./deploy/deploy.sh` (key `~/.ssh/sky_passport_deploy`); Node 20 lives in `/opt/node20` (system Node 12 untouched); TLS via certbot webroot; server bandwidth is 3 Mbps — move static files to COS+CDN before promoting.
 6. Share/social: 9:16 cover image export, Xiaohongshu/Douyin-friendly title card.
 
 ## Working agreements

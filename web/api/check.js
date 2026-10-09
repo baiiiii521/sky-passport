@@ -142,6 +142,8 @@ module.exports = async (req, res) => {
   const origin = req.headers.origin || '';
   if (origin && !ORIGINS.some(re => re.test(origin)) && !(process.env.ALLOWED_ORIGINS || '').split(',').includes(origin)) return res.status(403).json({ error: 'origin' });
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+  // TYPESAFE_DISABLED=1 where the provider is unavailable (TypeSafe answers 451 from mainland China): nothing is forwarded
+  if (process.env.TYPESAFE_DISABLED === '1') return res.status(503).json({ error: 'disabled' });
   const key = process.env.TYPESAFE_API_KEY;
   if (!key) return res.status(503).json({ error: 'not_configured' });
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
