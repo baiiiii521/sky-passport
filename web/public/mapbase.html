@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>map base</title>
+<!-- Renders the mini program's poster base map (fixed equirectangular, centre 105°E, lat 78°N…56°S). Used by scripts/build_mapbase (headless). -->
+<canvas id="c"></canvas>
+<script src="vendor/d3.min.js"></script><script src="vendor/topojson.min.js"></script>
+<script>
+const W=1200,LAT0=78,LAT1=-56,PX=W/360,H=Math.round((LAT0-LAT1)*PX),LON0=105;
+window.render=async()=>{const [w,cn]=await Promise.all([fetch('world-50m.json').then(r=>r.json()),fetch('china.json').then(r=>r.json())]);
+  const rw=g=>{for(const p of g.type==='Polygon'?[g.coordinates]:g.coordinates)if(d3.geoArea({type:'Polygon',coordinates:p})>2*Math.PI)p.forEach(r=>r.reverse());return g;};
+  const c=document.getElementById('c');c.width=W;c.height=H;const g=c.getContext('2d');
+  const proj=d3.geoEquirectangular().rotate([-LON0,0]).scale(W/(2*Math.PI)).translate([W/2,LAT0*PX]).precision(0.2);const path=d3.geoPath(proj,g);
+  const land=topojson.merge(w,w.objects.countries.geometries.filter(x=>x.id!=='010')),china={type:'Feature',geometry:rw(cn.cn)},jd={type:'Feature',geometry:rw(cn.jd)};
+  // land as horizontal print rows in the passport gradient
+  const m=document.createElement('canvas');m.width=W;m.height=H;const mg=m.getContext('2d');const gr=mg.createLinearGradient(0,0,W,0);
+  [[0,'#c58be0'],[.18,'#b98fe6'],[.3,'#d685c6'],[.42,'#ea8fb0'],[.55,'#e98aa8'],[.68,'#8fb4ef'],[.85,'#7fc6e8'],[1,'#78d8c2']].forEach(([o,cl])=>gr.addColorStop(o,cl));
+  mg.fillStyle=gr;for(let y=0;y<H;y+=4.6)mg.fillRect(0,y,W,1.6);mg.globalCompositeOperation='destination-in';const mp=d3.geoPath(proj,mg);mg.beginPath();mp(land);mp(china);mg.fill();
+  g.strokeStyle='rgba(120,80,150,.13)';g.lineWidth=1;g.beginPath();path(d3.geoGraticule().extent([[-180,LAT1],[180,LAT0]]).step([15,15])());g.stroke();
+  g.drawImage(m,0,0);
+  g.beginPath();path(china);g.fillStyle='rgba(150,30,70,.10)';g.fill();g.lineWidth=1.2;g.strokeStyle='rgba(140,30,70,.45)';g.stroke();
+  g.beginPath();path(jd);g.fillStyle='rgba(140,30,70,.6)';g.fill();g.lineWidth=0.8;g.strokeStyle='rgba(140,30,70,.6)';g.stroke();
+  return c.toDataURL('image/png');};
+</script>
