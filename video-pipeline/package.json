@@ -1,0 +1,14 @@
+{
+  "name": "sky-passport-video-pipeline",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "d3": "7.9.0",
+    "topojson-client": "3.1.0",
+    "world-atlas": "2.0.2",
+    "playwright-core": "1.47.2",
+    "@fontsource/open-sans": "5.0.28",
+    "@fontsource/space-mono": "5.0.20",
+    "flag-icons": "7.2.3"
+  }
+}

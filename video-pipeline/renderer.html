@@ -1,0 +1,412 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:OS;src:url(/video-pipeline/node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2);font-weight:400}
+@font-face{font-family:OS;src:url(/video-pipeline/node_modules/@fontsource/open-sans/files/open-sans-latin-600-normal.woff2);font-weight:600}
+@font-face{font-family:OS;src:url(/video-pipeline/node_modules/@fontsource/open-sans/files/open-sans-latin-700-normal.woff2);font-weight:700}
+@font-face{font-family:SM;src:url(/video-pipeline/node_modules/@fontsource/space-mono/files/space-mono-latin-400-normal.woff2);font-weight:400}
+@font-face{font-family:SM;src:url(/video-pipeline/node_modules/@fontsource/space-mono/files/space-mono-latin-700-normal.woff2);font-weight:700}
+html,body{margin:0;background:#000}
+canvas{display:block}
+</style>
+<script src="/video-pipeline/node_modules/d3/dist/d3.min.js"></script>
+<script src="/video-pipeline/node_modules/topojson-client/dist/topojson-client.min.js"></script>
+</head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+const W=1080,H=1920,FPS=30;const BPM=112,BEAT=60/BPM,BAR=4*BEAT;const T_OPEN=2*BAR,T_F0=3*BAR;
+const YB={2016:3,2017:3,2018:3,2019:2,2020:2,2021:.25,2022:.25,2023:.5,2024:1,2025:2,2026:2,2027:2};
+const OFF=T_OPEN;
+const cv=document.getElementById('c');let ctx=cv.getContext('2d');const mainCtx=ctx;
+const posterCv=document.createElement('canvas');posterCv.width=1080;posterCv.height=1920;const pctx=posterCv.getContext('2d');
+const hash=n=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor(x);};
+const CJK='"Noto Sans CJK SC","Noto Sans CJK JP",sans-serif';
+const F=(w,s,f='OS')=>`${w} ${s}px ${f}, ${CJK}`;
+// layout
+const CARD={x:36,y:118,w:1008,h:1700,r:44};
+const MAP={x:66,y:300,w:948,h:610};
+const PAGE2Y=1010;
+const ISO={CN:156,TH:764,MO:446,VN:704,MY:458,PH:608,SG:702,ID:360,HK:344,JP:392,ES:724,IT:380,KH:116,DE:276,RU:643,US:840,MM:104,KR:410};
+const CNAME={CN:'China',TH:'Thailand',MO:'Macao',VN:'Vietnam',MY:'Malaysia',PH:'Philippines',SG:'Singapore',ID:'Indonesia',HK:'Hong Kong',JP:'Japan',ES:'Spain',IT:'Italy',KH:'Cambodia',DE:'Germany',RU:'Russia',US:'USA',MM:'Myanmar',KR:'Korea'};
+let D,land,countries,proj,path,flights,flagImg={},photo,bgLayer,T_END,camArr=[],NF;
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const easeOut=t=>1-Math.pow(1-t,3);
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+async function init(){
+  D=await (await fetch('/data/private/data.json')).json();
+  const topo=await (await fetch('/video-pipeline/node_modules/world-atlas/countries-50m.json')).json();
+  land=topojson.merge(topo,topo.objects.countries.geometries.filter(g=>g.id!=='010'));
+  const cs=topojson.feature(topo,topo.objects.countries).features;
+  countries={};for(const k in ISO){countries[k]=cs.filter(f=>+f.id===ISO[k]);}
+  // world px: 360deg -> MAP.w at zoom 1, pacific-centred
+  proj=d3.geoEquirectangular().rotate([-155,0]).scale(MAP.w/(2*Math.PI)).translate([MAP.w/2,0]).precision(0.3);
+  console.log('topo ok');const loadImg=s=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>{console.log('imgerr '+s);r(i)};i.src=s;});
+  for(const k in ISO) flagImg[k]=await loadImg('/video-pipeline/node_modules/flag-icons/flags/1x1/'+k.toLowerCase()+'.svg');
+  photo=await loadImg('/data/private/photo.png');
+  await document.fonts.load('400 20px OS');await document.fonts.load('600 20px OS');await document.fonts.load('700 20px OS');
+  await document.fonts.load('400 20px SM');await document.fonts.load('700 20px SM');
+  schedule();window.FINAL=stats(1e9);buildBg();buildCam();
+  window.READY=true;
+}
+
+function schedule(){
+  flights=D.flights.map(f=>({...f}));
+  const G=BEAT/8; // 32nd-note grid
+  window.YEARS=[];let ys=T_F0;
+  for(const y of Object.keys(YB).sort()){
+    const fl=flights.filter(f=>f.date.slice(0,4)===y);const dur=YB[y]*BAR;YEARS.push({y:+y,t:ys,end:ys+dur});
+    const slot=dur/Math.max(1,fl.length);
+    fl.forEach((f,k)=>{f.t0=ys+Math.round(k*slot/G)*G;f.dur=Math.max(0.42,Math.min(1.5,0.3+1.25*Math.pow(f.km/11128,0.55)));
+      if(y==='2027')f.dur=Math.min(1.0,f.dur+0.3);f.t1=f.t0+f.dur;});
+    ys+=dur;
+  }
+  flights.sort((p,q)=>p.t0-q.t0);
+  window.T_FE=ys;window.T_STAMP=T_FE+BEAT;window.T_ZOOM=T_FE+BAR;window.T_CARD=T_FE+3*BAR;T_END=T_CARD+2.5*BAR;
+  const A=D.airports;
+  for(const f of flights){f.a=proj([A[f.f].lon,A[f.f].lat]);f.b=proj([A[f.to].lon,A[f.to].lat]);}
+  NF=flights.length;
+  window.TOTAL_FRAMES=Math.ceil(T_END*FPS);
+  window.visit={};window.visitOrder=['CN'];visit.CN=T_OPEN;
+  for(const f of flights){for(const c of [f.fc,f.tc]){const tt=c===f.fc?f.t0:f.t1;if(!(c in visit)){visit[c]=tt;visitOrder.push(c);}}}
+  visitOrder.sort((a,b)=>visit[a]-visit[b]);
+  window.TL={bpm:BPM,bar:BAR,T_OPEN,T_F0,T_FE,T_STAMP,T_ZOOM,T_CARD,T_END,years:YEARS,flights:flights.map(f=>({t0:f.t0,t1:f.t1,km:f.km,up:f.up,vd:f.vd}))};
+}
+
+// ---------- camera ----------
+const BASE=[[92,-11],[146,52]]; // lon/lat box east & SE asia
+function boxPx(b){const p1=proj(b[0]),p2=proj(b[1]);return [Math.min(p1[0],p2[0]),Math.min(p1[1],p2[1]),Math.max(p1[0],p2[0]),Math.max(p1[1],p2[1])];}
+function fit(bx){const pad=40;const w=bx[2]-bx[0],h=bx[3]-bx[1];const z=Math.min((MAP.w-2*pad)/w,(MAP.h-2*pad)/h);return {cx:(bx[0]+bx[2])/2,cy:(bx[1]+bx[3])/2,z};}
+function worldView(){const bx=boxPx([[-180+150-179.9+0.2,-56],[150+179.8,78]]);// full
+  const p1=proj([-24.9,-56]),p2=proj([334.9,76]);const v=fit([0,p2[1],MAP.w,p1[1]]);const hh=(p1[1]-p2[1])*v.z;v.cy+= (MAP.h/2-hh/2-40)/v.z;return v;}
+function buildCam(){
+  const base=boxPx(BASE);const wv=worldView();
+  let cur=fit(base);camArr=[];
+  const N=TOTAL_FRAMES;
+  for(let i=0;i<N;i++){
+    const t=i/FPS;let tgt;
+    if(t>=T_ZOOM){tgt=wv;}
+    else{
+      let bx=base.slice();
+      for(const f of flights){ if(f.t0-1.1<t && f.t1+0.5>t){ bx=[Math.min(bx[0],f.a[0],f.b[0]),Math.min(bx[1],f.a[1],f.b[1]),Math.max(bx[2],f.a[0],f.b[0]),Math.max(bx[3],f.a[1],f.b[1])]; } }
+      tgt=fit(bx);
+    }
+    const k=t>=T_ZOOM?0.06:0.075;
+    // zoom in log space
+    cur={cx:lerp(cur.cx,tgt.cx,k),cy:lerp(cur.cy,tgt.cy,k),z:Math.exp(lerp(Math.log(cur.z),Math.log(tgt.z),k))};
+    camArr.push(cur);
+  }
+}
+
+// ---------- static background (card + guilloche) ----------
+function guilloche(g,cx,cy,R,r,d,col,alpha,lw,n=1400){
+  g.save();g.strokeStyle=col;g.globalAlpha=alpha;g.lineWidth=lw;g.beginPath();
+  for(let i=0;i<=n*10;i++){const th=i/n*Math.PI*2*1;const x=cx+(R-r)*Math.cos(th)+d*Math.cos((R-r)/r*th);const y=cy+(R-r)*Math.sin(th)-d*Math.sin((R-r)/r*th);i?g.lineTo(x,y):g.moveTo(x,y);}
+  g.stroke();g.restore();
+}
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function buildBg(){
+  bgLayer=document.createElement('canvas');bgLayer.width=W;bgLayer.height=H;const g=bgLayer.getContext('2d');
+  // outer bg
+  const og=g.createLinearGradient(0,0,0,H);og.addColorStop(0,'#ece8ec');og.addColorStop(1,'#e2dde3');g.fillStyle=og;g.fillRect(0,0,W,H);
+  // cover (burgundy)
+  g.save();g.shadowColor='rgba(60,10,20,.35)';g.shadowBlur=40;g.shadowOffsetY=14;rr(g,CARD.x,CARD.y,CARD.w,CARD.h,CARD.r);g.fillStyle='#4b1019';g.fill();g.restore();
+  // page
+  const P={x:CARD.x+4,y:CARD.y+22,w:CARD.w-8,h:CARD.h-44};window.PG=P;
+  g.save();rr(g,P.x,P.y,P.w,P.h,36);g.clip();
+  const pg=g.createLinearGradient(P.x,P.y,P.x+P.w,P.y+P.h);pg.addColorStop(0,'#fbf7f6');pg.addColorStop(.5,'#f6f1f6');pg.addColorStop(1,'#f3eef6');g.fillStyle=pg;g.fillRect(P.x,P.y,P.w,P.h);
+  // fine wavy security lines
+  for(let y=P.y;y<P.y+P.h;y+=7){g.beginPath();for(let x=P.x;x<=P.x+P.w;x+=6){const yy=y+3*Math.sin(x/38+y/90)+2*Math.sin(x/11+y/30);x===P.x?g.moveTo(x,yy):g.lineTo(x,yy);}
+    const hue=y<PAGE2Y?300:340;g.strokeStyle=`hsla(${hue+(y%60)},60%,70%,.10)`;g.lineWidth=0.8;g.stroke();}
+  guilloche(g,P.x+P.w*0.80,P.y+170,170,37,60,'#e6a0b8',0.10,0.7,180);
+  guilloche(g,P.x+P.w*0.62,PAGE2Y+330,300,41,110,'#b9a2e6',0.09,0.7,200);
+  guilloche(g,P.x+90,PAGE2Y+600,190,29,80,'#9fd3e0',0.10,0.7,200);
+  // sun glow top right like reference
+  const sg=g.createRadialGradient(P.x+P.w-70,P.y+150,0,P.x+P.w-70,P.y+150,120);sg.addColorStop(0,'rgba(255,214,214,.55)');sg.addColorStop(1,'rgba(255,214,214,0)');g.fillStyle=sg;g.fillRect(P.x,P.y,P.w,400);
+  // page divider (fold)
+  g.setLineDash([6,8]);g.strokeStyle='rgba(120,90,120,.35)';g.lineWidth=1.5;g.beginPath();g.moveTo(P.x+20,PAGE2Y);g.lineTo(P.x+P.w-20,PAGE2Y);g.stroke();g.setLineDash([]);
+  const fold=g.createLinearGradient(0,PAGE2Y-26,0,PAGE2Y+26);fold.addColorStop(0,'rgba(90,40,80,0)');fold.addColorStop(.5,'rgba(90,40,80,.07)');fold.addColorStop(1,'rgba(90,40,80,0)');g.fillStyle=fold;g.fillRect(P.x,PAGE2Y-26,P.w,52);
+  // vertical microprint on right edge
+  g.save();g.translate(P.x+P.w-26,PAGE2Y+70);g.rotate(Math.PI/2);g.font=F(400,13,'SM');g.fillStyle='rgba(110,80,110,.35)';g.fillText('BYB·FLIGHT·LOG·2016-2027·BYB·FLIGHT·LOG·2016-2027·BYB·FLIGHT·LOG',0,0);g.restore();
+  // watermark under map
+  g.font=F(400,20,'SM');g.fillStyle='rgba(120,100,140,.5)';g.textAlign='center';g.fillText('@ BYB  ·  SKY  JOURNAL',W/2,MAP.y+MAP.h+28);g.textAlign='left';
+  g.restore();
+  // top caption
+  g.font=F(600,26);g.fillStyle='#3a1f2a';g.textAlign='center';g.fillText('飞 行 护 照   ·   F L I G H T   L O G',W/2,78);g.textAlign='left';
+}
+
+// ---------- map ----------
+const mapCv=document.createElement('canvas');mapCv.width=MAP.w;mapCv.height=MAP.h;const mg=mapCv.getContext('2d');
+const hatchCv=document.createElement('canvas');hatchCv.width=MAP.w;hatchCv.height=MAP.h;const hg=hatchCv.getContext('2d');
+function camTransform(g,cam){g.setTransform(cam.z,0,0,cam.z,MAP.w/2-cam.cx*cam.z,MAP.h/2-cam.cy*cam.z);}
+function toScr(p,cam){return [MAP.w/2+(p[0]-cam.cx)*cam.z,MAP.h/2+(p[1]-cam.cy)*cam.z];}
+function drawMap(t,cam){
+  // hatch layer
+  hg.setTransform(1,0,0,1,0,0);hg.globalCompositeOperation='source-over';hg.clearRect(0,0,MAP.w,MAP.h);
+  const x0=toScr([0,0],cam)[0],x1=toScr([MAP.w,0],cam)[0];
+  const gr=hg.createLinearGradient(x0,0,x1,0);
+  // pacific-centred: left edge = 30W (europe/africa), centre=150E, right=americas
+  gr.addColorStop(0,'#c58be0');gr.addColorStop(0.18,'#b98fe6');gr.addColorStop(0.30,'#d685c6');gr.addColorStop(0.42,'#ea8fb0');gr.addColorStop(0.55,'#e98aa8');gr.addColorStop(0.68,'#8fb4ef');gr.addColorStop(0.85,'#7fc6e8');gr.addColorStop(1,'#78d8c2');
+  hg.fillStyle=gr;
+  const sp=4.6,th=1.25;
+  const rev=clamp((t-T_OPEN)/BAR);let ri=0;
+  for(let y=0;y<MAP.h;y+=sp,ri++){const w=MAP.w*clamp(rev*1.8-hash(ri)*0.8);if(w>0)hg.fillRect(0,y,w,th);}
+  hg.globalCompositeOperation='destination-in';
+  camTransform(hg,cam);hg.beginPath();d3.geoPath(proj,hg)(land);hg.fillStyle='#000';hg.fill();
+  hg.setTransform(1,0,0,1,0,0);hg.globalCompositeOperation='source-over';
+  // compose
+  mg.setTransform(1,0,0,1,0,0);mg.clearRect(0,0,MAP.w,MAP.h);
+  mg.drawImage(hatchCv,0,0);
+  // visited countries tint
+  camTransform(mg,cam);
+  for(const k in countries){ if(!(k in visit))continue; const a=clamp((t-visit[k])/0.6); if(a<=0)continue;
+    mg.beginPath();for(const f of countries[k]) d3.geoPath(proj,mg)(f);
+    mg.fillStyle=`rgba(150,30,70,${0.16*a})`;mg.fill();
+    mg.lineWidth=1.1/cam.z;mg.strokeStyle=`rgba(140,30,70,${0.45*a})`;mg.stroke();}
+  mg.setTransform(1,0,0,1,0,0);
+  drawRoutes(mg,t,cam);
+  // soft vignette edges
+  const fe=60;
+  mg.globalCompositeOperation='destination-out';
+  let g1=mg.createLinearGradient(0,0,fe,0);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');mg.fillStyle=g1;mg.fillRect(0,0,fe,MAP.h);
+  g1=mg.createLinearGradient(MAP.w,0,MAP.w-fe,0);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');mg.fillStyle=g1;mg.fillRect(MAP.w-fe,0,fe,MAP.h);
+  g1=mg.createLinearGradient(0,0,0,fe);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');mg.fillStyle=g1;mg.fillRect(0,0,MAP.w,fe);
+  g1=mg.createLinearGradient(0,MAP.h,0,MAP.h-fe);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');mg.fillStyle=g1;mg.fillRect(0,MAP.h-fe,MAP.w,fe);
+  mg.globalCompositeOperation='source-over';
+  {const p=window.PUNCH||1;ctx.save();ctx.translate(MAP.x+MAP.w/2,MAP.y+MAP.h/2);ctx.scale(p,p);ctx.drawImage(mapCv,-MAP.w/2,-MAP.h/2);ctx.restore();}
+}
+function ctrl(a,b){const dx=b[0]-a[0],dy=b[1]-a[1];const L=Math.hypot(dx,dy);const k=0.18;let nx=-dy/L,ny=dx/L;if(ny>0){nx=-nx;ny=-ny;} // bow upward
+  return [(a[0]+b[0])/2+nx*L*k,(a[1]+b[1])/2+ny*L*k];}
+function qpt(a,c,b,u){const m=1-u;return [m*m*a[0]+2*m*u*c[0]+u*u*b[0],m*m*a[1]+2*m*u*c[1]+u*u*b[1]];}
+function qtan(a,c,b,u){return [2*(1-u)*(c[0]-a[0])+2*u*(b[0]-c[0]),2*(1-u)*(c[1]-a[1])+2*u*(b[1]-c[1])];}
+function strokeQ(g,a,c,b,u){ // partial quad bezier 0..u
+  const n=Math.max(8,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/6));g.beginPath();g.moveTo(a[0],a[1]);
+  for(let i=1;i<=n;i++){const p=qpt(a,c,b,u*i/n);g.lineTo(p[0],p[1]);}g.stroke();}
+function plane(g,x,y,ang,s,col){g.save();g.translate(x,y);g.rotate(ang);g.scale(s,s);g.fillStyle=col;g.beginPath();
+  g.moveTo(11,0);g.lineTo(7,-1.6);g.lineTo(1,-1.6);g.lineTo(-4,-9);g.lineTo(-6.5,-9);g.lineTo(-3,-1.6);g.lineTo(-8,-1.6);g.lineTo(-10.5,-4.5);g.lineTo(-12,-4.5);g.lineTo(-10.5,0);
+  g.lineTo(-12,4.5);g.lineTo(-10.5,4.5);g.lineTo(-8,1.6);g.lineTo(-3,1.6);g.lineTo(-6.5,9);g.lineTo(-4,9);g.lineTo(1,1.6);g.lineTo(7,1.6);g.closePath();g.fill();g.restore();}
+function drawRoutes(g,t,cam){
+  const outro=clamp((t-T_ZOOM)/1.5);
+  const seenAp=new Set();
+  // past + active
+  for(const f of flights){
+    if(t<f.t0)break;
+    const a=toScr(f.a,cam),b=toScr(f.b,cam),c=ctrl(a,b);
+    const u=clamp((t-f.t0)/f.dur);const ue=ease(u);
+    const active=u<1;const age=t-f.t1;
+    const col=f.up?'rgba(30,110,200,':'rgba(205,30,55,';
+    g.lineCap='round';
+    if(f.up) g.setLineDash([7,6]); else g.setLineDash([]);
+    if(active){g.lineWidth=3.2;g.strokeStyle=col+'1)';strokeQ(g,a,c,b,ue);
+      const p=qpt(a,c,b,ue),tg=qtan(a,c,b,ue);plane(g,p[0],p[1],Math.atan2(tg[1],tg[0]),1.25,f.up?'#1e6ec8':'#c41e37');}
+    else{const fresh=clamp(1-age/1.2);g.lineWidth=1.5+1.6*fresh;g.strokeStyle=col+(0.42+0.5*fresh+0.2*outro)+')';strokeQ(g,a,c,b,1);}
+    g.setLineDash([]);
+    seenAp.add(f.f);if(!active)seenAp.add(f.to);
+  }
+  if(t>T_ZOOM){const tz=t-T_ZOOM;let k=0;for(const f of flights){k++;if(f.up)continue;const a=toScr(f.a,cam),b=toScr(f.b,cam),c=ctrl(a,b);const u=(tz*0.55+hash(k))%1;const p=qpt(a,c,b,u);const al=clamp(tz/0.6)*Math.sin(Math.PI*u);g.beginPath();g.arc(p[0],p[1],2.6,0,7);g.fillStyle=`rgba(255,235,240,${0.95*al})`;g.fill();g.beginPath();g.arc(p[0],p[1],5.5,0,7);g.fillStyle=`rgba(230,40,80,${0.25*al})`;g.fill();}}
+  // airport dots
+  for(const code of seenAp){const p=toScr(proj([D.airports[code].lon,D.airports[code].lat]),cam);g.beginPath();g.arc(p[0],p[1],3.6,0,7);g.fillStyle='#fff';g.fill();g.lineWidth=2;g.strokeStyle='#b0173a';g.stroke();}
+  // landing ripples
+  for(const f of flights){const a=t-f.t1;if(a>0&&a<0.7){const p=toScr(f.b,cam);const r=6+26*easeOut(a/0.7);g.beginPath();g.arc(p[0],p[1],r,0,7);g.lineWidth=2;g.strokeStyle=`rgba(200,30,60,${0.8*(1-a/0.7)})`;g.stroke();}}
+}
+
+// ---------- UI pieces ----------
+function curFlightIdx(t){let k=-1;for(let i=0;i<NF;i++){if(flights[i].t0<=t)k=i;else break;}return k;}
+function stats(t){
+  let n=0,km=0,min=0;const al=new Set(),ap=new Set(),cc=new Set(['CN']);
+  for(const f of flights){if(t<f.t0)break;const u=clamp((t-f.t0)/f.dur);km+=f.km*ease(u);min+=f.min*ease(u);ap.add(f.f);
+    if(u>=1){n++;if(f.al!=='--')al.add(f.al);ap.add(f.to);cc.add(f.fc);cc.add(f.tc);} }
+  return {n,km:Math.round(km),min:Math.round(min),al:al.size,ap:ap.size,cc:cc.size};
+}
+function drawFlags(t){
+  const shown=visitOrder.filter(c=>visit[c]<=t+0.0001);
+  const R=21,step=50,per=Math.ceil(visitOrder.length/2);
+  shown.forEach((c,i)=>{const a=easeOut(clamp((t-visit[c])/0.45));const s=0.4+0.6*a+0.25*Math.sin(Math.PI*a)*(c==='CN'?0:1);
+    const row=i<per?0:1,j=row?i-per:i,cnt=row?visitOrder.length-per:per;const x=W/2+(j-(cnt-1)/2)*step,y=PAGE.flagY+row*50;ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+    ctx.shadowColor='rgba(0,0,0,.18)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.beginPath();ctx.arc(0,0,R+3,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.shadowColor='transparent';
+    ctx.beginPath();ctx.arc(0,0,R,0,7);ctx.clip();ctx.drawImage(flagImg[c],-R,-R,2*R,2*R);ctx.restore();});
+}
+const PAGE={flagY:192};
+function fmt(n){return n.toLocaleString('en-US');}
+function hm(m){return Math.floor(m/60)+'h '+(m%60)+'m';}
+function label(x,y,l,v,vs=27){ctx.font=F(400,19);ctx.fillStyle='#9a2b46';ctx.fillText(l,x,y);ctx.font=F(600,vs);ctx.fillStyle='#1d1420';ctx.fillText(v,x,y+vs+6);}
+function drawInfo(t,st){
+  const top=PAGE2Y+66;const rv=clamp((t-T_OPEN-0.15)/BAR);const grp=i=>{ctx.globalAlpha=easeOut(clamp((rv-i*0.085)/0.3));};
+  grp(0);
+  ctx.font=F(600,28);ctx.fillStyle='#8e1d38';ctx.fillText('FLIGHT  PASSPORT',92,top);
+  ctx.font=F(400,20);ctx.fillStyle='#8e1d38';ctx.fillText('飞行护照',92,top+30);
+  ctx.font=F(600,40);ctx.fillStyle='#8e1d38';ctx.textAlign='center';ctx.fillText('CHINA',600,top+4);ctx.textAlign='left';
+  grp(1);// chip icon
+  ctx.save();ctx.translate(880,top-30);rr(ctx,0,0,64,40,8);ctx.fillStyle='#2b1b24';ctx.fill();ctx.beginPath();ctx.arc(32,20,11,0,7);ctx.lineWidth=4;ctx.strokeStyle='#f3eef3';ctx.stroke();ctx.fillStyle='#f3eef3';ctx.fillRect(4,18,14,4);ctx.fillRect(46,18,14,4);ctx.restore();
+  grp(2);// photo
+  const px=92,py=top+62,pw=270,ph=330;
+  ctx.save();rr(ctx,px,py,pw,ph,10);ctx.clip();
+  const sw=photo.width*0.60,sh=sw*ph/pw;const sx=photo.width*0.03,sy=photo.height*0.33;ctx.drawImage(photo,sx,sy,sw,Math.min(sh,photo.height-sy),px,py,pw,ph);
+  ctx.globalAlpha=0.10;for(let y=py;y<py+ph;y+=6){ctx.fillStyle='#b77ad8';ctx.fillRect(px,y,pw,1);}ctx.globalAlpha=1;ctx.restore();
+  ctx.strokeStyle='#8e1d38';ctx.lineWidth=4;const L=26,e=8;
+  [[px-e,py-e,1,1],[px+pw+e,py-e,-1,1],[px-e,py+ph+e,1,-1],[px+pw+e,py+ph+e,-1,-1]].forEach(([x,y,sx,sy])=>{ctx.beginPath();ctx.moveTo(x+sx*L,y);ctx.lineTo(x,y);ctx.lineTo(x,y+sy*L);ctx.stroke();});
+  const fx=410;let fy=top+64;
+  grp(3);label(fx,fy,'Type / 类型','P');label(fx+170,fy,'Code / 国家码','CHN');label(fx+350,fy,'Passport No. / 号码','BYB'+FINAL.n+'27');
+  grp(4);label(fx,fy+92,'Name / 姓名','BYB',30);
+  grp(5);label(fx,fy+184,'Date of issue / 签发','08 OCT 2026');
+  const cx=830,cy=top+262;grp(5);
+  const pz=1+0.12*Math.max(0,1-Math.abs(t-T_STAMP-0.12)/0.35)*(t>T_STAMP?1:0);ctx.save();ctx.translate(cx,cy-40);ctx.scale(pz,pz);ctx.translate(-cx,-(cy-40));
+  ctx.font=F(600,112);ctx.fillStyle='#1d1420';ctx.textAlign='center';ctx.fillText(String(st.n),cx,cy);
+  ctx.font=F(400,28);ctx.fillText('flights · 航班',cx,cy+42);ctx.textAlign='left';ctx.restore();
+  grp(6);label(fx+350,fy+276,'Authority / 签发机关','SKY JOURNAL');
+  grp(7);// stats
+  const r1=top+430,r2=top+525,cols=[92,420,740];
+  ctx.strokeStyle='rgba(142,29,56,.18)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(92,r1-34);ctx.lineTo(W-100,r1-34);ctx.stroke();
+  label(cols[0],r1,'Distance / 里程',fmt(st.km)+' km',30);
+  label(cols[1],r1,'Flight time / 飞行时长',hm(st.min),30);
+  label(cols[2],r1,'Around Earth / 绕地球',(st.km/40075).toFixed(2)+' ×',30);
+  label(cols[0],r2,'Countries & regions / 国家地区',String(st.cc),30);
+  label(cols[1],r2,'Airports / 机场',String(st.ap),30);
+  label(cols[2],r2,'Airlines / 航司',String(st.al),30);
+  // MRZ typed out
+  ctx.globalAlpha=1;ctx.font=F(400,28,'SM');ctx.fillStyle='#2a2230';const nc=Math.floor(clamp((rv-0.35)/0.6)*88);
+  const m1='P<CHNBYB<<FLIGHT<LOG<<<<<<<<<<<<<<<<<<<<<<<';
+  const n3=String(st.n).padStart(3,'0');const m2=`BYB${FINAL.n}27<4CHN261008<${n3}<261008<<<<<<<<<<<<`;
+  ctx.fillText(m1.slice(0,Math.min(44,nc)),86,PG.y+PG.h-96);if(nc>44)ctx.fillText(m2.slice(0,nc-44),86,PG.y+PG.h-52);
+  ctx.globalAlpha=1;
+}
+function yearIdx(t){let k=-1;for(let i=0;i<YEARS.length;i++)if(YEARS[i].t<=t)k=i;return k;}
+function drawTicker(t){
+  if(t<T_F0-0.3||t>T_ZOOM+0.3)return;
+  const fade=Math.min(clamp((t-T_F0+0.3)/0.3),1-clamp((t-T_ZOOM)/0.3));
+  ctx.save();ctx.globalAlpha=fade;
+  const k=Math.max(0,yearIdx(t));const Y=YEARS[k];const prev=k>0?YEARS[k-1].y:Y.y;
+  const u=easeOut(clamp((t-Y.t)/0.28));
+  const x=MAP.x+18,yb=MAP.y+MAP.h-58,lh=64;
+  ctx.save();ctx.beginPath();ctx.rect(x-4,yb-50,260,58);ctx.clip();
+  ctx.font=F(700,64,'SM');ctx.fillStyle='rgba(120,30,70,.88)';
+  const sNew=String(Y.y),sOld=String(prev);const cw=ctx.measureText('0').width;
+  for(let d=0;d<4;d++){const cx=x+d*cw;
+    if(sNew[d]===sOld[d]||k===0){ctx.fillText(sNew[d],cx,yb);}
+    else{ctx.fillText(sOld[d],cx,yb-u*lh);ctx.fillText(sNew[d],cx,yb+(1-u)*lh);}}
+  ctx.restore();
+  const i=curFlightIdx(t);
+  if(i>=0&&t<=T_FE+0.2&&flights[i].date.slice(0,4)!==String(Y.y)){ctx.font=F(400,26,'SM');ctx.fillStyle='rgba(60,30,50,.9)';ctx.fillText('NO FLIGHTS · 无航班',MAP.x+22,MAP.y+MAP.h-18);}
+  else if(i>=0&&t<=T_FE+0.2){const f=flights[i];
+    ctx.font=F(700,28,'SM');ctx.fillStyle='rgba(60,30,50,.92)';
+    ctx.fillText(`${f.fn.replace(/OPEN$/," OPEN")}  ${f.f} → ${f.to}`,MAP.x+22,MAP.y+MAP.h-18);
+    const tag=f.vd?['VOID · 退票/作废','#7a6a74']:f.up?['UPCOMING · 待出行','#1e6ec8']:null;
+    if(tag){ctx.font=F(700,20,'SM');ctx.save();ctx.translate(MAP.x+235,MAP.y+MAP.h-104);ctx.rotate(-0.12);ctx.strokeStyle=tag[1];ctx.lineWidth=3;rr(ctx,-8,-26,250,38,6);ctx.stroke();ctx.fillStyle=tag[1];ctx.fillText(tag[0],4,0);ctx.restore();}
+  }
+  ctx.restore();
+}
+function drawTimeline(t){
+  ctx.save();ctx.globalAlpha=easeOut(clamp((t-T_OPEN-0.4)/0.6));
+  const x0=MAP.x+40,x1=MAP.x+MAP.w-40,y=MAP.y+MAP.h+70;
+  const years=[];for(let y=2016;y<=2027;y++)years.push(y);
+  const t0=flights[0].t0,t1=flights[NF-1].t1;const p=clamp((t-t0)/(t1-t0));
+  ctx.strokeStyle='rgba(120,90,120,.3)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
+  // progress by year position of current flight date
+  const i=curFlightIdx(t);let yp=0;
+  if(i>=0){const f=flights[i];const dd=new Date(f.date);const s=new Date('2016-01-01'),e=new Date('2027-12-31');yp=clamp((dd-s)/(e-s));if(t>=flights[NF-1].t1)yp=clamp((new Date('2027-03-04')-s)/(e-s));}
+  const g=ctx.createLinearGradient(x0,0,x1,0);g.addColorStop(0,'#78d8c2');g.addColorStop(.5,'#b98fe6');g.addColorStop(1,'#c41e37');
+  ctx.strokeStyle=g;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(lerp(x0,x1,yp),y);ctx.stroke();
+  ctx.beginPath();ctx.arc(lerp(x0,x1,yp),y,6,0,7);ctx.fillStyle='#c41e37';ctx.fill();
+  ctx.font=F(400,17,'SM');ctx.textAlign='center';
+  years.forEach((yy,k)=>{const x=lerp(x0,x1,k/(years.length-1));const s=new Date(yy+'-01-01'),S=new Date('2016-01-01'),E=new Date('2027-12-31');const xx=lerp(x0,x1,(s-S)/(E-S));ctx.fillStyle='rgba(80,50,80,.6)';ctx.fillText(String(yy).slice(2).padStart(3,"'"),xx+20,y+28);});
+  ctx.textAlign='left';ctx.restore();
+}
+function drawEndCard(t,T0){
+  const a=1;
+  ctx.save();ctx.globalAlpha=a;const lt=Math.max(0,t-T0);
+  const g=ctx.createRadialGradient(W/2,H*0.42,50,W/2,H*0.5,1100);g.addColorStop(0,'#3a0f1c');g.addColorStop(1,'#0d0508');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // film grain lines
+  ctx.globalAlpha=a*0.06;for(let y=0;y<H;y+=3){ctx.fillStyle='#fff';ctx.fillRect(0,y,W,1);}
+  const fr=Math.floor(t*FPS);ctx.fillStyle='#fff';for(let i=0;i<180;i++){ctx.globalAlpha=0.05+0.12*hash(fr*977+i*3);ctx.fillRect(hash(fr*131+i)*W,hash(fr*71+i*7)*H,1.6,1.6);}
+  ctx.globalAlpha=a;const pz=1+0.035*ease(clamp(lt/(2.6*BAR)));ctx.translate(W/2,H*0.42);ctx.scale(pz,pz);ctx.translate(-W/2,-H*0.42);
+  const k=easeOut(clamp((t-T0-0.3)/1.0));
+  // mini passport
+  ctx.save();ctx.translate(W/2,560-30*(1-k));rr(ctx,-120,-160,240,320,18);ctx.fillStyle='#5a1422';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='rgba(230,190,140,.6)';ctx.stroke();
+  ctx.strokeStyle='#e8c38c';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(0,-30,62,0,7);ctx.stroke();ctx.beginPath();ctx.ellipse(0,-30,26,62,0,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(-62,-30);ctx.lineTo(62,-30);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-54,-62);ctx.quadraticCurveTo(0,-50,54,-62);ctx.stroke();ctx.beginPath();ctx.moveTo(-54,2);ctx.quadraticCurveTo(0,-10,54,2);ctx.stroke();
+  plane(ctx,48,-96,-0.6,2.2,'#e8c38c');
+  ctx.fillStyle='#e8c38c';ctx.font=F(600,22);ctx.textAlign='center';ctx.fillText('FLIGHT LOG',0,80);ctx.font=F(400,18);ctx.fillText('飞 行 护 照 · BYB',0,110);ctx.restore();
+  ctx.textAlign='center';
+  const k2=easeOut(clamp((t-T0-0.8)/1.0));ctx.globalAlpha=a*k2;
+  ctx.fillStyle='#f6ede6';ctx.font=F(600,46);ctx.fillText('BYB · 2016 — 2027',W/2,850);
+  ctx.font=F(400,30);ctx.fillStyle='#e9d8cf';
+  const S=window.FINAL;
+  ctx.fillText(`${S.n} flights  ·  ${fmt(S.km)} km  ·  ${Math.round(S.min/60)} hours in the sky`,W/2,920);
+  ctx.fillText(`${S.cc} countries & regions  ·  ${S.ap} airports  ·  ${S.al} airlines`,W/2,968);
+  ctx.font=F(400,28);ctx.fillStyle='#cdb3aa';
+  ctx.fillText(`${S.n} 次航班 · ${(S.km/10000).toFixed(1)} 万公里 · 绕地球 ${(S.km/40075).toFixed(2)} 圈`,W/2,1030);
+  const k3=easeOut(clamp((t-T0-1.8)/1.0));
+  ctx.globalAlpha=a*k3;ctx.font=F(400,30,'SM');ctx.fillStyle='#e8c38c';ctx.fillText('MY JOURNEY ACROSS THE GLOBE',W/2,1190);
+  ctx.font=F(400,26);ctx.fillStyle='#cdb3aa';ctx.fillText('一本护照，十年天空',W/2,1236);
+  ctx.globalAlpha=a*k3*0.7;ctx.font=F(400,22,'SM');ctx.fillStyle='#bfa49b';ctx.fillText('P<CHNBYB<<FLIGHT<LOG<<<<<<<<<<<<<<<<<<<',W/2,1600);
+  ctx.restore();ctx.textAlign='left';
+}
+
+function punchAt(t){let s=0;const ev=[T_OPEN,...YEARS.map(y=>y.t),T_ZOOM];for(const e of ev){const u=(t-e)/0.667;if(u>=0&&u<1)s=Math.max(s,0.03*(1-easeOut(u)));}return 1+s;}
+function drawSheen(t){
+  // passport hologram sweep every 4 bars, offset 2 beats
+  if(t<T_F0)return;const per=4*BAR,ph=((t-T_F0-2*BEAT)%per+per)%per;const u=ph/1.0;if(u>1)return;
+  ctx.save();rr(ctx,PG.x,PG.y,PG.w,PG.h,36);ctx.clip();ctx.globalCompositeOperation='soft-light';
+  const cx=lerp(-500,W+500,ease(u));const g=ctx.createLinearGradient(cx-260,0,cx+260,260);
+  g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.3,'rgba(120,230,255,.55)');g.addColorStop(.5,'rgba(255,170,240,.75)');g.addColorStop(.7,'rgba(255,240,150,.55)');g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g;ctx.setTransform(1,0,-0.6,1,0,0);ctx.fillRect(-1000,0,W+3000,H);ctx.restore();
+}
+const stampCv=document.createElement('canvas');stampCv.width=520;stampCv.height=280;let stampReady=false;
+function buildStamp(){const g=stampCv.getContext('2d');g.translate(260,140);
+  const col='#c0162f';g.strokeStyle=col;g.fillStyle=col;g.lineWidth=6;rr(g,-210,-92,420,184,18);g.stroke();g.lineWidth=2.5;rr(g,-196,-78,392,156,12);g.stroke();
+  g.textAlign='center';g.font=F(700,64);g.fillText(FINAL.n+' FLIGHTS',0,22);
+  g.font=F(700,24,'SM');g.fillText('BYB · 2016 — 2027',0,60);g.font=F(600,20);g.fillText('已 飞 行 · TRAVELLED',0,-44);
+  g.globalCompositeOperation='destination-out';
+  for(let i=0;i<900;i++){const x=(hash(i)-0.5)*440,y=(hash(i+5000)-0.5)*200,r=0.4+Math.pow(hash(i+9000),3)*2.6;g.globalAlpha=0.35+0.65*hash(i+300);g.beginPath();g.arc(x,y,r,0,7);g.fill();}
+  stampReady=true;}
+function inkStamp(t){
+  if(t<T_STAMP)return;if(!stampReady)buildStamp();const u=clamp((t-T_STAMP)/0.16);const s=lerp(2.6,1,u*u);const a=clamp(u*1.6);
+  ctx.save();ctx.globalAlpha=0.88*a;ctx.translate(W/2+215,MAP.y+MAP.h-105);ctx.rotate(-0.14);ctx.scale(s*0.82,s*0.82);ctx.globalCompositeOperation='multiply';ctx.drawImage(stampCv,-260,-140);ctx.restore();
+}
+function inkStampOld(t){
+  if(t<T_STAMP)return;const u=clamp((t-T_STAMP)/0.16);const s=lerp(2.6,1,u*u);const a=clamp(u*1.6)*(1-clamp((t-T_CARD+0.2)/0.4));
+  const cx=W/2+150,cy=MAP.y+MAP.h-150;
+  ctx.save();ctx.globalAlpha=0.9*a;ctx.translate(cx,cy);ctx.rotate(-0.16);ctx.scale(s,s);
+  const col='#c0162f';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=6;rr(ctx,-210,-92,420,184,18);ctx.stroke();ctx.lineWidth=2.5;rr(ctx,-196,-78,392,156,12);ctx.stroke();
+  ctx.textAlign='center';ctx.font=F(700,64);ctx.fillText(FINAL.n+' FLIGHTS',0,10);
+  ctx.font=F(700,24,'SM');ctx.fillText('BYB · 2016 — 2027',0,52);ctx.font=F(600,20);ctx.fillText('已 飞 行 · TRAVELLED',0,-46);
+  // ink wear
+  ctx.globalCompositeOperation='destination-out';
+  for(let i=0;i<260;i++){const x=(hash(i)-0.5)*430,y=(hash(i+500)-0.5)*190,r=0.8+hash(i+900)*3.2;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
+  ctx.restore();
+}
+function drawPassport(t,cam){
+  const p=1;window.PUNCH=punchAt(t);let sx=0,sy=0;
+  const sh=t-T_STAMP-0.16;if(sh>=0&&sh<0.3){const amp=14*(1-sh/0.3);sx=amp*Math.sin(sh*95);sy=amp*Math.cos(sh*77);}
+  ctx.save();ctx.translate(W/2+sx,H/2+sy);ctx.scale(p,p);ctx.translate(-W/2,-H/2);
+  ctx.drawImage(bgLayer,0,0);
+  drawFlags(t);drawMap(t,cam);drawTicker(t);drawTimeline(t);
+  drawInfo(t,stats(t));drawSheen(t);inkStamp(t);
+  ctx.restore();
+}
+function cover(t,T0,u,closing){
+  // poster as passport cover hinged on the left edge
+  ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawEndCard(t,T0);ctx=mainCtx;
+  const th=u*Math.PI/2;const c=Math.cos(th);if(c<0.01)return;
+  const sn=Math.sin(th),SW=12;
+  for(let x=0;x<W;x+=SW){const k=x/W;const sy=1-0.16*sn*k;const h=H*sy;const dx=x*c,dw=SW*c+0.6;
+    ctx.drawImage(posterCv,x,0,SW,H,dx,(H-h)/2,dw,h);}
+  ctx.save();ctx.globalAlpha=0.5*u;ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W*c,H*0.08*sn);ctx.lineTo(W*c,H-H*0.08*sn);ctx.lineTo(0,H);ctx.fill();ctx.restore();
+  // shadow cast on page
+  ctx.save();const g=ctx.createLinearGradient(W*c,0,W*c+160,0);g.addColorStop(0,`rgba(20,0,8,${0.45*(1-u)})`);g.addColorStop(1,'rgba(20,0,8,0)');ctx.fillStyle=g;ctx.fillRect(W*c,0,160,H);ctx.restore();
+}
+function renderFrame(i){
+  const t=i/FPS;const cam=camArr[Math.min(i,camArr.length-1)];
+  ctx.setTransform(1,0,0,1,0,0);
+  const SWG=0.8,o0=T_OPEN-0.3,o1=o0+SWG,c0=T_CARD-0.55,c1=c0+SWG,TC=T_CARD-3;
+  if(t<o0){ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawEndCard(t,0);ctx=mainCtx;ctx.drawImage(posterCv,0,0);return;}
+  if(t>=c1){ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawEndCard(t,TC);ctx=mainCtx;ctx.drawImage(posterCv,0,0);return;}
+  drawPassport(t,cam);
+  if(t<o1) cover(t,0,easeInOut(clamp((t-o0)/SWG)),false);
+  if(t>=c0) cover(t,TC,1-easeInOut(clamp((t-c0)/SWG)),true);
+}
+const easeInOut=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+window.renderFrame=renderFrame;
+init();
+</script></body></html>

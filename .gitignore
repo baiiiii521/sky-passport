@@ -1,0 +1,6 @@
+node_modules/
+data/private/
+web/public/flags.json
+*.mp4
+
+.DS_Store
