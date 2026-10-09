@@ -49,8 +49,9 @@ Page({
     wx.showModal({
       title: '生成视频需要上传航段',
       content: '视频在我们的服务器上渲染：会上传航段的日期、航班号、出发和到达地，以及你填的名字。视频生成 24 小时后自动删除，不做其他用途。',
-      confirmText: '同意并生成', cancelText: '不用了',
+      confirmText: '同意', cancelText: '不用了', // WeChat caps modal button text at 4 characters, or the modal silently fails
       success: r => { if (r.confirm) { wx.setStorageSync(CONSENT, 1); this.submitVideo(); } },
+      fail: e => this.setData({ 'video.state': 'error', 'video.err': '弹窗打开失败：' + (e.errMsg || '') }),
     });
   },
   async submitVideo() {
