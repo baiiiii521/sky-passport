@@ -1,5 +1,8 @@
 {
-  "pages": ["pages/index/index"],
+  "pages": [
+    "pages/index/index",
+    "pages/result/result"
+  ],
   "window": {
     "navigationBarTitleText": "航迹护照",
     "navigationBarBackgroundColor": "#2a0b12",

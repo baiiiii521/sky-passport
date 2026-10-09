@@ -1,76 +1,45 @@
-<view class="wrap">
+<view class="page">
+  <!-- hero: the finished film, frame by frame -->
   <view class="hero">
     <text class="eyebrow">SKY PASSPORT · FLIGHT LOG</text>
     <text class="title">航迹护照</text>
-    <text class="lede">把你的航班记录变成一本飞行护照：统计、成就和一张可以晒的长图。表格只在你的手机上解析，不会上传。</text>
+    <text class="sub">把这些年飞过的航班，做成一本会动的护照</text>
+    <swiper class="shots" autoplay interval="3200" circular previous-margin="120rpx" next-margin="120rpx" indicator-dots indicator-color="rgba(227,189,132,.3)" indicator-active-color="#e3bd84">
+      <swiper-item wx:for="{{shots}}" wx:key="src">
+        <view class="shot" data-src="{{item.src}}" bindtap="previewShot">
+          <image src="{{item.src}}" mode="aspectFill" lazy-load/>
+          <text class="cap">{{item.cap}}</text>
+        </view>
+      </swiper-item>
+    </swiper>
+    <button class="cta" bindtap="chooseFile">开始制作 · 从聊天中选择表格</button>
+    <view class="cta2">
+      <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
+      <button class="ghost" bindtap="playDemo">▶ 看示例视频</button>
+    </view>
+    <video wx:if="{{showDemo}}" class="demo" src="{{demoVideo}}" poster="{{demoPoster}}" autoplay controls object-fit="contain" show-fullscreen-btn></video>
   </view>
 
-  <block wx:if="{{stage==='start'}}">
-    <view class="card">
-      <view class="h2"><text class="no">01</text>选择航班记录</view>
-      <button class="primary" bindtap="chooseFile">从微信聊天中选择表格</button>
-      <button class="ghost" bindtap="useDemo">先用示例数据看看</button>
-      <view class="guide" bindtap="toggleGuide">{{guideOpen?'▾':'▸'}} 不知道怎么导出记录？看 3 步说明</view>
-      <view wx:if="{{guideOpen}}" class="steps">
-        <view wx:for="{{guide}}" wx:key="index" class="step"><text class="n">{{index+1}}</text><view><view>{{item[0]}}</view><view class="small">{{item[1]}}</view></view></view>
-      </view>
+  <view class="sec">
+    <view class="sec-h">你会得到</view>
+    <view class="grid">
+      <view wx:for="{{features}}" wx:key="t" class="feat"><text class="fi">{{item.i}}</text><text class="ft">{{item.t}}</text><text class="fd">{{item.d}}</text></view>
     </view>
-  </block>
+  </view>
 
-  <block wx:else>
-    <view class="card">
-      <view class="h2"><text class="no">01</text>{{demo?'示例数据 · 虚构旅客':'你的航班记录'}}<text class="link" bindtap="restart">换一份</text></view>
-      <view class="chips">
-        <view class="chip {{year===0?'on':''}}" data-y="0" bindtap="pickYear">全部年份</view>
-        <view wx:for="{{years}}" wx:key="*this" class="chip {{year===item?'on':''}}" data-y="{{item}}" bindtap="pickYear">{{item}}</view>
-      </view>
-      <view class="row"><switch checked="{{up}}" bindchange="toggleUp" color="#b98a50"/><text class="small">计入待出行航班</text></view>
-      <view wx:if="{{unres.length||noDate}}" class="warn">
-        <text wx:if="{{unres.length}}">有 {{unres.length}} 个地名没认出来（{{unres[0]}}{{unres.length>1?' 等':''}}），这些航段没有算进去。</text>
-        <text wx:if="{{noDate}}">{{noDate}} 行没有日期，已跳过。</text>
-        <text>到网页版可以逐条补全，修正后的表格也能下载。</text>
-      </view>
-    </view>
+  <view class="sec">
+    <view class="sec-h">三步做好</view>
+    <view wx:for="{{guide}}" wx:key="index" class="step"><text class="n">{{index+1}}</text><view class="st"><view>{{item[0]}}</view><view wx:if="{{guideOpen}}" class="small">{{item[1]}}</view></view></view>
+    <view class="more" bindtap="toggleGuide">{{guideOpen?'收起说明 ▴':'看详细说明 ▾'}}</view>
+  </view>
 
-    <view class="card" wx:if="{{sum && sum.n}}">
-      <view class="h2"><text class="no">02</text>{{label}}</view>
-      <view class="stats">
-        <view class="st"><text class="k">航班</text><text class="v">{{sum.n}}</text></view>
-        <view class="st"><text class="k">里程 km</text><text class="v">{{sum.kmText}}</text></view>
-        <view class="st"><text class="k">飞行小时</text><text class="v">{{sum.hours}}</text></view>
-        <view class="st"><text class="k">国家地区</text><text class="v">{{sum.cc}}</text></view>
-        <view class="st"><text class="k">机场</text><text class="v">{{sum.ap}}</text></view>
-        <view class="st"><text class="k">航司</text><text class="v">{{sum.al}}</text></view>
-      </view>
-      <view class="h3">飞行成就</view>
-      <view class="badges">
-        <view wx:for="{{badges}}" wx:key="k" class="badge"><text class="k">{{item.i}} {{item.k}}</text><text class="v">{{item.v}}</text><text class="d">{{item.d}}</text></view>
-      </view>
-    </view>
-    <view class="card" wx:elif="{{sum}}"><text class="small">这个范围里没有可用的航班，换个年份试试。</text></view>
+  <view class="sec">
+    <view class="sec-h">长图海报样例</view>
+    <image class="long" src="{{longImg}}" mode="widthFix" lazy-load data-src="{{longImg}}" bindtap="previewShot"/>
+    <button class="cta" bindtap="chooseFile">做一张我自己的</button>
+  </view>
 
-    <view class="card" wx:if="{{sum && sum.n}}">
-      <view class="h2"><text class="no">03</text>晒一张长图</view>
-      <input class="input" placeholder="海报上的名字（可不填）" value="{{name}}" bindinput="onName" maxlength="16"/>
-      <button class="primary" bindtap="makePoster" disabled="{{!!busy}}">生成长图海报</button>
-      <block wx:if="{{poster}}">
-        <image class="poster" src="{{poster}}" mode="widthFix" bindtap="previewPoster"/>
-        <button class="primary" bindtap="savePoster">保存到相册</button>
-        <text class="small center">点图片可以放大查看</text>
-      </block>
-    </view>
-
-    <view class="card">
-      <view class="h2"><text class="no">04</text>生成带配乐的视频</view>
-      <text class="small">视频需要浏览器的编码能力，小程序里做不了。复制网址，到手机浏览器里打开，上传同一份表格即可。</text>
-      <button class="ghost" bindtap="copySite">复制网址，去浏览器生成视频</button>
-    </view>
-  </block>
-
+  <text class="foot">表格只在你的手机上解析；生成视频时才把航段发到我们的服务器渲染，24 小时后自动删除。\n地图数据 Natural Earth、DataV.GeoAtlas · 机场数据 OpenFlights（ODbL）</text>
   <view wx:if="{{busy}}" class="busy">{{busy}}</view>
   <view wx:if="{{err}}" class="err">{{err}}</view>
-  <text class="foot">地图数据 Natural Earth、DataV.GeoAtlas · 机场数据 OpenFlights（ODbL）</text>
-
-  <!-- off-screen drawing surface for the poster -->
-  <canvas type="2d" id="poster" class="offscreen" style="width:1080px;height:{{posterH}}px"></canvas>
 </view>

@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 npm test --silent
 "${SSH[@]}" "$DEPLOY_HOST" "mkdir -p $APP"
 # code only: fonts/, flags/, vendor/ and the data JSON are built on the server from China mirrors (deploy/fetch_assets.sh)
-rsync -az --delete -e "${SSH[*]}" --exclude fonts/ --exclude flags/ --exclude vendor/ --exclude "*.json" public/ "$DEPLOY_HOST:$APP/public/"
+rsync -az --delete -e "${SSH[*]}" --exclude fonts/ --exclude flags/ --exclude vendor/ --exclude mp/ --exclude "*.json" public/ "$DEPLOY_HOST:$APP/public/"
 rsync -az --delete -e "${SSH[*]}" api server scripts deploy package.json "$DEPLOY_HOST:$APP/"
 "${SSH[@]}" "$DEPLOY_HOST" "sudo systemctl restart sky-passport && sleep 1 && curl -fsS http://127.0.0.1:3100/api/health && sudo nginx -t -q && sudo systemctl reload nginx"
 echo "deployed to $DEPLOY_HOST"

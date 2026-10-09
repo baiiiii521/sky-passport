@@ -11,7 +11,7 @@ Two codebases live here:
 | `web/` | Self-serve website. Users upload an Excel/CSV of flights, type a name, preview in-browser, export MP4. Everything runs client-side (no server, no upload). | v1, published as a claude.ai artifact; this repo is now the source of truth |
 | `video-pipeline/` | Offline renderer used for Barry's personal film (v4). Headless Chrome renders frames → ffmpeg; Python synthesizes the score from the exported timeline. | Reference implementation; the web engine was ported from it |
 | `data/private/` | Barry's real flight records, photo and derived `data.json`. **Never commit, never publish.** (git-ignored) | |
-| `miniprogram/` | WeChat mini program (personal entity, AppID wx49f39c4e21487f55): native lite version — parse in phone, stats, achievements, long poster to album; video via the web. Dev copy lives in `~/WeChatProjects/miniprogram-2`; sync with rsync. See `miniprogram/README.md`. | v1 |
+| `miniprogram/` | WeChat mini program (personal entity, AppID wx49f39c4e21487f55): native — home showcase, parse in phone, stats, achievements, long poster; video rendered server-side by `web/server/render.js` (`/api/video`, systemd `sky-passport-render`, headless snap Chromium + ffmpeg, 24 h retention). Dev copy lives in `~/WeChatProjects/miniprogram-2`; sync with rsync. See `miniprogram/README.md`. | v1 |
 | `docs/` | `reference_v4.mp4` = approved personal film; `inspiration_reference.mp4` = the third-party app clip we took motion ideas from (do not copy its branding). | |
 
 ## web/ architecture (page: `web/public/index.html` + classic scripts in `web/public/js/`; one serverless function: `web/api/check.js`)

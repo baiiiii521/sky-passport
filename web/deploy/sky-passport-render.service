@@ -1,0 +1,16 @@
+[Unit]
+Description=Sky Passport video renderer (/api/video)
+After=network.target
+
+[Service]
+Environment=NODE_PATH=/srv/sky-passport/rt/node_modules
+Environment=RENDER_PAGE=https://passport.nybbq.art/index.html
+WorkingDirectory=/srv/sky-passport
+ExecStart=/opt/node20/bin/node server/render.js
+Restart=always
+# snap Chromium needs a real user with a home directory
+User=ubuntu
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
