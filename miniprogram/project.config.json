@@ -27,7 +27,7 @@
       "outputPath": ""
     },
     "uglifyFileName": false,
-    "uploadWithSourceMap": true,
+    "uploadWithSourceMap": false,
     "packNpmManually": false,
     "minifyWXSS": true,
     "localPlugins": false,
