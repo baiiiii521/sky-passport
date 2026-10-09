@@ -1,7 +1,8 @@
 "use strict";
 /* ================= sharing extras: QR end card, achievements, long poster, cover image ================= */
 // printed on the end card and the poster: the https domain the page was opened from (falls back to the Vercel address locally)
-const SITE_URL=typeof location!=='undefined'&&location.protocol==='https:'&&!/^(localhost|127\.)/.test(location.hostname)?location.origin:'https://sky-passport.vercel.app';
+const SITE_URL=(()=>{if(typeof location==='undefined')return 'https://sky-passport.vercel.app';const q=new URLSearchParams(location.search).get('site'); // ?site= lets the server renderer (loading from 127.0.0.1) print the public address
+  if(q&&/^https:\/\/[\w.-]+$/.test(q))return q;return location.protocol==='https:'&&!/^(localhost|127\.)/.test(location.hostname)?location.origin:'https://sky-passport.vercel.app';})();
 const SITE_HOST=SITE_URL.replace(/^https?:\/\//,'');
 
 /* ---------- QR code (qrcode-generator), cached as a crisp canvas ---------- */

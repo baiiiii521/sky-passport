@@ -37,3 +37,5 @@ button[disabled] { opacity: .65; }
 .busy { position: fixed; left: 32rpx; right: 32rpx; bottom: 40rpx; padding: 20rpx; border-radius: 16rpx; background: rgba(0,0,0,.8); color: #fff; text-align: center; font-size: 26rpx; }
 .err { margin: 16rpx 0; padding: 16rpx 20rpx; border-radius: 16rpx; border: 1px solid #ff8a9a; color: #ff9aa8; font-size: 24rpx; }
 .offscreen { position: fixed; left: -10000px; top: 0; }
+.two { display: flex; gap: 16rpx; }
+.two button { flex: 1; width: auto !important; }

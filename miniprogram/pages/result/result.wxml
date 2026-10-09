@@ -49,7 +49,11 @@
 
     <block wx:if="{{video.state==='done'}}">
       <video class="player" src="{{video.url}}" controls autoplay object-fit="contain" show-fullscreen-btn></video>
-      <button class="primary" bindtap="saveVideo" disabled="{{!!saving}}">{{saving||'保存视频到相册 · '+video.size}}</button>
+      <view class="two">
+        <button class="primary" bindtap="saveVideo" disabled="{{!!saving}}">{{saving||'存到相册'}}</button>
+        <button class="primary" bindtap="sendVideo" disabled="{{!!saving}}">发给朋友</button>
+      </view>
+      <text class="small center">视频 {{video.size}} · 发朋友圈请先存到相册，再在朋友圈选择这段视频</text>
       <button class="ghost" bindtap="makeVideo" data-again="1">换个风格重新生成</button>
     </block>
   </view>
@@ -66,8 +70,11 @@
     <button class="primary" bindtap="makePoster" disabled="{{!!busy}}">生成长图海报</button>
     <block wx:if="{{poster}}">
       <image class="poster" src="{{poster}}" mode="widthFix" bindtap="previewPoster"/>
-      <button class="primary" bindtap="savePoster">保存到相册</button>
-      <text class="small center">点图片可以放大查看</text>
+      <view class="two">
+        <button class="primary" bindtap="sharePoster">分享到朋友圈</button>
+        <button class="primary" bindtap="savePoster">存到相册</button>
+      </view>
+      <text class="small center">「分享到朋友圈」里也可以发给朋友、收藏；点图片可以放大查看</text>
     </block>
   </view>
 

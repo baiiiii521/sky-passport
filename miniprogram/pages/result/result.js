@@ -3,7 +3,8 @@ const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const PO = require('../../libs/poster.js');
 const SS = require('../../libs/session.js');
-const CONSENT = 'skypassport.videoConsent';
+const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
+const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
 let ALL = [], mapImgPath = '', pollTimer = null;
 function loadMapBase() {
@@ -27,6 +28,12 @@ Page({
     const years = [...new Set(ALL.filter(f => !f.vd).map(f => f.y))].sort((a, b) => a - b);
     this.setData({ demo: g.demo, name: g.demo ? '林小舟' : '', latin: g.demo ? 'LIN XIAOZHOU' : '', years, unres: [...res.diag.refs.keys()].slice(0, 8), noDate: res.diag.noDate.length });
     this.recompute(); loadMapBase();
+    // resume a video that was still rendering (or already done) for this same spreadsheet
+    const last = wx.getStorageSync(LAST);
+    if (last && last.sig === dataSig(SS.rowsForServer())) {
+      this.setData({ ...last.opts, video: { state: 'queued', progress: 0, ahead: 0, url: '', size: '', err: '' } });
+      this.recompute(); this.setData({ 'video.state': 'queued' }); this.poll(last.id, true);
+    }
   },
   onUnload() { clearTimeout(pollTimer); },
   recompute() {
@@ -58,6 +65,7 @@ Page({
     this.setData({ video: { state: 'sending', progress: 0, ahead: 0, url: '', size: '', err: '' } });
     try {
       const d = this.data, r = await SS.api('/api/video', 'POST', { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
+      wx.setStorageSync(LAST, { id: r.id, sig: dataSig(SS.rowsForServer()), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
       this.setData({ 'video.state': 'queued', 'video.ahead': r.ahead || 0 });
       this.poll(r.id);
     } catch (e) {
@@ -65,7 +73,7 @@ Page({
       this.setData({ 'video.state': 'error', 'video.err': msg });
     }
   },
-  poll(id) {
+  poll(id, resume) {
     clearTimeout(pollTimer);
     pollTimer = setTimeout(async () => {
       try {
@@ -73,26 +81,32 @@ Page({
         if (s.state === 'done') return this.setData({ video: { state: 'done', progress: 1, ahead: 0, url: SS.SITE + s.url, size: (s.size / 1048576).toFixed(1) + ' MB', err: '' } });
         if (s.state === 'error') return this.setData({ 'video.state': 'error', 'video.err': s.error || '生成失败' });
         this.setData({ 'video.state': s.state, 'video.progress': Math.round(s.progress * 100), 'video.ahead': s.ahead || 0 });
-      } catch (e) { /* transient: keep polling */ }
-      this.poll(id);
-    }, 2000);
+      } catch (e) { if (resume && e.code === 404) { wx.removeStorageSync(LAST); return this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); } /* otherwise transient: keep polling */ }
+      this.poll(id, resume);
+    }, resume ? 300 : 2000);
   },
-  saveVideo() {
-    if (!this.data.video.url || this.data.saving) return;
-    this.setData({ saving: '正在下载 0%' });
-    const task = wx.downloadFile({
-      url: this.data.video.url,
-      success: r => {
-        if (r.statusCode !== 200) { this.setData({ saving: '' }); return wx.showToast({ title: '下载失败', icon: 'none' }); }
-        wx.saveVideoToPhotosAlbum({
-          filePath: r.tempFilePath,
-          success: () => { this.setData({ saving: '' }); wx.showToast({ title: '已保存到相册', icon: 'success' }); },
-          fail: e => { this.setData({ saving: '' }); this.albumDenied(e); },
-        });
-      },
-      fail: () => { this.setData({ saving: '' }); wx.showToast({ title: '下载失败，请重试', icon: 'none' }); },
+  // the video file on the phone (downloaded once, reused for the album and for sending to a friend)
+  localVideo() {
+    if (this._vfile && this._vfileUrl === this.data.video.url) return Promise.resolve(this._vfile);
+    return new Promise((resolve, reject) => {
+      this.setData({ saving: '正在下载 0%' });
+      const task = wx.downloadFile({
+        url: this.data.video.url,
+        success: r => { this.setData({ saving: '' }); if (r.statusCode !== 200) return reject(new Error('下载失败')); this._vfile = r.tempFilePath; this._vfileUrl = this.data.video.url; resolve(r.tempFilePath); },
+        fail: () => { this.setData({ saving: '' }); reject(new Error('下载失败，请重试')); },
+      });
+      task.onProgressUpdate(p => this.setData({ saving: `正在下载 ${p.progress}%` }));
     });
-    task.onProgressUpdate(p => this.setData({ saving: `正在下载 ${p.progress}%` }));
+  },
+  async saveVideo() {
+    if (!this.data.video.url || this.data.saving) return;
+    try { const f = await this.localVideo(); wx.saveVideoToPhotosAlbum({ filePath: f, success: () => wx.showModal({ title: '已保存到相册', content: '发朋友圈：打开朋友圈 → 右上角相机 → 从相册选择这段视频。', showCancel: false }), fail: e => this.albumDenied(e) }); }
+    catch (e) { wx.showToast({ title: e.message, icon: 'none' }); }
+  },
+  async sendVideo() {
+    if (!this.data.video.url || this.data.saving) return;
+    try { const f = await this.localVideo(); wx.shareVideoMessage({ videoPath: f, fail: e => { if (!/cancel/.test(e.errMsg || '')) wx.showToast({ title: '发送失败', icon: 'none' }); } }); }
+    catch (e) { wx.showToast({ title: e.message, icon: 'none' }); }
   },
   albumDenied(e) {
     if (/cancel/.test((e && e.errMsg) || '')) return;
@@ -117,6 +131,11 @@ Page({
     } catch (e) { this.setData({ busy: '', err: '生成失败：' + (e.errMsg || e.message || e) }); }
   },
   previewPoster() { if (this.data.poster) wx.previewImage({ urls: [this.data.poster] }); },
+  sharePoster() {
+    if (!this.data.poster) return;
+    if (wx.showShareImageMenu) wx.showShareImageMenu({ path: this.data.poster, fail: e => { if (!/cancel/.test(e.errMsg || '')) this.savePoster(); } });
+    else this.savePoster();
+  },
   savePoster() {
     wx.saveImageToPhotosAlbum({ filePath: this.data.poster, success: () => wx.showToast({ title: '已保存到相册', icon: 'success' }), fail: e => this.albumDenied(e) });
   },

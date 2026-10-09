@@ -12,7 +12,7 @@ fs.mkdirSync(OUT, { recursive: true });
   const b = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/snap/bin/chromium', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
   const p = await b.newPage();
   await p.setViewport({ width: 1280, height: 900 });
-  await p.goto(process.env.RENDER_PAGE || 'https://passport.nybbq.art/index.html', { waitUntil: 'load', timeout: 60000 });
+  await p.goto(process.env.RENDER_PAGE || 'http://127.0.0.1:8088/index.html?site=https://passport.nybbq.art', { waitUntil: 'load', timeout: 60000 });
   await p.waitForFunction('typeof S!=="undefined"&&S&&S.ok', { timeout: 60000 });
   await p.evaluate(async () => { await Promise.all([ensureFonts(), loadFlags(S.order)]); coverBuilt = false; });
   const shots = await p.evaluate(() => {

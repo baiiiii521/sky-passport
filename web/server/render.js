@@ -13,14 +13,15 @@ const { spawn } = require('child_process');
 const puppeteer = require('puppeteer-core');
 
 const PORT = +process.env.RENDER_PORT || 3102;
-const PAGE = process.env.RENDER_PAGE || 'https://passport.nybbq.art/index.html';
+// served by nginx on 127.0.0.1:8088 (going through the public address would eat the 3 Mbps uplink)
+const PAGE = process.env.RENDER_PAGE || 'http://127.0.0.1:8088/index.html?site=https://passport.nybbq.art';
 const CHROME = process.env.CHROME_PATH || '/snap/bin/chromium';
 const VIDEO_DIR = process.env.VIDEO_DIR || '/srv/sky-passport/videos';
 const TTL = 24 * 3600e3, MAX_QUEUE = 12, PER_IP_HOUR = 5, MAX_ROWS = 1500;
 fs.mkdirSync(VIDEO_DIR, { recursive: true });
 
-const jobs = new Map(), queue = [], hits = new Map();
-let browser = null, busy = false;
+const jobs = new Map(), byKey = new Map(), queue = [], hits = new Map();
+let browser = null, busy = false, warming = Promise.resolve();
 
 const s = (v, n = 40) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').slice(0, n);
 function clean(body) {
@@ -41,15 +42,26 @@ async function getBrowser() {
   return browser;
 }
 
-const WORKERS = +process.env.RENDER_WORKERS || 3; // pages rendering frame ranges in parallel (deterministic engine ⇒ identical frames)
+const WORKERS = +process.env.RENDER_WORKERS || 4; // pages rendering frame ranges in parallel (deterministic engine ⇒ identical frames)
 
-// load the page and feed the rows/options exactly like the web UI would
-async function openScene(job) {
+// warm pages: the site, fonts and map data stay loaded between jobs; recycled after a while to bound memory
+const pool = [];
+async function takePage() {
+  while (pool.length) { const p = pool.pop(); if (!p.isClosed() && p._uses < 25) return p; await p.close().catch(() => {}); }
   const page = await (await getBrowser()).newPage();
   await page.setViewport({ width: 1280, height: 900 });
-  await page.goto(PAGE + '?render=' + job.id, { waitUntil: 'load', timeout: 60000 });
+  await page.goto(PAGE + (PAGE.includes('?') ? '&' : '?') + 'render=pool', { waitUntil: 'load', timeout: 60000 });
   await page.waitForFunction('typeof S!=="undefined"&&S&&S.ok', { timeout: 60000 });
+  page._uses = 0;
+  return page;
+}
+function givePage(p) { if (p && !p.isClosed()) { p._uses++; pool.push(p); } }
+
+// feed the rows/options exactly like the web UI would (resetting whatever the previous job left behind)
+async function openScene(job) {
+  const page = await takePage();
   const info = await page.evaluate(async ({ rows, opts }) => {
+    for (const k in manual) delete manual[k]; STFIX = {}; EXCL = new Set(); KEEP = new Set(); playT = 0;
     const press = (id, v) => { for (const b of document.querySelectorAll('#' + id + ' button')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); };
     press('segTheme', opts.theme); press('segMusic', opts.mstyle); press('segLen', opts.len);
     document.getElementById('name').value = opts.name; document.getElementById('latin').value = opts.latin; document.getElementById('nat').value = opts.nat;
@@ -72,6 +84,7 @@ async function render(job) {
   fs.mkdirSync(dir, { recursive: true });
   const pages = [];
   try {
+    const T = [Date.now()];
     const first = await openScene(job); pages.push(first.page);
     const info = first.info; if (!info.ok) throw new Error('没有可用的航段（地名没认出来或缺日期）');
     job.seconds = info.seconds;
@@ -83,8 +96,9 @@ async function render(job) {
     hdr.write('RIFF', 0); hdr.writeUInt32LE(36 + data.length, 4); hdr.write('WAVEfmt ', 8); hdr.writeUInt32LE(16, 16); hdr.writeUInt16LE(1, 20); hdr.writeUInt16LE(2, 22);
     hdr.writeUInt32LE(48000, 24); hdr.writeUInt32LE(192000, 28); hdr.writeUInt16LE(4, 32); hdr.writeUInt16LE(16, 34); hdr.write('data', 36); hdr.writeUInt32LE(data.length, 40);
     fs.writeFileSync(wav, Buffer.concat([hdr, data]));
+    T.push(Date.now());
     // more pages, each renders a contiguous range of frames to JPEG files
-    for (let k = 1; k < WORKERS; k++) { const o = await openScene(job); pages.push(o.page); }
+    (await Promise.all(Array.from({ length: WORKERS - 1 }, () => openScene(job)))).forEach(o => pages.push(o.page));
     const N = info.frames, per = Math.ceil(N / pages.length); let done = 0;
     await Promise.all(pages.map(async (pg, k) => {
       const a = k * per, b = Math.min(N, a + per);
@@ -94,23 +108,26 @@ async function render(job) {
         done += imgs.length; job.progress = Math.min(0.97, done / N);
       }
     }));
-    await Promise.all(pages.splice(0).map(p => p.close().catch(() => {})));
+    pages.splice(0).forEach(givePage);
+    T.push(Date.now());
     await new Promise((res, rej) => {
       const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '30', '-i', path.join(dir, '%05d.jpg'), '-i', wav, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25',
         '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', tmp], { stdio: ['ignore', 'ignore', 'pipe'] });
       let err = ''; ff.stderr.on('data', d => { err += d; }); ff.on('close', c => (c === 0 ? res() : rej(new Error('ffmpeg ' + c + ' ' + err.slice(-300)))));
     });
+    T.push(Date.now()); job.phases = T.slice(1).map((t, i) => ((t - T[i]) / 1000).toFixed(1)).join('/'); // scene+audio / frames / encode
     fs.renameSync(tmp, out); job.size = fs.statSync(out).size; job.state = 'done'; job.progress = 1;
   } finally {
-    await Promise.all(pages.map(p => p.close().catch(() => {})));
+    await Promise.all(pages.map(p => p.close().catch(() => {}))); // only reached with pages still held, i.e. after an error
     for (const f of [tmp, wav, dir]) fs.rm(f, { force: true, recursive: true }, () => {});
   }
 }
 
 async function pump() {
   if (busy || !queue.length) return;
-  busy = true; const job = queue.shift(); job.state = 'rendering'; job.started = Date.now();
-  try { await render(job); console.log('done', job.id, job.seconds && job.seconds.toFixed(1) + 's video', ((Date.now() - job.started) / 1000).toFixed(0) + 's'); }
+  busy = true; await warming; // never race the pre-warm for CPU
+  const job = queue.shift(); job.state = 'rendering'; job.started = Date.now();
+  try { await render(job); console.log('done', job.id, job.seconds && job.seconds.toFixed(1) + 's video', ((Date.now() - job.started) / 1000).toFixed(0) + 's', 'phases', job.phases); }
   catch (e) { job.state = 'error'; job.error = String(e.message || e).slice(0, 200); console.error('fail', job.id, job.error); try { await browser.close(); } catch (_) {} browser = null; }
   finally { delete job.rows; busy = false; setImmediate(pump); }
 }
@@ -119,7 +136,7 @@ async function pump() {
 setInterval(() => {
   const now = Date.now();
   for (const f of fs.readdirSync(VIDEO_DIR)) { const p = path.join(VIDEO_DIR, f); if (now - fs.statSync(p).mtimeMs > TTL) fs.rm(p, { force: true }, () => {}); }
-  for (const [id, j] of jobs) if (now - j.created > TTL) jobs.delete(id);
+  for (const [id, j] of jobs) if (now - j.created > TTL) { jobs.delete(id); if (byKey.get(j.key) === id) byKey.delete(j.key); }
   for (const [ip, w] of hits) if (now - w.t > 3600e3) hits.delete(ip);
 }, 3600e3).unref();
 
@@ -140,11 +157,20 @@ http.createServer((req, res) => {
     let body = null; try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch (e) {}
     const input = clean(body); if (!input) return send(res, 400, { error: 'bad_input' });
     const w = hits.get(ip) || { n: 0, t: Date.now() }; if (Date.now() - w.t > 3600e3) { w.n = 0; w.t = Date.now(); }
+    // same rows + same options → the same film: hand back the existing job (done, queued or rendering)
+    const key = crypto.createHash('sha1').update(JSON.stringify(input)).digest('hex'), prev = jobs.get(byKey.get(key));
+    if (prev && prev.state !== 'error' && (prev.state !== 'done' || fs.existsSync(path.join(VIDEO_DIR, prev.id + '.mp4')))) {
+      return send(res, 200, { id: prev.id, ahead: prev.state === 'queued' ? queue.indexOf(prev) + (busy ? 1 : 0) : 0, reused: true });
+    }
     if (w.n >= PER_IP_HOUR) return send(res, 429, { error: 'too_many' });
     if (queue.length >= MAX_QUEUE) return send(res, 503, { error: 'busy' });
     w.n++; hits.set(ip, w);
-    const id = crypto.randomBytes(12).toString('hex'), job = { id, state: 'queued', created: Date.now(), progress: 0, ...input };
-    jobs.set(id, job); queue.push(job); setImmediate(pump);
+    const id = crypto.randomBytes(12).toString('hex'), job = { id, key, state: 'queued', created: Date.now(), progress: 0, ...input };
+    jobs.set(id, job); byKey.set(key, id); queue.push(job); setImmediate(pump);
     send(res, 200, { id, ahead: queue.length - 1 + (busy ? 1 : 0) });
   });
-}).listen(PORT, '127.0.0.1', () => console.log('sky-passport render on 127.0.0.1:' + PORT));
+}).listen(PORT, '127.0.0.1', () => {
+  console.log('sky-passport render on 127.0.0.1:' + PORT);
+  // pre-warm the page pool so the first job after a restart is as fast as the rest
+  warming = Promise.all(Array.from({ length: WORKERS }, () => takePage())).then(ps => { ps.forEach(p => pool.push(p)); console.log('pool warm:', pool.length); }).catch(e => console.error('prewarm', e.message));
+});

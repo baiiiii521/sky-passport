@@ -39,3 +39,11 @@ server {
     limit_req zone=skyapi burst=10 nodelay;
   }
 }
+# internal copy of the site for the headless renderer (never exposed publicly)
+server {
+  listen 127.0.0.1:8088;
+  root /srv/sky-passport/public;
+  index index.html;
+  charset utf-8;
+  location / { try_files $uri =404; }
+}
