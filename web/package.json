@@ -4,7 +4,8 @@
   "scripts": {
     "build:data": "node scripts/build_data.js",
     "dev": "npx --yes http-server@14.1.1 public -p 5173 -c-1",
-    "build:china": "node scripts/build_china.js"
+    "build:china": "node scripts/build_china.js",
+    "test": "node --test tests/"
   },
   "devDependencies": {
     "@nwpr/airport-codes": "3.0.3",

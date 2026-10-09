@@ -23,7 +23,7 @@ console.log('zh keys',Object.keys(zh).length,'unknown iata',Object.entries(zh).f
 const num={};for(const c of Object.keys(countries.getAlpha2Codes())){num[c]=+countries.alpha2ToNumeric(c);}
 const names={};for(const c of Object.keys(num)){names[c]=[dn.of(c), new Intl.DisplayNames(['zh-CN'],{type:'region'}).of(c), countries.alpha2ToAlpha3(c)];}
 fs.writeFileSync('public/airports.json',JSON.stringify({cols:['iata','lat','lon','tz','iso','city','name'],rows:out,zh,num,names}));
-// flags
-const flags={};for(const f of fs.readdirSync('node_modules/flag-icons/flags/1x1')){flags[f.replace('.svg','').toUpperCase()]='data:image/svg+xml;base64,'+fs.readFileSync('node_modules/flag-icons/flags/1x1/'+f).toString('base64');}
-fs.writeFileSync('public/flags.json',JSON.stringify(flags));
+// flags: one SVG per ISO code, fetched only when a country appears (no Taiwan flag: the mainland-facing build shows a neutral marker)
+fs.mkdirSync('public/flags',{recursive:true});
+for(const f of fs.readdirSync('node_modules/flag-icons/flags/1x1')){const k=f.replace('.svg','').toUpperCase();if(k==='TW'||!/^[A-Z]{2}$/.test(k))continue;fs.copyFileSync('node_modules/flag-icons/flags/1x1/'+f,'public/flags/'+k+'.svg');}
 fs.copyFileSync('node_modules/world-atlas/countries-50m.json','public/world-50m.json');
