@@ -13,10 +13,19 @@ Two codebases live here:
 | `data/private/` | Barry's real flight records, photo and derived `data.json`. **Never commit, never publish.** (git-ignored) | |
 | `docs/` | `reference_v4.mp4` = approved personal film; `inspiration_reference.mp4` = the third-party app clip we took motion ideas from (do not copy its branding). | |
 
-## web/ architecture (single file: `web/public/index.html`)
+## web/ architecture (page: `web/public/index.html`; one serverless function: `web/api/check.js`)
 - Data files fetched relatively at runtime: `airports.json` (OpenFlights IATA rows + 738 Chinese airport-name keywords + ISO numeric + country names), `world-50m.json` (world-atlas topojson), `flags.json` (flag-icons 1x1 SVGs as data URIs; regenerate with `npm run build:data`).
 - CDN scripts (pinned): d3 7.9.0, topojson 3.0.2, SheetJS xlsx 0.18.5, mp4-muxer 5.2.1.
-- Pipeline in the page: `readWorkbook` (sheet/column detection, 航旅纵横 export format incl. 待出行/已结束/无效票 sheets) → `buildFlights` (airport resolution: IATA → Chinese keyword longest-match → English city → manual IATA entry; tz-aware durations; dedupe) → `buildScene` (BPM-grid schedule, camera, countries) → `renderFrame(i)` (deterministic, pure function of frame index) → `synth()` (music, same grid) → `exportWebCodecs` (H.264/AAC MP4 via WebCodecs + mp4-muxer; falls back to VP9/Opus-in-MP4, then real-time MediaRecorder).
+- Pipeline in the page: `readWorkbook` (sheet/column detection, 航旅纵横 export format incl. 待出行/已结束/无效票 sheets) → `buildFlights` (airport resolution: IATA → Chinese keyword longest-match → English city → manual IATA entry; tz-aware durations; dedupe) → `buildScene` (BPM-grid schedule, camera, countries; land/graticule/country outlines cached as `Path2D` per projection) → `renderFrame(i)` (deterministic, pure function of frame index) → `synth()` (music, same grid) → `exportWebCodecs` (H.264 10 Mbps/AAC MP4 via WebCodecs + mp4-muxer; falls back to VP9/Opus-in-MP4, then real-time MediaRecorder).
+- Look (v2, 2026-10-09): poster = leather passport cover with debossed gold-foil emblem/title (`buildCover`, foil mask `foilCv`, light glint on open and on close); page has paper fibres, watermark emblem, engraved-silhouette photo placeholder, OVD rainbow rosette on the photo, graticule, route halo + gradient, plane ground shadow, flag gloss, ink-bleed stamp; seeded film grain on every frame (`grain(i)`).
+- Audio (v2): buses dry (drums/leads/SFX) + bed (pad, FM keys, bass; side-chained to the kick); dotted-8th ping-pong + Freeverb-style room; master glue comp → −14 LUFS (BS.1770 measured in-page) → look-ahead limiter −1.2 dBFS. The 3-note motif (A–G–E over Fmaj7) is stated on every non-gap year downbeat, moved to that bar's chord, on a rotating instrument (celesta, marimba, kalimba, vibes, flute, glock; glass for dream years). SFX are tied to picture events: cover swish/thud, MRZ typing ticks, map print buzz, flag pops, tom fill into each year, reverse swell in the hang, stamp slam + page rattle, glitter on the route pulses.
+- The score is synthesised in a Web Worker built at runtime from the same functions (`synthInWorker`; falls back to the main thread), precomputed ~0.8 s after each rebuild; `ensureAudio()` returns a Promise.
+- Ticker: departure-board roll between entries (0.12 s); the newest flight's plane leads, older planes in the air are smaller/fainter. Odometer clip = one glyph (48 px).
+- Fonts: every CJK glyph used in the script (plus the user's name/tags) is preloaded by `ensureFonts()` before preview and export, so fonts never swap mid-video. Flags (SVG) are rasterised once to 96 px bitmaps.
+- Demo data uses a fictional traveller (林小舟 / LIN XIAOZHOU); input placeholders are fictional too — never put the owner's real name in examples.
+- Table check (step 01·B「检查表格」): `buildFlights` returns `diag` (unknown airport names with row refs, rows without dates + reason, unknown status texts, train/station-looking rows, same-airport, missing airport, duplicates). The panel shows each issue with sheet/row/column and guidance; fixes live in `manual` (name→IATA), `STFIX` (status→flown/upcoming/void), `EXCL`/`KEEP` (row keys). 「下载修正后的表格」 exports a clean CSV.
+- AI check (opt-in button): the browser sends only cells needing judgment to `POST /api/check`; the function writes every question itself (Choice per unknown name over code-generated airport candidates + `none`, per unknown status, per suspicious row; column/header-row mapping when no table was recognised) and calls TypeSafe Jev (`jev-1.13.0`, pinned). Thresholds in the page: ≥0.85 one-click apply, 0.5–0.85 "please confirm", below that alternatives only. Key: Vercel env `TYPESAFE_API_KEY` (production + development; sensitive). The function rejects foreign `Origin`s and throttles per IP (best effort; add a Vercel Firewall rate limit if abused). Privacy copy on the page says exactly what is sent — keep it accurate if the payload changes.
+- Local dev with the API: `cd web && vercel dev` (pulls the development env). `npm run dev` serves the static page only; the AI button then reports that the service is unavailable.
 - When running as a claude.ai artifact, file saving goes through `claude.use('downloads')`; outside claude.ai it falls back to an `<a download>` link.
 
 ## Motion/music rules we settled on (keep these)
@@ -25,7 +34,7 @@ Two codebases live here:
 - Ending = stop → hang (1 beat) → ink-stamp slam (SFX on contact frame, page shake) → groove returns with zoom-out + route light pulses → cover closes → poster.
 - Opening = poster (2 bars) → cover swings open (0.8 s) → map prints row by row, MRZ types itself.
 - Year counter is an odometer, clipped to one glyph height. Flight ticker shows only flight no. + IATA route (no dates).
-- Determinism: all randomness via `hash()` / seeded PRNG; same frame index ⇒ same pixels.
+- Determinism: all randomness via `hash()` / seeded PRNG; same frame index ⇒ same pixels (GPU anti-aliasing can still differ by ≤3/255 on a few hundred edge pixels between two renders; avoid `shadowBlur` and re-rasterised SVGs, which made it worse).
 - Visual direction: 90s passport / guilloche security print; burgundy cover + gold foil on the site.
 
 ## Commands
@@ -33,6 +42,7 @@ Two codebases live here:
 # web
 cd web && npm install && npm run build:data   # regenerates public/airports.json, flags.json, world-50m.json
 npm run dev                                    # http://localhost:5173  (WebCodecs needs https or localhost)
+vercel deploy --prod                           # static deploy of web/public (config: web/vercel.json) -> https://sky-passport.vercel.app
 
 # personal film pipeline (needs ffmpeg, Python 3 with numpy/scipy/pandas/xlrd, Chrome)
 cd video-pipeline && npm install
@@ -44,11 +54,11 @@ ffmpeg -i ../out/out_noaudio.mp4 -i ../out/music.wav -c:v copy -c:a aac -shortes
 ```
 
 ## Known gaps / next steps (candidate backlog)
-1. Rows without a date (OPEN / 退票 tickets) are skipped on the web; consider letting users assign a date.
-2. Let users delete/toggle individual segments in the web UI (today they must edit the spreadsheet).
+1. Rows without a date (OPEN / 退票 tickets) are skipped and listed in the check panel; consider letting users type a date there.
+2. Individual rows can be excluded only when flagged as suspicious; a general per-segment toggle is still missing.
 3. Chinese airport dictionary covers ~738 keywords; unresolved names fall back to manual IATA entry. Grow it from real uploads.
-4. Export speed (~1–3 min); consider OffscreenCanvas + Worker.
-5. Deploy outside claude.ai (Vercel/Netlify static hosting works as-is: just serve `web/public/`).
+4. Export speed: ~7 s for a 31 s film with hardware H.264 on a Mac; slower machines/software encoders still take minutes. OffscreenCanvas + Worker remains an option.
+5. ~~Deploy outside claude.ai~~ Done 2026-10-09: Vercel project `baiiiii521s-projects/sky-passport`, deployed via CLI from `web/` (no Git integration yet; `flags.json` is git-ignored, so a Git-connected build would need `npm run build:data`).
 6. Share/social: 9:16 cover image export, Xiaohongshu/Douyin-friendly title card.
 
 ## Working agreements
