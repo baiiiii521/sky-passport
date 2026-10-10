@@ -105,7 +105,7 @@
   /* Narration drives the words on screen. VO = [[t0, t1, text, head, y], …] from make_voice.py (real TTS timings).
      A spoken line is shown as one subtitle whose characters light up as the voice reaches them; lines flagged `head` are already
      on screen as a headline, so they only get the voice meter. With VO set, the old fixed captions (say) stay off. */
-  let VO = null;
+  let VO = null, NOQR = false;
   function meter(cx, y, on, t, a) { g.save(); g.globalAlpha = a; for (let i = 0; i < 9; i++) { const h = on ? 5 + 24 * Math.abs(Math.sin(t * 9 + i * 1.7)) * (0.45 + 0.55 * hash(Math.floor(t * 12) * 7 + i)) : 4; g.fillStyle = i === 4 ? P.gold : rgba(P.ac, 0.85); g.fillRect(cx - 49 + i * 11, y - h / 2, 5, h); } g.restore(); }
   function subtitle(t) { if (!VO) return; const ln = VO.find(l => t >= l[0] - 0.15 && t <= l[1] + 0.35); if (!ln) return; const [t0, t1, s, head, yy] = ln, a = Math.min(cl((t - t0 + 0.15) / 0.2), cl((t1 + 0.35 - t) / 0.3)), on = t >= t0 && t <= t1;
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
@@ -316,17 +316,17 @@
 
   /* ---------- Act 5: start ---------- */
   function act5(t) {
-    backdrop(t); const t0 = SC.T_CARD;
-    g.save(); g.translate(PW / 2, 470); g.strokeStyle = g.fillStyle = goldFill(-200, 200); const len = 2400; g.setLineDash([len * eio((t - t0) / 1.2), len]); emblem(g, 0.6, false); g.setLineDash([]); g.restore();
-    const ta = eo((t - t0 - 0.3) / 0.5); g.save(); g.globalAlpha = ta; g.fillStyle = goldFill(760, 900); g.font = `900 ${LG === 'en' ? 110 : 140}px ${SERIF}`; g.textAlign = 'center'; spaced(g, T('航迹护照', 'SKY PASSPORT'), PW / 2, 880, LG === 'en' ? 8 : 26); g.restore();
-    blurIn(T('把你的天空，装进一本护照', 'Every flight. One passport.'), PW / 2, 980, 46, t0 + 0.6, t, { w: 600 });
+    backdrop(t); const t0 = SC.T_CARD, dy = NOQR ? 190 : 0; /* NOQR: the end card without the code, set a little lower */
+    g.save(); g.translate(PW / 2, 470 + dy); g.strokeStyle = g.fillStyle = goldFill(-200, 200); const len = 2400; g.setLineDash([len * eio((t - t0) / 1.2), len]); emblem(g, 0.6, false); g.setLineDash([]); g.restore();
+    const ta = eo((t - t0 - 0.3) / 0.5); g.save(); g.globalAlpha = ta; g.fillStyle = goldFill(760, 900); g.font = `900 ${LG === 'en' ? 110 : 140}px ${SERIF}`; g.textAlign = 'center'; spaced(g, T('航迹护照', 'SKY PASSPORT'), PW / 2, 880 + dy, LG === 'en' ? 8 : 26); g.restore();
+    blurIn(T('把你的天空，装进一本护照', 'Every flight. One passport.'), PW / 2, 980 + dy, 46, t0 + 0.6, t, { w: 600 });
     // QR in a HUD frame with a scan line
-    const qa = eo(cl((t - t0 - 1.0) / 0.4)), qx = PW / 2 - 190, qy = 1080, qs = 380;
+    const qa = NOQR ? 0 : eo(cl((t - t0 - 1.0) / 0.4)), qx = PW / 2 - 190, qy = 1080, qs = 380;
     if (qa > 0) { g.save(); g.globalAlpha = qa; g.fillStyle = '#fff'; rr(g, qx, qy, qs, qs, 22); g.fill(); g.imageSmoothingEnabled = false; g.drawImage(QR, qx + 26, qy + 26, qs - 52, qs - 52); g.imageSmoothingEnabled = true;
       g.strokeStyle = rgba(P.ac, 0.9); g.lineWidth = 3; const L = 40, e = 18; [[qx - e, qy - e, 1, 1], [qx + qs + e, qy - e, -1, 1], [qx - e, qy + qs + e, 1, -1], [qx + qs + e, qy + qs + e, -1, -1]].forEach(([x, y, sx, sy]) => { g.beginPath(); g.moveTo(x + sx * L, y); g.lineTo(x, y); g.lineTo(x, y + sy * L); g.stroke(); });
       const sy = qy + ((t - t0) * 0.6 % 1) * qs; g.fillStyle = rgba(P.ac, 0.5); g.fillRect(qx - 10, sy, qs + 20, 3); g.restore(); }
-    decodeIn(URL_TEXT(), PW / 2, 1560, 38, t0 + 1.4, t, { fam: 'SM', w: 700, color: rgba(P.ac, 0.95), dur: 0.6 });
-    blurIn(T('免费 · 隐私 · 一分钟出片 · 微信小程序同名', 'Free · private · made in your browser'), PW / 2, 1630, 30, t0 + 1.8, t, { w: 400, color: P.sub, max: PW - 140 });
+    decodeIn(URL_TEXT(), PW / 2, NOQR ? 1330 : 1560, 38, t0 + 1.4, t, { fam: 'SM', w: 700, color: rgba(P.ac, 0.95), dur: 0.6 });
+    blurIn(T('免费 · 隐私 · 一分钟出片 · 微信小程序同名', 'Free · private · made in your browser'), PW / 2, NOQR ? 1400 : 1630, 30, t0 + 1.8, t, { w: 400, color: P.sub, max: PW - 140 });
     bloom(0.4);
   }
   const URL_TEXT = () => (LG === 'en' ? 'sky-passport.vercel.app' : 'passport.nybbq.art');
@@ -415,6 +415,7 @@
     },
     frame(i) { return frame(i).toDataURL('image/jpeg', 0.92); },
     setVO(v) { VO = v && v.length ? v : null; },
+    setNoQR(v) { NOQR = !!v; },
     poster(kind, w, h) { return poster(kind, w, h); },
     debug() { const m = mk(1440, 720), mc = m.getContext('2d'), pr = d3.geoEquirectangular().scale(1440 / (2 * Math.PI)).translate([720, 360]); mc.fillStyle = '#fff'; mc.beginPath(); d3.geoPath(pr, mc)(LAND); mc.fill(); const px = mc.getImageData(0, 0, 1440, 720).data; let n = 0; for (let i = 3; i < px.length; i += 4) if (px[i] > 128) n++; return { dots: DOTS ? DOTS.length : -1, flights: FL.length, land: LAND && LAND.type, filled: n }; },
     cues() { return cues().map(c => [c[0], c[1]]); },

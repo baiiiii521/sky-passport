@@ -10,7 +10,7 @@ import numpy as np
 import edge_tts
 from playwright.sync_api import sync_playwright
 
-args = [a for a in sys.argv[1:] if not a.startswith('--')]; AUDIO_ONLY = '--audio-only' in sys.argv
+args = [a for a in sys.argv[1:] if not a.startswith('--')]; AUDIO_ONLY = '--audio-only' in sys.argv; NOQR = '--no-qr' in sys.argv   # --no-qr: end card without the QR code
 out, lang = args[0], args[1]
 VOICE = args[2] if len(args) > 2 else {'zh': 'zh-CN-YunyangNeural', 'en': 'en-US-AndrewNeural'}[lang]
 os.makedirs(out, exist_ok=True); HERE = os.path.dirname(os.path.abspath(__file__)); SR = 48000; END = 41.79
@@ -88,7 +88,7 @@ with sync_playwright() as p:
     site = 'https://sky-passport.vercel.app' if lang == 'en' else 'https://passport.nybbq.art'
     pg.goto(f'http://localhost:5190/?site={site}&lang={lang}'); pg.wait_for_function('typeof S!=="undefined"&&S&&S.ok', timeout=60000); pg.wait_for_timeout(1200)
     pg.add_script_tag(path=os.path.join(HERE, 'story.js')); info = pg.evaluate('([p,l,s])=>STORY.init(p,l,s)', ['hud', lang, [sprite('sfx-promo'), sprite('sfx-tech')]]); print(info, flush=True)
-    pg.evaluate('v=>STORY.setVO(v)', VOJS)
+    pg.evaluate('v=>STORY.setVO(v)', VOJS); pg.evaluate('v=>STORY.setNoQR(v)', NOQR)
     if not AUDIO_ONLY:
         enc = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', '30', '-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-crf', '17', '-preset', 'medium', '-pix_fmt', 'yuv420p', os.path.join(out, '_v.mp4')], stdin=subprocess.PIPE)
         for i in range(info['frames']):
@@ -99,7 +99,7 @@ with sync_playwright() as p:
     with wave.open(os.path.join(out, '_a.wav'), 'wb') as w: w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(base64.b64decode(A['pcm']))
     open(os.path.join(out, '_stems_full.f32'), 'wb').write(base64.b64decode(A['stems'])); print('errors', errs); b.close()
 
-name = f'promo-v4-{lang}-{VOICE.split("-")[2].replace("Neural", "").lower()}'; full = os.path.join(out, name + '.mp4')
+name = f'promo-v4-{lang}-{VOICE.split("-")[2].replace("Neural", "").lower()}' + ('-noqr' if NOQR else ''); full = os.path.join(out, name + '.mp4')
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_v.mp4'), '-i', os.path.join(out, '_a.wav'), '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-t', str(info['seconds']), '-movflags', '+faststart', full], check=True)
 f = lambda s: f'{int(s // 3600):02d}:{int(s % 3600 // 60):02d}:{int(s % 60):02d},{int(round(s % 1 * 1000)) % 1000:03d}'
 with open(full.replace('.mp4', '.srt'), 'w', encoding='utf-8') as o:
