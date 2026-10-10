@@ -198,7 +198,7 @@ drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f
 $('btnDemo').addEventListener('click',()=>{resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';if(!NAT_TOUCHED)$('nat').value='CN';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus(L('已换回示例数据。','Back to the sample data.'));rebuild();});
 $('btnAI').addEventListener('click',runAI);$('btnApplyAll').addEventListener('click',applyAll);
 $('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹护照_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
-$('btnToMake').addEventListener('click',()=>$('h3').scrollIntoView({behavior:'smooth',block:'start'}));
+$('btnToMake').addEventListener('click',()=>HOME.go('studio','s3'));
 $('btnTpl').addEventListener('click',async()=>{
   const csv=EN()?'﻿Date,Flight,Airline,From,To,Departure time,Arrival time,Distance km,Status\n2024-05-01,BA117,British Airways,London Heathrow,JFK,11:30,14:20,,flown\n2024-05-09,DL405,Delta,JFK,LHR,20:30,08:45,,flown\n2027-02-24,NH212,ANA,LHR,Tokyo Haneda,19:15,15:50,,upcoming\n'
     :'﻿日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态\n2024-05-01,MU5101,东方航空,上海虹桥,北京首都,08:00,10:15,,已使用\n2024-05-06,CA1519,中国国航,PEK,SHA,19:00,21:10,,已使用\n2027-02-24,NH924,全日空,广州白云,东京羽田,15:05,20:00,,未使用\n';
@@ -305,7 +305,7 @@ function heroStats(){const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.
   $('heroLine').textContent=S.ok?L(`绕地球 ${(F.km/40075).toFixed(2)} 圈 · ${yearsLabel(S,' — ')}`,`${(F.km/40075).toFixed(2)}× around the Earth · ${yearsLabel(S,' — ')}`):L('导入航班后，这里会显示你的数字','Your numbers appear here once your flights are in');
   if(typeof HOME!=='undefined'){for(const [key,v] of Object.entries(to))HOME.flap(box.querySelector(`[data-k="${key}"]`),fmt(v));HOME.update();return;} /* split-flap board (home.js) */
   const step=now=>{if(id!==HERO_ANIM)return;const k=reduce?1:Math.min(1,(now-t0)/900),e=1-Math.pow(1-k,3);for(const [key,v] of Object.entries(to))box.querySelector(`[data-k="${key}"]`).textContent=fmt(v*e);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
-$('btnStart').addEventListener('click',()=>$('s1').scrollIntoView({behavior:'smooth',block:'start'}));
+$('btnStart').addEventListener('click',()=>HOME.go('studio','s1'));
 document.querySelectorAll('.introBtn').forEach(b=>b.addEventListener('click',()=>$('btnIntro').click()));
 // the promo film (720p, loaded only when opened), in the page's language
 $('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV'),src=`promo/sky-passport-${EN()?'en':'zh'}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});

@@ -43,7 +43,7 @@ const HOME=(()=>{
     let sx=0,sy=0,sz=0;for(const p of G.ports){sx+=p.p[0]*p.n;sy+=p.p[1]*p.n;sz+=p.p[2]*p.n;}const m=Math.hypot(sx,sy,sz);
     if(m>0){const lo=Math.atan2(sx,sz),la=Math.asin(sy/m);G.yaw=G.yaw0=-lo;G.tilt=G.tilt0=Math.max(-0.7,Math.min(0.7,la));}
     const r=q('#gRoutes');if(r)r.textContent=String(G.arcs.length);}
-  function resize(){const box=G.cv.parentElement,s=Math.round(box.clientWidth);if(!s)return;G.dpr=Math.min(2,window.devicePixelRatio||1);G.size=s;G.cv.width=G.cv.height=Math.round(s*G.dpr);G.cv.style.width=G.cv.style.height=s+'px';draw(performance.now());}
+  function resize(){const box=G.cv.parentElement,s=Math.round(box.clientWidth);if(!s)return;G.dpr=Math.min(FINE?2:1.5,window.devicePixelRatio||1);G.size=s;G.cv.width=G.cv.height=Math.round(s*G.dpr);G.cv.style.width=G.cv.style.height=s+'px';draw(performance.now());}
   function draw(now){const g=G.g,W=G.cv.width;if(!g||!W)return;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,W);paint(g,W/2,W/2,W*0.39,G.dpr,G.yaw,G.tilt,now);
     if(now-G.hud>120){G.hud=now;const lo=((-G.yaw/R2+540)%360)-180,la=G.tilt/R2,el=q('#gPos');if(el)el.textContent=`${Math.abs(la).toFixed(1)}°${la>=0?'N':'S'}  ${Math.abs(lo).toFixed(1)}°${lo>=0?'E':'W'}`;}}
   /* the globe itself, on any 2D context: the page canvas, or the long poster */
@@ -70,7 +70,7 @@ const HOME=(()=>{
     g.globalCompositeOperation='source-over';
     /* terminator-like sheen on the limb */
     gr=g.createRadialGradient(cx+R*0.45,cy+R*0.5,R*0.2,cx,cy,R*1.05);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.35)');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,R,0,7);g.fill();}
-  function loop(now){G.raf=0;if(!G.live)return;const dt=Math.min(0.05,(now-(G.last||now))/1000);G.last=now;
+  function loop(now){G.raf=0;if(!G.live)return;if(!FINE&&!G.drag&&now-(G.last||0)<30){G.raf=requestAnimationFrame(loop);return;}const dt=Math.min(0.05,(now-(G.last||now))/1000);G.last=now;
     if(!G.drag){if(now>G.idle)G.vy+=(0.09-G.vy)*0.02;else G.vy*=0.95;G.yaw+=G.vy*dt*(RM?0:1);G.vt*=0.92;G.tilt=Math.max(-1.1,Math.min(1.1,G.tilt+G.vt*dt));}
     draw(now);G.raf=requestAnimationFrame(loop);}
   function setLive(v){if(RM){G.live=false;if(v)draw(performance.now());return;}G.live=v&&!document.hidden;if(G.live&&!G.raf){G.last=0;G.raf=requestAnimationFrame(loop);}}
@@ -92,12 +92,6 @@ const HOME=(()=>{
   function initMotion(){
     const io=new IntersectionObserver(es=>{for(const e of es)if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}},{threshold:0.08,rootMargin:'0px 0px -6% 0px'});
     document.querySelectorAll('.rv').forEach(n=>io.observe(n));
-    const secs=['s1','stepCheck','s2','s3','s4'].map(id=>document.getElementById(id)).filter(Boolean);
-    const spy=new IntersectionObserver(es=>{for(const e of es){if(!e.isIntersecting)continue;const id=e.target.id;
-      document.querySelectorAll('[data-sec]').forEach(a=>a.classList.toggle('on',a.dataset.sec===id));secs.forEach(s=>s.classList.toggle('cur',s===e.target));}},{rootMargin:'-42% 0px -52% 0px'});
-    secs.forEach(s=>spy.observe(s));
-    const bar=q('#fbar');let pend=false;const prog=()=>{pend=false;const h=document.documentElement,max=h.scrollHeight-h.clientHeight;if(bar)bar.style.setProperty('--p',max>0?Math.min(1,h.scrollTop/max):0);};
-    addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(prog);}},{passive:true});prog();
     if(FINE&&!RM){let tgt=null,ev=null,raf=0;const apply=()=>{raf=0;if(!tgt||!ev)return;const r=tgt.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top;tgt.style.setProperty('--mx',x+'px');tgt.style.setProperty('--my',y+'px');
         if(tgt.classList.contains('medal')||tgt.classList.contains('card')){tgt.style.setProperty('--ry',((x/r.width-0.5)*10).toFixed(2)+'deg');tgt.style.setProperty('--rx',((0.5-y/r.height)*10).toFixed(2)+'deg');}};
       document.addEventListener('pointermove',e=>{const t=e.target.closest&&e.target.closest('.step,.medal,.card,.board');if(tgt&&t!==tgt){tgt.style.removeProperty('--rx');tgt.style.removeProperty('--ry');}tgt=t;ev=e;if(!raf)raf=requestAnimationFrame(apply);},{passive:true});}
@@ -105,12 +99,23 @@ const HOME=(()=>{
     const sk=q('.stars');if(sk){const lay=(n,s)=>{let o=[];for(let i=0;i<n;i++)o.push(`${(Math.random()*2400)|0}px ${(Math.random()*1800)|0}px 0 ${s}px rgba(${Math.random()<.2?'255,214,170':'200,236,255'},${(0.3+Math.random()*0.7).toFixed(2)})`);return o.join(',');};
       sk.innerHTML='<i></i><i></i><i></i>';const [a,b,c]=sk.children;a.style.boxShadow=lay(160,0);b.style.boxShadow=lay(70,0.5);c.style.boxShadow=lay(24,1);}}
 
+  /* ---------- views: home / studio (three wizard steps) / badges; the address keeps the place, so Back works ---------- */
+  const STEPS=['s1','s2','s3'];
+  function show(view,step,keep){const d=document.documentElement,was=d.dataset.view+d.dataset.step;d.dataset.view=view;if(step)d.dataset.step=step;const st=d.dataset.step;
+    document.querySelectorAll('[data-go]').forEach(a=>{const [v,s2]=a.dataset.go.split(':');if(a.closest('.stepper')){a.classList.toggle('on',s2===st);a.classList.toggle('done',STEPS.indexOf(s2)<STEPS.indexOf(st));}else if(a.closest('.topnav,.tabbar'))a.classList.toggle('on',v===view);});
+    STEPS.forEach(id=>{const n=document.getElementById(id);if(n)n.classList.toggle('cur',view==='studio'&&id===st);});
+    if(!keep&&was!==view+st)scrollTo(0,0);if(view==='home')update();}
+  function go(view,step){const h='#/'+view+(view==='studio'?'/'+(step||document.documentElement.dataset.step||'s1'):'');if(location.hash!==h)location.hash=h;else route();}
+  function route(keep){const m=/^#\/(home|studio|badges)(?:\/(s[123]))?/.exec(location.hash)||[];show(m[1]||'home',m[2],keep===true);}
+  function initViews(){document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-go]');if(!a)return;e.preventDefault();const [v,s2]=a.dataset.go.split(':');go(v,s2);});
+    addEventListener('hashchange',route);route(true);}
+
   /* ---------- public ---------- */
   function update(){buildDots();buildArcs();ticker();if(G.g&&!G.live)draw(performance.now());}
   function relang(){scramble(q('#heroH'));update();}
-  function init(){initGlobe();initMotion();scramble(q('#heroH'));update();}
+  function init(){initViews();initGlobe();initMotion();scramble(q('#heroH'));update();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
   /* a still of the globe facing the traveller's routes, comets frozen mid-flight (fixed clock, so the same input gives the same picture) */
   function paintGlobe(g,cx,cy,R,scale){update();paint(g,cx,cy,R,scale||1,G.yaw0||0,G.tilt0==null?0.35:G.tilt0,2600);return G.arcs.length;}
-  return {flap,update,relang,scramble,paintGlobe};
+  return {flap,update,relang,scramble,paintGlobe,go};
 })();
