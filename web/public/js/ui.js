@@ -296,13 +296,14 @@ function natOptions(){const sel=$('nat'),keep=sel.value||'CN';sel.innerHTML='';c
 let NAT_TOUCHED=false;
 function natForUser(){if(NAT_TOUCHED)return;const m=(navigator.language||'').match(/[-_]([A-Za-z]{2})\b/),r=m?m[1].toUpperCase():/^zh/i.test(navigator.language||'')?'CN':'';if(r&&NAMES[r])$('nat').value=r;}
 $('nat').addEventListener('change',()=>{NAT_TOUCHED=true;});
-function onLangChange(){initGuide();if(Object.keys(NAMES).length)natOptions();if(!playing)stopPlay();qaUpdate();if(S)rebuild();}
+function onLangChange(){if(typeof HOME!=='undefined')HOME.relang();initGuide();if(Object.keys(NAMES).length)natOptions();if(!playing)stopPlay();qaUpdate();if(S)rebuild();}
 $('btnLang').addEventListener('click',()=>setLang(EN()?'zh':'en'));
 /* ---------- hero: the traveller's numbers, counted up like a flight-log readout ---------- */
 let HERO_ANIM=0;
 function heroStats(){const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.final:{n:0,km:0,cc:0,min:0},to={n:F.n,km:F.km,cc:F.cc,h:Math.round(F.min/60)},id=++HERO_ANIM,t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   $('heroWho').textContent=SOURCE==='demo'?L('示例旅客 · 林小舟 · 虚构','Sample traveller · Lin Xiaozhou · fictional'):L('你的航迹','Your flight log');
   $('heroLine').textContent=S.ok?L(`绕地球 ${(F.km/40075).toFixed(2)} 圈 · ${yearsLabel(S,' — ')}`,`${(F.km/40075).toFixed(2)}× around the Earth · ${yearsLabel(S,' — ')}`):L('导入航班后，这里会显示你的数字','Your numbers appear here once your flights are in');
+  if(typeof HOME!=='undefined'){for(const [key,v] of Object.entries(to))HOME.flap(box.querySelector(`[data-k="${key}"]`),fmt(v));HOME.update();return;} /* split-flap board (home.js) */
   const step=now=>{if(id!==HERO_ANIM)return;const k=reduce?1:Math.min(1,(now-t0)/900),e=1-Math.pow(1-k,3);for(const [key,v] of Object.entries(to))box.querySelector(`[data-k="${key}"]`).textContent=fmt(v*e);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
 $('btnStart').addEventListener('click',()=>$('s1').scrollIntoView({behavior:'smooth',block:'start'}));
 document.querySelectorAll('.introBtn').forEach(b=>b.addEventListener('click',()=>$('btnIntro').click()));
