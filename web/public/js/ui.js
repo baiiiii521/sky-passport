@@ -298,5 +298,8 @@ function natForUser(){if(NAT_TOUCHED)return;const m=(navigator.language||'').mat
 $('nat').addEventListener('change',()=>{NAT_TOUCHED=true;});
 function onLangChange(){initGuide();if(Object.keys(NAMES).length)natOptions();if(!playing)stopPlay();qaUpdate();if(S)rebuild();}
 $('btnLang').addEventListener('click',()=>setLang(EN()?'zh':'en'));
+// the promo film (720p, loaded only when opened), in the page's language
+$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV'),src=`promo/sky-passport-${EN()?'en':'zh'}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
+const closeIntro=()=>{$('introV').pause();$('intro').close?$('intro').close():$('intro').removeAttribute('open');};$('btnIntroX').addEventListener('click',closeIntro);$('intro').addEventListener('close',()=>$('introV').pause());
 $('btnMakeM').addEventListener('click',()=>{$('h3').scrollIntoView({behavior:'smooth',block:'start'});if(S&&S.ok&&!exporting)$('btnMake').click();});
 initSegs();initGuide();

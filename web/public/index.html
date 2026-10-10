@@ -118,7 +118,9 @@ details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(
 .segrow input[type=date]{font:12px var(--f-mono);background:var(--field);color:var(--ink);border:1px solid var(--warn);border-radius:6px;padding:3px 4px;min-width:0}
 @media (max-width:520px){.segrow{grid-template-columns:auto 8.5em minmax(0,1fr) auto}.segrow .fn,.segrow .where{display:none}}
 header.top{position:relative}
-.lang{position:absolute;top:22px;right:0;font-family:var(--f-mono);font-size:13px;padding:7px 12px;border-radius:999px;letter-spacing:.08em}
+.topbtns{position:absolute;top:22px;right:0;display:flex;gap:8px}.pill{font-family:var(--f-mono);font-size:13px;padding:7px 12px;border-radius:999px;letter-spacing:.06em}
+dialog.intro{border:1px solid var(--line);border-radius:18px;padding:0;background:#05070d;max-width:min(420px,92vw);width:100%}dialog.intro::backdrop{background:rgba(5,2,4,.8)}
+dialog.intro video{display:block;width:100%;aspect-ratio:9/16;background:#000}dialog.intro .x{position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,.55)}
 .qa{display:grid;grid-template-columns:9.5em minmax(0,1fr) minmax(0,1fr) 8em;gap:10px;margin-top:12px}
 @media (max-width:620px){.qa{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .qa input[type=date]{font:15px var(--f-body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;width:100%;min-width:0;color-scheme:dark}
@@ -139,7 +141,7 @@ header.top{position:relative}
       <span class="eyebrow">Sky Passport · Flight Log Studio</span>
       <h1 data-en="Sky Passport">航迹护照</h1>
     </div>
-    <button type="button" class="lang" id="btnLang" aria-label="Switch to English">EN</button>
+    <div class="topbtns"><button type="button" class="pill" id="btnIntro" data-en="▶ 40-second intro">▶ 40 秒看懂</button><button type="button" class="pill" id="btnLang" aria-label="Switch to English">EN</button></div>
     <p class="lede" data-en="Upload your flight history, add your name, and get a vertical flight-passport film (MP4, with an original score) in one click. Everything is processed in your browser; only when you tap “AI check” are the few cells that need a judgment sent to the AI.">上传你的航班记录，写上名字，一键生成竖屏飞行护照动画（MP4，带配乐）。记录在你的浏览器里处理；只有你点「AI 检查」时，才会把需要判断的几个单元格发给 AI。</p>
   </header>
   <div class="wxtip" id="wxTip" hidden data-en="You're inside WeChat, which can't save files. Tap ··· (top right) → Open in browser, then make and save the film.">你正在微信里打开：微信不允许保存文件。请点右上角「···」→「在浏览器打开」，再生成视频并保存。</div>
@@ -264,6 +266,7 @@ header.top{position:relative}
   </div>
   <div class="foot"><span data-en="Map data Natural Earth, DataV.GeoAtlas (China) · Airports OpenFlights (ODbL; airports.json is offered under ODbL too) · Flags flag-icons">地图数据 Natural Earth、DataV.GeoAtlas（中国） · 机场数据 OpenFlights（ODbL，airports.json 同样以 ODbL 提供） · 国旗 flag-icons</span><span data-en="The music is an original score synthesised in your browser, free to use. Sound effects are public-domain (CC0) recordings from Kenney and Freesound — &lt;a href=&quot;sfx/CREDITS.md&quot;&gt;credits&lt;/a&gt;.">配乐为程序实时合成的原创曲目，可自由使用；音效是 Kenney、Freesound 的 CC0 公有领域真实录音（<a href="sfx/CREDITS.md">来源</a>）</span></div>
 </div>
+<dialog class="intro" id="intro" aria-label="宣传片" data-en-aria="Intro film"><button type="button" class="x sm" id="btnIntroX" aria-label="关闭" data-en-aria="Close">✕</button><video id="introV" controls playsinline preload="none"></video></dialog>
 <div class="mcta" id="mcta"><button type="button" class="primary" id="btnMakeM" data-en="Make the film">生成视频</button></div>
 
 <script src="vendor/d3.min.js"></script>

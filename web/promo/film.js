@@ -208,9 +208,9 @@
   }
 
   /* ---------- sound: real recordings (film + promo sprites) placed on this timeline ---------- */
-  const MOVE = 0.12, LAND = 0.42; // a card's spring (0.75 s, bounce 0.12): top speed / settled
+  const SPR_MOVE = 0.12, SPR_LAND = 0.42; // NB: not "LAND" — that name is the engine's land geometry // a card's spring (0.75 s, bounce 0.12): top speed / settled
   function promoCues() {
-    const C = [], Y = SC.years, card = (t0, k = 0) => C.push(['card' + (k % 2), t0 + MOVE, 0.3, 0.4 + 0.2 * (k % 3) / 2, 0.1, 1, 3000], ['place' + (k % 2), t0 + LAND, 0.3, 0.5, 0.1, 1, 3000]);
+    const C = [], Y = SC.years, card = (t0, k = 0) => C.push(['card' + (k % 2), t0 + SPR_MOVE, 0.3, 0.4 + 0.2 * (k % 3) / 2, 0.1, 1, 3000], ['place' + (k % 2), t0 + SPR_LAND, 0.3, 0.5, 0.1, 1, 3000]);
     card(0.9);                                                                                  // the spreadsheet card
     C.push(['cov_sw', T_OPEN, 0.3, 0.5, 0.15, 1, 1500], ['print', T_OPEN + 0.9, 0.18, 0.5, 0.15, 1, 4000]); // cut to the map; routes sweep in
     const tb = Y[1].t + HERO; C.push(['cov_sw', Y[1].t, 0.22, 0.5, 0.15, 1, 1500], ['rev_zoom', tb, 0.16, 0.5, 0.2], ['hit2', tb, 0.5, 0.5, 0.12], ['boom2', tb, 0.34, 0.5, 0], ['sparkle2', Y[1].t + 2.4, 0.16, 0.5, 0.25, 1, 2500]); // brand: hero + light sweep

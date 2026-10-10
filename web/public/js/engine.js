@@ -357,7 +357,7 @@ function yearsLabel(sc,sep,annual=L(' 年度','')){const a=sc.years[0].y,b=sc.ye
 function goldText(g,y0,y1){const gr=g.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'#fbe9c2');gr.addColorStop(.55,'#e2b670');gr.addColorStop(1,'#f6dca6');return gr;}
 function drawPoster(t,T0){
   const sc=S,P=sc.P,F0=sc.final;if(!coverBuilt||coverTheme!==(P.theme||'burgundy'))buildCover();const lt=Math.max(0,t-T0);
-  ctx.save();const pz=1+0.035*ease(clamp(lt/(T0===0?2.6*BAR:sc.T_END-T0))); // slow push-in; on the closing poster it runs to the last framectx.translate(W/2,H*0.42);ctx.scale(pz,pz);ctx.translate(-W/2,-H*0.42);
+  ctx.save(); /* the poster holds still: a push-in scales its small type, which shimmers (motion rules) — an old push-in here had been commented out by accident */
   ctx.drawImage(coverCv,0,0);coverPlane(t);
   // a band of light slides across the foil only: once on opening, once when the cover shuts
   const gu=(lt-(T0===0?0.9:sc.T_CARD+0.25-T0))/1.3;
