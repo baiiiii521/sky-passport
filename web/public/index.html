@@ -122,6 +122,7 @@ details.guide ol{margin:10px 0 2px;padding-left:20px;font-size:14px;line-height:
 /* progress, status, results */
 .bar{height:6px;border-radius:99px;background:var(--field);border:1px solid var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac2),var(--ac));box-shadow:0 0 12px var(--ac)}
+.diag{margin:6px 0 0;padding:8px 10px;border:1px dashed var(--line,#2a3a5a);border-radius:8px;font:11px/1.5 var(--f-mono);color:var(--muted);white-space:pre-wrap;word-break:break-all;user-select:all}
 .status{font-size:13px;color:var(--muted);min-height:1.4em;font-family:var(--f-mono)}.status.err,#aiStatus.err{color:var(--stamp)}
 .result video{width:100%;border-radius:12px;border:1px solid var(--line);max-width:100%}
 .savebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);font-family:var(--f-mono)}.savebar button{font-size:16px;padding:13px 20px}
@@ -308,6 +309,7 @@ section[id],.extras[id]{scroll-margin-top:96px}
         <div class="row"><button type="button" class="primary" id="btnMake" data-en="Make the MP4">生成 MP4 视频</button><button type="button" id="btnCancel" hidden data-en="Cancel">取消</button></div>
         <div class="bar" style="margin-top:14px" aria-hidden="true"><i id="prog"></i></div>
         <div class="status" id="status" role="status" aria-live="polite"></div>
+        <pre class="diag" id="diag" hidden></pre>
         <div class="result" id="result" hidden>
           <video id="outVideo" controls playsinline></video>
           <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnSave" data-en="⬇ Save video (MP4)">⬇ 保存视频（MP4）</button></div>
