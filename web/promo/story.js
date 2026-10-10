@@ -301,6 +301,10 @@
   }
   function act4b(t) {
     backdrop(t); const u = t - SC.T_ZOOM;
+    if (VO) { /* narrated cut: no numbers again — the line stays, over the traveller's routes glowing on the globe */
+      globe(t, PW / 2, 1010, 390 + 14 * eo(u / 4), GC.lam - 10 + u * 6, GC.phi, { t0: -99, step: 0, a: eo(u / 0.6), pulse: true });
+      text(T('每一次起飞', 'Every take-off'), PW / 2, 360, LG === 'en' ? 84 : 96, { w: 900, a: eo(u / 0.5) }); text(T('都值得被记住', 'deserves to be remembered'), PW / 2, 480, LG === 'en' ? 64 : 96, { w: 900, color: P.gold, a: eo((u - 0.15) / 0.5), max: PW - 100 });
+      bloom(0.65); return; }
     globe(t, PW / 2, 760, 330, GC.lam - 10 + u * 6, GC.phi, { t0: -99, step: 0, a: eo(u / 0.6), pulse: true });
     decodeIn(T('这些年，你一共', 'Over the years'), PW / 2, 330, 40, SC.T_ZOOM - 0.1, t, { w: 600, color: P.sub, dur: 0.5 });
     const st = [[F0.n, T('次起飞', 'take-offs')], [Math.round(F0.km), 'km'], [F0.cc, T('个国家地区', 'countries & regions')], [Math.round(F0.min / 60), T('小时在空中', 'hours in the air')]];

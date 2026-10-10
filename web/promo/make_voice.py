@@ -20,22 +20,20 @@ os.makedirs(out, exist_ok=True); HERE = os.path.dirname(os.path.abspath(__file__
 # 30.7 stamp then its two lines, 36.43 end card. A line may run until 0.12 s before the next one; the last few must also
 # clear the dead stop before the title (15.66) and the stamp (30.54).
 LINES = {
- 'zh': [(0.45, '2018 年，第一次一个人出远门。', 0, 0),
+ 'zh': [(0.45, '2018 年，第一次出远门。', 0, 0),
         (2.90, '后来，登机牌越攒越多。', 0, 0),
-        (4.80, '最后，都成了一张表格。', 0, 0),
-        (6.50, '把每一行，解码成一条航线。', 1, 1720),
+        (5.05, '最后，都成了表格。', 0, 0),
+        (6.60, '把每一行，解码成一条航线。', 1, 1720),
         (10.95, '51 次起飞，13 个国家和地区，绕地球 3.28 圈。', 0, 0),
         (16.32, '航迹护照。', 1, 1480),
-        (17.15, '把你的航班记录，做成一本会动的护照。', 1, 1480),
-        (19.95, '一分钟的飞行护照。', 1, 1790),
-        (21.60, '一张图，晒出这些年。', 1, 1790),
-        (23.70, '写错的地名，它认得出。', 1, 1790),
-        (25.82, '各种 App 的导出，直接上传。', 1, 1790),
-        (28.10, '表格，只在你的浏览器里处理。', 1, 1790),
-        (30.98, '每一次起飞，都值得被记住。', 0, 1620),
-        (33.40, '这些年，51 次起飞，13 万公里。', 0, 1620),
-        (37.00, '把你的天空，装进一本护照。', 1, 1740),
-        (39.35, '扫码，免费生成你的。', 0, 1760)],
+        (17.20, '把你的航班记录，做成一本会动的护照。', 1, 1480),
+        (20.20, '一分钟的飞行护照。', 1, 1790),
+        (21.95, '一张图，晒出这些年。', 1, 1790),
+        (23.90, '写错的地名，它认得出。', 1, 1790),
+        (26.05, '各种导出，直接上传。', 1, 1790),
+        (28.15, '表格只在浏览器里处理。', 1, 1790),
+        (31.00, '每一次起飞，都值得被记住。', 1, 1700),
+        (37.00, '把你的天空，装进一本护照。', 1, 1740)],
  'en': [(0.45, '2018. My first flight on my own.', 0, 0),
         (2.90, 'Then the boarding passes piled up.', 0, 0),
         (4.80, 'And ended up in a spreadsheet.', 0, 0),
@@ -53,7 +51,7 @@ LINES = {
         (37.00, 'Every flight. One passport.', 1, 1740),
         (39.35, 'Scan, and make yours for free.', 0, 1760)]}
 HARD = [15.55, 30.45, 36.35, END - 0.35]          # nothing is spoken across these moments
-RATES = ['-4%', '+0%', '+5%', '+10%', '+15%', '+20%', '+26%']
+RATES = ['-12%', '-9%', '-6%', '-3%']   # unhurried; a line that still does not fit must be shortened, not sped up
 
 async def tts(text, rate, path):
     await edge_tts.Communicate(text, VOICE, rate=rate, pitch='-2Hz' if lang == 'zh' else '+0Hz').save(path)
