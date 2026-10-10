@@ -105,7 +105,7 @@
   /* Narration drives the words on screen. VO = [[t0, t1, text, head, y], …] from make_voice.py (real TTS timings).
      A spoken line is shown as one subtitle whose characters light up as the voice reaches them; lines flagged `head` are already
      on screen as a headline, so they only get the voice meter. With VO set, the old fixed captions (say) stay off. */
-  let VO = null, NOQR = false;
+  let VO = null, NOQR = false, NOURL = false, KIN = false; /* KIN: false | 'A' rapid fire | 'B' one pass | 'C' departures board */
   function meter(cx, y, on, t, a) { g.save(); g.globalAlpha = a; for (let i = 0; i < 9; i++) { const h = on ? 5 + 24 * Math.abs(Math.sin(t * 9 + i * 1.7)) * (0.45 + 0.55 * hash(Math.floor(t * 12) * 7 + i)) : 4; g.fillStyle = i === 4 ? P.gold : rgba(P.ac, 0.85); g.fillRect(cx - 49 + i * 11, y - h / 2, 5, h); } g.restore(); }
   function subtitle(t) { if (!VO) return; const ln = VO.find(l => t >= l[0] - 0.15 && t <= l[1] + 0.35); if (!ln) return; const [t0, t1, s, head, yy] = ln, a = Math.min(cl((t - t0 + 0.15) / 0.2), cl((t1 + 0.35 - t) / 0.3)), on = t >= t0 && t <= t1;
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
@@ -118,7 +118,7 @@
     const k = ch.length * cl((t - t0) / Math.max(0.3, t1 - t0 - 0.12)); let x = PW / 2 - w / 2; g.textAlign = 'left';
     ch.forEach((c, i) => { const lit = cl(k - i); g.globalAlpha = a; g.fillStyle = `rgba(234,244,255,${0.3 + 0.7 * lit})`; if (lit > 0 && lit < 1) g.fillStyle = P.gold; g.fillText(c, x, y); x += ws[i]; });
     meter(PW / 2, y + 42, on, t, a * 0.85); g.restore(); }
-  function say(s, t0, t1, t, y = 1560) { if (VO) return; const a = win(t, t0, t1, 0.35, 0.3); if (a <= 0) return; const sz = LG === 'en' ? 46 : 52;
+  function say(s, t0, t1, t, y = 1560) { if (VO || KIN) return; const a = win(t, t0, t1, 0.35, 0.3); if (a <= 0) return; const sz = LG === 'en' ? 46 : 52;
     g.save(); g.font = font(600, sz); const w = Math.min(PW - 100, g.measureText(s).width + 80); g.globalAlpha = a * 0.96; g.fillStyle = 'rgba(2,6,16,.94)'; rr(g, PW / 2 - w / 2, y - sz - 22, w, sz + 46, 16); g.fill();
     g.globalAlpha = a; g.fillStyle = rgba(P.ac, 0.9); g.fillRect(PW / 2 - w / 2, y - sz - 22, 4, sz + 46); g.restore(); // a subtitle bar: readable over the white passes too
     g.save(); g.filter = t - t0 < 0.4 ? `blur(${(1 - eo((t - t0) / 0.4)) * 10}px)` : 'none'; text(s, PW / 2, y, sz, { w: 600, a, max: PW - 160 }); g.restore(); }
@@ -325,13 +325,98 @@
     if (qa > 0) { g.save(); g.globalAlpha = qa; g.fillStyle = '#fff'; rr(g, qx, qy, qs, qs, 22); g.fill(); g.imageSmoothingEnabled = false; g.drawImage(QR, qx + 26, qy + 26, qs - 52, qs - 52); g.imageSmoothingEnabled = true;
       g.strokeStyle = rgba(P.ac, 0.9); g.lineWidth = 3; const L = 40, e = 18; [[qx - e, qy - e, 1, 1], [qx + qs + e, qy - e, -1, 1], [qx - e, qy + qs + e, 1, -1], [qx + qs + e, qy + qs + e, -1, -1]].forEach(([x, y, sx, sy]) => { g.beginPath(); g.moveTo(x + sx * L, y); g.lineTo(x, y); g.lineTo(x, y + sy * L); g.stroke(); });
       const sy = qy + ((t - t0) * 0.6 % 1) * qs; g.fillStyle = rgba(P.ac, 0.5); g.fillRect(qx - 10, sy, qs + 20, 3); g.restore(); }
-    decodeIn(URL_TEXT(), PW / 2, NOQR ? 1330 : 1560, 38, t0 + 1.4, t, { fam: 'SM', w: 700, color: rgba(P.ac, 0.95), dur: 0.6 });
-    blurIn(T('免费 · 隐私 · 一分钟出片 · 微信小程序同名', 'Free · private · made in your browser'), PW / 2, NOQR ? 1400 : 1630, 30, t0 + 1.8, t, { w: 400, color: P.sub, max: PW - 140 });
+    if (!NOURL) decodeIn(URL_TEXT(), PW / 2, NOQR ? 1330 : 1560, 38, t0 + 1.4, t, { fam: 'SM', w: 700, color: rgba(P.ac, 0.95), dur: 0.6 });
+    blurIn(T('免费 · 隐私 · 一分钟出片 · 微信小程序同名', 'Free · private · made in your browser'), PW / 2, NOURL ? 1320 : NOQR ? 1400 : 1630, 30, t0 + 1.8, t, { w: 400, color: P.sub, max: PW - 140 });
     bloom(0.4);
   }
   const URL_TEXT = () => (LG === 'en' ? 'sky-passport.vercel.app' : 'passport.nybbq.art');
 
+  /* ================= kinetic cut (~24 s): boarding passes at speed, no explaining =================
+     Picture time runs through four pieces of the film's own timeline, cut on bar lines so the music and its hits stay on the grid:
+     bars 0–3 passes (new) · 6–11 globe + slammed numbers, dead stop, title hit, two bars of montage (new) · 14–15 stamp · 17–end card. */
+  const KSEG = () => KIN === 'B' ? [[0, 3 * BAR], [6 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : KIN === 'C' ? [[0, 3 * BAR], [7 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : [[0, 3 * BAR], [6 * BAR, 11 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]];
+  const kinLen = () => KSEG().reduce((a, [x, y]) => a + y - x, 0);
+  function kinMap(tau) { let acc = 0; for (const [a, b] of KSEG()) { if (tau < acc + b - a) return [a + tau - acc, a]; acc += b - a; } const L = KSEG(); return [L[L.length - 1][1] - 1e-3, L[L.length - 1][0]]; }
+  function big(s, x, y, size, { fill, stroke, a = 1, align = 'center', fam = 'SM', w = 700, lw = 3 } = {}) { if (a <= 0) return; g.save(); g.globalAlpha *= a; g.font = font(w, size, fam); g.textAlign = align; if (stroke) { g.lineWidth = lw; g.strokeStyle = stroke; g.strokeText(s, x, y); } if (fill) { g.fillStyle = fill; g.fillText(s, x, y); } g.restore(); }
+  function flash(a, col = '255,246,225') { if (a <= 0.01) return; g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(${col},${a})`; g.fillRect(0, 0, PW, PH); g.restore(); }
+  function streaks(t, n, a) { g.save(); g.globalCompositeOperation = 'lighter'; for (let i = 0; i < n; i++) { const y = hash(i * 9.1) * PH, sp = 2600 + 2600 * hash(i * 3.7), x = ((t * sp + hash(i * 5.3) * 3000) % (PW + 900)) - 450, w = 160 + 420 * hash(i * 2.2); const lg = g.createLinearGradient(x, 0, x + w, 0); lg.addColorStop(0, rgba(P.ac, 0)); lg.addColorStop(1, rgba(P.ac, 0.5 * a)); g.fillStyle = lg; g.fillRect(x, y, w, 2); } g.restore(); }
+  const KSLOT = () => { const o = []; let t = 2 * BEAT; while (t < 6 * BEAT - 1e-6) { o.push(t); t += BEAT / 2; } while (t < 8 * BEAT - 1e-6) { o.push(t); t += BEAT / 4; } return o; }; /* 8ths, then 16ths: the passes speed up */
+  function kinA(t) {
+    backdrop(t, 0.25); const f0 = FL[0], cy = 900, T2 = 8 * BEAT, slots = KSLOT();
+    if (t < 2 * BEAT) { /* one pass slams in */
+      const k = spring(t - 0.12, 0.5, 0.25), a = cl((t - 0.1) / 0.08);
+      big(String(f0.y), PW / 2, 1010, 430, { stroke: rgba(P.ac, 0.22 * a), lw: 4 }); big('BOARDING PASS', PW / 2, 420, 34, { fill: rgba(P.ac, 0.9 * a) }); big('NO. 001', PW / 2, 1420, 54, { fill: P.ink, a });
+      pass(f0, PW / 2, cy, 2.4 - 1.25 * k, -0.05 + 0.3 * (1 - k), a, 0); flash(0.55 * Math.exp(-Math.max(0, t - 0.12) * 14));
+    } else if (t < T2) { /* rapid fire: a pass per slot, its route in giant type behind */
+      let n = 0; for (let i = 0; i < slots.length; i++) if (t >= slots[i]) n = i; const ts = slots[n], len = (slots[n + 1] || T2) - ts, u = (t - ts) / len, idx = Math.min(FL.length - 1, 1 + Math.floor(n * (FL.length - 2) / slots.length)), f = FL[idx], dir = n % 2 ? 1 : -1;
+      streaks(t, 26, 0.7); const rtxt = `${f.f} ${f.to}`; big(rtxt, PW / 2 + dir * (200 - 500 * u), 560 + 760 * (n % 2), 330, { stroke: rgba(P.ac, 0.3), lw: 4 }); big(rtxt, PW / 2 - dir * (240 - 420 * u), 1320 - 760 * (n % 2), 330, { stroke: 'rgba(255,79,154,.22)', lw: 3 });
+      if (n > 0) { const pf = FL[Math.min(FL.length - 1, 1 + Math.floor((n - 1) * (FL.length - 2) / slots.length))]; pass(pf, PW / 2 - dir * (-1) * (300 + 1500 * eo(u * 1.6)), cy + 80 * dir, 1.5, 0.14 * dir, 1 - cl(u * 2.2), n - 1); }
+      const k = eo(cl(u / 0.35)); pass(f, PW / 2 + dir * 900 * (1 - k), cy - 30 * dir, 1.95 - 0.35 * k, -0.13 * dir * (1 - 0.5 * k), 1, n);
+      big(`NO. ${String(idx + 1).padStart(3, '0')} / ${String(FL.length).padStart(3, '0')}`, PW / 2, 300, 44, { fill: P.ink }); big(String(f.y), PW / 2, 1640, 120, { fill: P.gold, w: 700 });
+      flash(0.38 * Math.exp(-(t - ts) * 26)); g.save(); g.fillStyle = rgba(P.ac, 0.9); g.fillRect(80, 1720, (PW - 160) * (t - 2 * BEAT) / (T2 - 2 * BEAT), 4); g.restore();
+    } else { /* tunnel: every pass rushes to the vanishing point and becomes one line of light */
+      const u = (t - T2) / (T_F0 - T2), N = Math.min(FL.length, 44); streaks(t, 40, 1 - u);
+      for (let k = N - 1; k >= 0; k--) { const z = ((k / N + u * 1.5) % 1), d = 1 / (0.12 + z * 3.2), ang = k * 2.4 + t * 1.3, rad = 520 * d * (1 - eo((u - 0.55) / 0.4)), sc = 0.42 * d * (1 - eio((u - 0.5) / 0.45)); if (sc < 0.02) continue;
+        pass(FL[k], PW / 2 + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 1.25, sc, ang * 0.3, cl(z * 6) * cl((1 - z) * 3), k); }
+      const lk = eo((u - 0.55) / 0.4); if (lk > 0) { g.save(); g.globalCompositeOperation = 'lighter'; const w = PW * (0.1 + 1.2 * lk), lg = g.createLinearGradient(PW / 2 - w / 2, 0, PW / 2 + w / 2, 0); lg.addColorStop(0, 'rgba(255,240,220,0)'); lg.addColorStop(0.5, `rgba(255,244,226,${lk})`); lg.addColorStop(1, 'rgba(255,240,220,0)'); g.fillStyle = lg; g.fillRect(PW / 2 - w / 2, cy - 3 - 5 * lk, w, 6 + 10 * lk);
+        const rg = g.createRadialGradient(PW / 2, cy, 0, PW / 2, cy, 60 + 420 * lk); rg.addColorStop(0, `rgba(255,240,220,${0.8 * lk})`); rg.addColorStop(1, 'rgba(255,240,220,0)'); g.fillStyle = rg; g.fillRect(0, 0, PW, PH); g.restore(); }
+      big(`${String(FL.length).padStart(3, '0')} FLIGHTS`, PW / 2, 300, 44, { fill: P.ink, a: 1 - cl((u - 0.6) / 0.2) });
+    }
+    bloom(0.85);
+  }
+  function kinNums(t) { /* over the globe: one giant number per beat */
+    const t0 = 6 * BAR, items = [[String(F0.n), T('次起飞', 'FLIGHTS')], [fmt(F0.km), 'KM'], [String(F0.cc), T('个国家地区', 'COUNTRIES')], [(F0.km / 40075).toFixed(2), T('圈 · 绕地球', '× ROUND THE EARTH')]];
+    const n = Math.min(3, Math.floor((t - t0) / BEAT)), u = (t - t0 - n * BEAT) / BEAT; if (n < 0) return; const [num, lab] = items[n], k = spring(u * BEAT, 0.32, 0.3), left = n % 2 === 0, x = left ? 90 : PW - 90, al = left ? 'left' : 'right', y = 1560;
+    let sz = 300; g.save(); g.font = font(700, sz, 'SM'); while (g.measureText(num).width > PW - 160 && sz > 120) { sz -= 10; g.font = font(700, sz, 'SM'); } g.restore(); const s2 = sz * (1.5 - 0.5 * k), a = cl(u * 12) * (1 - cl((u - 0.82) / 0.18));
+    big(num, x + (left ? -1 : 1) * 14 * (1 - k), y, s2, { fill: 'rgba(255,79,154,.5)', a, align: al }); big(num, x, y, s2, { fill: P.ink, a, align: al }); big(lab, x, y + 90, 46, { fill: P.gold, a, align: al, fam: undefined, w: 700 });
+    flash(0.22 * Math.exp(-u * BEAT * 20));
+  }
+  function kinMont(t) { /* two bars: the film, then the poster — tilted cards at speed, a punch on every beat */
+    backdrop(t); const t0 = 9 * BAR, m = t < t0 + BAR ? 0 : 1, tb = t0 + m * BAR, lt = t - tb, bu = (lt % BEAT) / BEAT, punch = 1 + 0.035 * Math.exp(-bu * BEAT * 9), k = spring(lt, 0.4, 0.22), dir = m ? 1 : -1;
+    streaks(t, 22, 0.6); const word = m ? T('长图', 'POSTER') : T('影片', 'FILM'), en = m ? 'LONG POSTER' : 'PASSPORT FILM';
+    big(word, PW / 2 - dir * (60 - 180 * lt / BAR), 760, LG === 'en' ? 300 : 520, { stroke: rgba(P.ac, 0.22), lw: 5, fam: undefined, w: 900 });
+    g.save(); g.translate(PW / 2 + dir * 700 * (1 - k), 980); g.rotate(-0.07 * dir * (2 - k)); g.scale(punch, punch); const w = 600, h = w * 16 / 9;
+    g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 60; g.shadowOffsetY = 30; g.fillStyle = '#04101f'; rr(g, -w / 2 - 14, -h / 2 - 14, w + 28, h + 28, 34); g.fill(); g.shadowColor = 'transparent'; g.strokeStyle = rgba(P.ac, 0.8); g.lineWidth = 2; g.stroke();
+    g.save(); rr(g, -w / 2, -h / 2, w, h, 22); g.clip(); if (m === 0) g.drawImage(shot(T_F0 + 1.5 + lt * 9), -w / 2, -h / 2, w, h); else { const sc = w / LONG.width, trv = LONG.height * sc - h; g.drawImage(LONG, -w / 2, -h / 2 - trv * eio(cl(lt / (BAR * 0.95))), w, LONG.height * sc); } g.restore(); g.restore();
+    big(`0${m + 1}`, 90, 330, 120, { fill: P.gold, align: 'left' }); big(en, 90, 400, 34, { fill: rgba(P.ac, 0.95), align: 'left' });
+    text(m ? T('一张图，晒出这些年', 'One image, all those years') : T('一分钟，生成你的飞行护照', 'Your passport film, in a minute'), PW / 2, 1690, 50, { w: 800, a: cl(lt / 0.2), max: PW - 120 });
+    flash(0.3 * Math.exp(-lt * 18)); bloom(0.5); glitch(t, tb, 0.14, 1);
+  }
+  /* ----- B: one boarding pass — turn it in the light, fly into its barcode, come out among the routes ----- */
+  function kinB1(t) {
+    backdrop(t, 0.6 * (1 - cl((t - 3) / 2))); const f0 = FL[0], z0 = 3.0, zk = Math.max(0, t - z0), sc = 1.2 * Math.exp(zk * 1.3), k = eio(zk / 1.3), bx = 215, fade = 1 - cl((t - 5.0) / 0.6);
+    if (fade > 0) { pass(f0, PW / 2 - bx * sc * k, 900, sc, (-0.1 + 0.035 * t) * (1 - k), cl(t / 0.8) * fade, 0);
+      if (t < z0 + 0.3) { const u = ((t - 0.6) % 2.2) / 1.1; if (u > 0 && u < 1) { g.save(); g.translate(PW / 2, 900); g.rotate(-0.1 + 0.035 * t); g.scale(1.2, 1.2); rr(g, -310, -125, 620, 250, 18); g.clip(); g.globalCompositeOperation = 'lighter'; const x = -420 + 840 * u, lg = g.createLinearGradient(x - 70, 0, x + 70, 0); lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(0.5, 'rgba(255,250,235,.55)'); lg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = lg; g.fillRect(-320, -130, 640, 260); g.restore(); } } }
+    big(`${f0.y} · ${f0.f} → ${f0.to}`, PW / 2, 430, 36, { fill: rgba(P.ac, 0.9), a: win(t, 0.5, 3.2) }); blurIn(T('一切，从一张登机牌开始', 'It all starts with one boarding pass'), PW / 2, 1420, 52, 0.9, t, { w: 600, out: 3.3, max: PW - 140 });
+    const lk = cl((t - 4.2) / 1.2); if (lk > 0) { g.save(); g.globalCompositeOperation = 'lighter'; const end = eio((t - 5.6) / 0.7); for (let i = 0; i < 46; i++) { const x = PW * (i + 0.5) / 46 + (hash(i * 3.1) - 0.5) * 30, w = 2 + 10 * hash(i * 7.7), h = PH * (1 - end) + 8 * end, sp = (t * (300 + 900 * hash(i))) % 60; g.fillStyle = rgba(i % 5 ? P.ac : [255, 226, 170], (0.25 + 0.5 * hash(i * 1.3)) * lk); g.fillRect(x, 900 - h / 2 + (1 - end) * (sp - 30), w, h); } g.restore(); flash(0.6 * eo((t - 6.0) / 0.4)); }
+    bloom(0.8);
+  }
+  function kinB2(t) { act2b(t); const t0 = 6 * BAR; for (let k = 0; k < 18; k++) { const a = k * 0.349 + t * 1.5, sn = Math.sin(a); if (sn < -0.1) continue; pass(FL[k % FL.length], PW / 2 + Math.cos(a) * 520, 900 + sn * 170 - 60 * Math.cos(a), 0.16 + 0.06 * sn, a * 0.2, cl((t - t0) / 0.4) * (0.5 + 0.5 * sn), k); } }
+  /* ----- C: the departures board — your flights flip in, then the whole board spells the totals ----- */
+  function kinBoard(t, k2 = 0) {
+    backdrop(t); const cols = 14, rows = 12, cw = 66, ch = 92, gap = 6, x0 = (PW - cols * (cw + gap) + gap) / 2, y0 = 420, GL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', T2 = 8 * BEAT;
+    const msg = { 3: `${F0.n} FLIGHTS`, 5: `${fmt(F0.km)} KM`, 7: `${F0.cc} COUNTRIES`, 9: `${(F0.km / 40075).toFixed(2)} LAPS` };
+    big(T('出发 DEPARTURES', 'DEPARTURES'), x0, 330, 44, { fill: P.gold, align: 'left', fam: undefined, w: 800 }); big(`${D2(Math.floor(6 + t * 3) % 24)}:${D2(Math.floor(t * 47) % 60)}`, PW - x0, 330, 44, { fill: P.ink, align: 'right' });
+    g.save(); g.translate(PW / 2, 900); g.scale(1 - 0.97 * k2, 1 - 0.97 * k2); g.translate(-PW / 2, -900); g.globalAlpha = 1 - k2 * 0.5; g.font = font(700, 58, 'SM'); g.textAlign = 'center';
+    for (let r = 0; r < rows; r++) { const f = FL[Math.min(FL.length - 1, Math.floor(r * FL.length / rows))], a = `${(f.fn || '').slice(0, 6).padEnd(7)}${f.f} ${f.to}`.padEnd(cols), m = msg[r] ? msg[r].padStart(Math.floor((cols + msg[r].length) / 2)).padEnd(cols) : ''.padEnd(cols), tr = 0.25 + r * 0.3;
+      for (let c = 0; c < cols; c++) { const x = x0 + c * (cw + gap), y = y0 + r * (ch + gap); let chr = ' ', gold = false;
+        if (t >= T2) { const st = T2 + 0.7 + c * 0.035 + r * 0.02; if (t >= st) { chr = m[c]; gold = true; } else chr = GL[Math.floor(hash(r * 31 + c * 7 + Math.floor(t * 24)) * GL.length)]; }
+        else if (t >= tr) { const st = tr + 0.22 + c * 0.03; chr = t >= st ? a[c] : GL[Math.floor(hash(r * 31 + c * 7 + Math.floor(t * 22)) * GL.length)]; }
+        const gr = g.createLinearGradient(0, y, 0, y + ch); gr.addColorStop(0, '#16305c'); gr.addColorStop(0.5, '#11244a'); gr.addColorStop(0.5, '#0b1a38'); gr.addColorStop(1, '#0a1630'); g.fillStyle = gr; rr(g, x, y, cw, ch, 8); g.fill();
+        if (chr !== ' ') { g.fillStyle = gold ? P.gold : (c >= 7 ? rgba(P.ac, 0.95) : '#fff6e2'); g.fillText(chr, x + cw / 2, y + ch * 0.72); } g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x, y + ch / 2 - 1, cw, 2); } }
+    g.restore(); if (t >= T2) flash(0.3 * Math.exp(-(t - T2) * 14) + 0.35 * Math.exp(-Math.abs(t - T2 - 1.25) * 16)); bloom(0.45);
+  }
+  function kinFrame(i) {
+    const tau = i / FPS, [t, seg0] = kinMap(tau), hit = Y[2].t + HERO;
+    if (KIN === 'B') { if (t < T_F0) kinB1(t); else if (t < Y[2].t) kinB2(t); else if (t < Y[3].t) act3a(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
+    if (KIN === 'C') { if (t < T_F0) kinBoard(t); else if (t < hit) { const k = eio(cl((t - (hit - BEAT)) / BEAT)); kinBoard(T_F0 - 0.01, k); const lp = eo(k); g.save(); g.globalCompositeOperation = 'lighter'; const lg = g.createRadialGradient(PW / 2, 900, 0, PW / 2, 900, 40 + 260 * lp); lg.addColorStop(0, `rgba(255,240,220,${0.9 * lp})`); lg.addColorStop(1, 'rgba(255,240,220,0)'); g.fillStyle = lg; g.fillRect(0, 0, PW, PH); g.restore(); }
+      else if (t < Y[3].t) act3a(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2 && seg0 > 16) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
+    if (t < T_F0) kinA(t); else if (t < Y[2].t) { act2b(t); kinNums(t); } else if (t < Y[3].t) act3a(t); else if (t < 11 * BAR + 1e-6 && t < 14 * BAR - 1e-6 && t < SC.T_FE - 3 * BAR) kinMont(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t);
+    if (tau > 0.2) glitch(t, seg0, 0.12, 0.9);
+    g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C;
+  }
   function frame(i) {
+    if (KIN) return kinFrame(i);
     const t = i / FPS;
     if (t < T_F0) act1(t); else if (t < Y[1].t) act2a(t); else if (t < Y[2].t) act2b(t); else if (t < Y[3].t) act3a(t); else if (t < SC.T_FE) act3b(t);
     else if (t < SC.T_ZOOM) act4a(t); else if (t < SC.T_CARD) act4b(t); else act5(t);
@@ -344,10 +429,13 @@
   function cues() {
     const C2 = [], card = (t0, k = 0) => C2.push(['card' + (k % 2), t0 + SPR_MOVE, 0.3, 0.4 + 0.2 * (k % 3) / 2, 0.1, 1, 3000], ['place' + (k % 2), t0 + SPR_LAND, 0.28, 0.5, 0.1, 1, 3000]);
     // Act 1: the first pass settles, then passes fly past the camera (one swish per few, never stacked)
-    C2.push(['paper', 0.55, 0.22, 0.5, 0.15, 1, 4000]);
-    const N = Math.min(FL.length, 42); let last = -9; for (let k = 1; k < N; k++) { const st = 1.9 + 2.0 * Math.pow(k / N, 0.75), tz = st + 1.5 * 0.9; /* closest to the camera = fastest on screen */ if (tz - last > 0.22) { C2.push(['swish', tz, 0.18, 0.2 + 0.6 * hash(k), 0.1, [1, 1.08, 0.94][k % 3], 3000]); last = tz; } }
-    C2.push(['cov_sw', 3.05, 0.2, 0.45, 0.12, 1, 1500]); // the first wave of passes reaches the camera
-    C2.push(['place1', 4.3 + 0.35, 0.3, 0.5, 0.12, 1, 3000]);
+    if (KIN === 'B') { C2.push(['paper', 0.5, 0.24, 0.5, 0.15, 1, 4000], ['cov_sw', 3.6, 0.3, 0.5, 0.15, 1, 1500], ['swish', 4.6, 0.24, 0.4, 0.1, 1, 3000], ['swish', 5.3, 0.24, 0.6, 0.1, 1.1, 3000], ['glitchA', 6 * BAR, 0.4, 0.5, 0.05, 1, 5000]); }
+    else if (KIN === 'C') { for (let r = 0; r < 12; r++) C2.push(['tick' + (r % 2), 0.25 + r * 0.3 + 0.05, 0.2, 0.3 + 0.4 * hash(r), 0.08, 1, 4000], ['card' + (r % 2), 0.25 + r * 0.3 + 0.24, 0.2, 0.5, 0.06, 1, 3000]); C2.push(['data', 8 * BEAT + 0.75, 0.14, 0.5, 0.1, 1, 2000], ['place1', 8 * BEAT + 1.25, 0.4, 0.5, 0.12, 1, 3000]); }
+    else if (KIN) { C2.push(['place0', 0.12 + 0.02, 0.4, 0.5, 0.12, 1, 3000], ['paper', 0.2, 0.2, 0.5, 0.1, 1, 4000]); KSLOT().forEach((ts, n) => C2.push(['card' + (n % 2), ts + 0.03, 0.3, n % 2 ? 0.72 : 0.28, 0.06, [1, 1.06, 0.94, 1.12][n % 4], 3000]));
+      C2.push(['cov_sw', 8 * BEAT + 0.5, 0.3, 0.5, 0.15, 1, 1500], ['swish', 8 * BEAT + 0.2, 0.22, 0.4, 0.1, 1, 3000], ['swish', 8 * BEAT + 0.8, 0.22, 0.6, 0.1, 1.1, 3000]);
+      for (let n = 0; n < 4; n++) C2.push(['place' + (n % 2), 6 * BAR + n * BEAT + 0.02, 0.34, n % 2 ? 0.7 : 0.3, 0.12, 1, 3000]); }
+    const N = KIN ? 0 : Math.min(FL.length, 42); if (!KIN) C2.push(['paper', 0.55, 0.22, 0.5, 0.15, 1, 4000]); let last = -9; for (let k = 1; k < N; k++) { const st = 1.9 + 2.0 * Math.pow(k / N, 0.75), tz = st + 1.5 * 0.9; /* closest to the camera = fastest on screen */ if (tz - last > 0.22) { C2.push(['swish', tz, 0.18, 0.2 + 0.6 * hash(k), 0.1, [1, 1.08, 0.94][k % 3], 3000]); last = tz; } }
+    if (!KIN) { C2.push(['cov_sw', 3.05, 0.2, 0.45, 0.12, 1, 1500]); /* the first wave of passes reaches the camera */ C2.push(['place1', 4.3 + 0.35, 0.3, 0.5, 0.12, 1, 3000]); }
     // Act 2: the scan (data texture + blips per log line), rows rise, the globe draws its routes
     const t0 = Y[0].t; C2.push(['data', t0 + 0.3 + 0.75, 0.12, 0.5, 0.1, 1, 2000], ['blip', t0 - 0.1, 0.3, 0.5, 0.05, 1, 3000]);
     for (let i = 0; i < 4; i++) C2.push(['tone', t0 + 0.4 + i * 0.5, 0.16, 0.35 + 0.1 * i, 0.08, [1, 1.122, 1.26, 1.5][i], 1500]);
@@ -415,7 +503,8 @@
     },
     frame(i) { return frame(i).toDataURL('image/jpeg', 0.92); },
     setVO(v) { VO = v && v.length ? v : null; },
-    setNoQR(v) { NOQR = !!v; },
+    setNoQR(v, nourl) { NOQR = !!v; NOURL = !!nourl; },
+    setKinetic(v) { KIN = v === true ? 'A' : (v || false); return { frames: Math.ceil(kinLen() * FPS), seconds: kinLen(), segs: KSEG() }; },
     poster(kind, w, h) { return poster(kind, w, h); },
     debug() { const m = mk(1440, 720), mc = m.getContext('2d'), pr = d3.geoEquirectangular().scale(1440 / (2 * Math.PI)).translate([720, 360]); mc.fillStyle = '#fff'; mc.beginPath(); d3.geoPath(pr, mc)(LAND); mc.fill(); const px = mc.getImageData(0, 0, 1440, 720).data; let n = 0; for (let i = 3; i < px.length; i += 4) if (px[i] > 128) n++; return { dots: DOTS ? DOTS.length : -1, flights: FL.length, land: LAND && LAND.type, filled: n }; },
     cues() { return cues().map(c => [c[0], c[1]]); },
