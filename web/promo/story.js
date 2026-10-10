@@ -102,7 +102,23 @@
   function blurIn(s, x, y, size, t0, t, o = {}) { const u = cl((t - t0) / 0.7), a = Math.min(eo(u), o.out ? cl((o.out - t) / 0.3) : 1); if (a <= 0) return; g.save(); g.filter = u < 1 ? `blur(${(1 - eo(u)) * 18}px)` : 'none'; text(s, x, y + (1 - eo(u)) * 26, size, { ...o, a }); g.restore(); }
   function decodeIn(s, x, y, size, t0, t, o = {}) { const a = o.out ? cl((o.out - t) / 0.3) : 1; if (a <= 0 || t < t0) return; text(decodeStr(s, t0, t, o.dur || 0.6), x, y, size, { ...o, a }); }
   // story narration: one line at a time, lower third
-  function say(s, t0, t1, t, y = 1560) { const a = win(t, t0, t1, 0.35, 0.3); if (a <= 0) return; const sz = LG === 'en' ? 46 : 52;
+  /* Narration drives the words on screen. VO = [[t0, t1, text, head, y], …] from make_voice.py (real TTS timings).
+     A spoken line is shown as one subtitle whose characters light up as the voice reaches them; lines flagged `head` are already
+     on screen as a headline, so they only get the voice meter. With VO set, the old fixed captions (say) stay off. */
+  let VO = null;
+  function meter(cx, y, on, t, a) { g.save(); g.globalAlpha = a; for (let i = 0; i < 9; i++) { const h = on ? 5 + 24 * Math.abs(Math.sin(t * 9 + i * 1.7)) * (0.45 + 0.55 * hash(Math.floor(t * 12) * 7 + i)) : 4; g.fillStyle = i === 4 ? P.gold : rgba(P.ac, 0.85); g.fillRect(cx - 49 + i * 11, y - h / 2, 5, h); } g.restore(); }
+  function subtitle(t) { if (!VO) return; const ln = VO.find(l => t >= l[0] - 0.15 && t <= l[1] + 0.35); if (!ln) return; const [t0, t1, s, head, yy] = ln, a = Math.min(cl((t - t0 + 0.15) / 0.2), cl((t1 + 0.35 - t) / 0.3)), on = t >= t0 && t <= t1;
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    if (head) { meter(PW / 2, yy || 1700, on, t, a * 0.9); g.restore(); return; }
+    const y = yy || 1590, ch = [...s]; let sz = LG === 'en' ? 44 : 50; g.font = font(600, sz); while (g.measureText(s).width > PW - 170 && sz > 26) { sz -= 2; g.font = font(600, sz); }
+    const ws = ch.map(c => g.measureText(c).width), w = ws.reduce((p, c) => p + c, 0), bw = w + 300, bh = sz + 64;
+    const bg = g.createLinearGradient(PW / 2 - bw / 2, 0, PW / 2 + bw / 2, 0); bg.addColorStop(0, 'rgba(2,6,16,0)'); bg.addColorStop(0.22, 'rgba(2,6,16,.82)'); bg.addColorStop(0.78, 'rgba(2,6,16,.82)'); bg.addColorStop(1, 'rgba(2,6,16,0)');
+    g.globalAlpha = a; g.fillStyle = bg; g.fillRect(PW / 2 - bw / 2, y - sz - 20, bw, bh);
+    const ln2 = g.createLinearGradient(PW / 2 - w / 2, 0, PW / 2 + w / 2, 0); ln2.addColorStop(0, 'rgba(233,197,142,0)'); ln2.addColorStop(0.5, 'rgba(233,197,142,.9)'); ln2.addColorStop(1, 'rgba(233,197,142,0)'); g.fillStyle = ln2; g.fillRect(PW / 2 - w / 2, y - sz - 20, w, 1.5);
+    const k = ch.length * cl((t - t0) / Math.max(0.3, t1 - t0 - 0.12)); let x = PW / 2 - w / 2; g.textAlign = 'left';
+    ch.forEach((c, i) => { const lit = cl(k - i); g.globalAlpha = a; g.fillStyle = `rgba(234,244,255,${0.3 + 0.7 * lit})`; if (lit > 0 && lit < 1) g.fillStyle = P.gold; g.fillText(c, x, y); x += ws[i]; });
+    meter(PW / 2, y + 42, on, t, a * 0.85); g.restore(); }
+  function say(s, t0, t1, t, y = 1560) { if (VO) return; const a = win(t, t0, t1, 0.35, 0.3); if (a <= 0) return; const sz = LG === 'en' ? 46 : 52;
     g.save(); g.font = font(600, sz); const w = Math.min(PW - 100, g.measureText(s).width + 80); g.globalAlpha = a * 0.96; g.fillStyle = 'rgba(2,6,16,.94)'; rr(g, PW / 2 - w / 2, y - sz - 22, w, sz + 46, 16); g.fill();
     g.globalAlpha = a; g.fillStyle = rgba(P.ac, 0.9); g.fillRect(PW / 2 - w / 2, y - sz - 22, 4, sz + 46); g.restore(); // a subtitle bar: readable over the white passes too
     g.save(); g.filter = t - t0 < 0.4 ? `blur(${(1 - eo((t - t0) / 0.4)) * 10}px)` : 'none'; text(s, PW / 2, y, sz, { w: 600, a, max: PW - 160 }); g.restore(); }
@@ -316,7 +332,7 @@
     if (t < T_F0) act1(t); else if (t < Y[1].t) act2a(t); else if (t < Y[2].t) act2b(t); else if (t < Y[3].t) act3a(t); else if (t < SC.T_FE) act3b(t);
     else if (t < SC.T_ZOOM) act4a(t); else if (t < SC.T_CARD) act4b(t); else act5(t);
     for (const e of [T_F0, Y[1].t, SC.T_ZOOM, SC.T_CARD]) glitch(t, e, 0.12, 0.8);
-    g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, t); return C;
+    g.setTransform(1, 0, 0, 1, 0, 0); subtitle(t); hud(t); finish(i, t); return C;
   }
 
   /* ---------- sound: every cue from the picture's timing (CC0 recordings; no synthesised effects) ---------- */
@@ -394,6 +410,7 @@
       return { frames: Math.ceil(SC.T_END * FPS), seconds: SC.T_END, hero: Y[2].t + HERO, stamp: SC.T_STAMP + 0.16, lang: LG, pal: P.name };
     },
     frame(i) { return frame(i).toDataURL('image/jpeg', 0.92); },
+    setVO(v) { VO = v && v.length ? v : null; },
     poster(kind, w, h) { return poster(kind, w, h); },
     debug() { const m = mk(1440, 720), mc = m.getContext('2d'), pr = d3.geoEquirectangular().scale(1440 / (2 * Math.PI)).translate([720, 360]); mc.fillStyle = '#fff'; mc.beginPath(); d3.geoPath(pr, mc)(LAND); mc.fill(); const px = mc.getImageData(0, 0, 1440, 720).data; let n = 0; for (let i = 3; i < px.length; i += 4) if (px[i] > 128) n++; return { dots: DOTS ? DOTS.length : -1, flights: FL.length, land: LAND && LAND.type, filled: n }; },
     cues() { return cues().map(c => [c[0], c[1]]); },
