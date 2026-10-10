@@ -103,7 +103,7 @@
   function decodeIn(s, x, y, size, t0, t, o = {}) { const a = o.out ? cl((o.out - t) / 0.3) : 1; if (a <= 0 || t < t0) return; text(decodeStr(s, t0, t, o.dur || 0.6), x, y, size, { ...o, a }); }
   // story narration: one line at a time, lower third
   function say(s, t0, t1, t, y = 1560) { const a = win(t, t0, t1, 0.35, 0.3); if (a <= 0) return; const sz = LG === 'en' ? 46 : 52;
-    g.save(); g.font = font(600, sz); const w = Math.min(PW - 100, g.measureText(s).width + 80); g.globalAlpha = a * 0.78; g.fillStyle = 'rgba(2,6,16,.82)'; rr(g, PW / 2 - w / 2, y - sz - 22, w, sz + 46, 16); g.fill();
+    g.save(); g.font = font(600, sz); const w = Math.min(PW - 100, g.measureText(s).width + 80); g.globalAlpha = a * 0.96; g.fillStyle = 'rgba(2,6,16,.94)'; rr(g, PW / 2 - w / 2, y - sz - 22, w, sz + 46, 16); g.fill();
     g.globalAlpha = a; g.fillStyle = rgba(P.ac, 0.9); g.fillRect(PW / 2 - w / 2, y - sz - 22, 4, sz + 46); g.restore(); // a subtitle bar: readable over the white passes too
     g.save(); g.filter = t - t0 < 0.4 ? `blur(${(1 - eo((t - t0) / 0.4)) * 10}px)` : 'none'; text(s, PW / 2, y, sz, { w: 600, a, max: PW - 160 }); g.restore(); }
 
@@ -131,7 +131,7 @@
     const N = Math.min(FL.length, 42);
     for (let k = N - 1; k >= 1; k--) { const st = 1.9 + 2.0 * Math.pow(k / N, 0.75), u = (t - st) / 1.5; if (u <= 0 || u > 1.05) continue;
       const z = 6 - 5.4 * eio(u), x = (hash(k * 1.7) - 0.5) * 2.4, y = (hash(k * 3.3) - 0.5) * 3.0, sc = 1.4 / z, X = PW / 2 + x * 520 / z, Yy = 900 + y * 520 / z;
-      pass(FL[k], X, Yy, sc, (hash(k * 5.1) - 0.5) * 0.5, cl(u * 4) * cl((1.05 - u) * 6), k); }
+      pass(FL[k], X, Yy, sc, (hash(k * 5.1) - 0.5) * 0.5, cl(u * 4) * cl((1.05 - u) * 6) * (1 - cl((t - 4.4) / 0.4)), k); } /* clear the stage for the spreadsheet and its line */
     say(T('后来，登机牌越攒越多', 'Then the boarding passes piled up.'), 2.9, 4.4, t);
     // a counter in the HUD
     if (t > 1.9 && t < 4.6) { const n = Math.min(FL.length, Math.floor(1 + (FL.length - 1) * eo((t - 1.9) / 2.3))); text(`${T('登机牌', 'BOARDING PASSES')}  ${String(n).padStart(3, '0')}`, PW / 2, 300, 28, { fam: 'SM', color: rgba(P.ac, 0.85), a: win(t, 1.9, 4.6) }); }
@@ -245,27 +245,27 @@
   }
   const MODS = () => [
     ['MODULE 01 // PASSPORT FILM', T('一分钟的飞行护照', 'A one-minute passport film'), T('竖屏动画 · 原创配乐 · 存进相册', 'Vertical film · original score · straight to your photos')],
-    ['MODULE 02 // LONG POSTER', T('一张图，晒出这些年', 'One image for all those years'), T('统计 · 航线地图 · 飞行成就', 'Numbers · route map · achievements')],
-    ['MODULE 03 // AI CLEANUP', T('写错的地名，它认得出', 'Typos? It still knows'), T('错别字、简称、中英文都能认', 'Misspellings, nicknames, any language')],
-    ['MODULE 04 // ANY EXPORT', T('各种 App 的导出，直接上传', 'Your exports, as they are'), T('航旅纵横 · Flighty · myFlightradar24 · Excel · CSV', '航旅纵横 · Flighty · myFlightradar24 · OpenFlights · CSV')],
+    ['MODULE 02 // LONG POSTER', T('一张图，晒出这些年', 'One image, all those years'), T('统计 · 航线地图 · 飞行成就', 'Numbers · route map · achievements')],
+    ['MODULE 03 // AI CLEANUP', T('写错的地名，它认得出', 'Typos? It still gets them'), T('错别字、简称、中英文都能认', 'Misspellings, nicknames, any language')],
+    ['MODULE 04 // ANY EXPORT', T('各种 App 的导出，直接上传', 'Upload your exports as-is'), T('航旅纵横 · Flighty · myFlightradar24 · Excel · CSV', 'Flighty · myFlightradar24 · OpenFlights · Excel · CSV')],
     ['MODULE 05 // PRIVATE', T('表格只在你的浏览器里处理', 'Your sheet never leaves your browser'), T('不登录 · 不上传 · 免费', 'No sign-up · no upload · free')],
   ];
   function act3b(t) {
     backdrop(t); const k = Math.max(3, Math.min(7, Y.findIndex(y => t >= y.t && t < y.end))), m = k - 3, t0 = Y[k].t, [hd, title, line] = MODS()[m];
     text(`0${m + 1} / 05`, PW / 2, 250, 26, { fam: 'SM', color: rgba(P.ac, 0.9), a: win(t, t0 - 0.05, Y[k].end + 0.1, 0.15, 0.15) });
-    decodeIn(title, PW / 2, 340, LG === 'en' ? 60 : 72, t0 - 0.05, t, { w: 800, dur: 0.45, max: PW - 120 });
+    decodeIn(title, PW / 2, 340, LG === 'en' ? 60 : 72, t0 - 0.2, t, { w: 800, dur: 0.28, max: PW - 120 });
     blurIn(line, PW / 2, 410, LG === 'en' ? 30 : 34, t0 + 0.15, t, { w: 400, color: P.sub, max: PW - 140 });
     const lt = t - t0;
     if (m === 0) panel(170, 480, 740, 1240, t0 + 0.05, t, hd, (x, y, w, h) => { const pt = T_F0 + 2.5 + lt * 4.5; g.drawImage(shot(pt), x + (w - h * 9 / 16) / 2, y, h * 9 / 16, h); });
     if (m === 1) panel(170, 480, 740, 1240, t0 + 0.05, t, hd, (x, y, w, h) => { const sc = w / LONG.width, trv = LONG.height * sc - h; g.drawImage(LONG, x, y - trv * eio(cl((lt - 0.2) / 1.8)), w, LONG.height * sc); });
     if (m === 2) panel(110, 520, 860, 900, t0 + 0.05, t, hd, (x, y, w, h) => { const fx = LG === 'en' ? [['Heathrw', 'London Heathrow LHR'], ['JFK Intl', 'New York JFK'], ['Narita T1', 'Tokyo Narita NRT'], ['Suvarnabumi', 'Bangkok BKK'], ['LA', 'Los Angeles LAX']] : [['浦栋', '上海浦东 PVG'], ['红桥', '上海虹桥 SHA'], ['Narita T1', '东京成田 NRT'], ['Suvarnabumi', '曼谷 BKK'], ['LA', '洛杉矶 LAX']];
-      fx.forEach(([bad, good], i) => { const yy = y + 110 + i * 150, kk = cl((lt - 0.35 - i * 0.24) / 0.2); text(bad, x + 50, yy, 44, { align: 'left', w: 600, color: `rgba(255,120,140,${1 - kk})` }); if (kk > 0) { text(good, x + 50 + (1 - eo(kk)) * 30, yy, 44, { align: 'left', w: 700, a: kk }); g.save(); g.globalAlpha = kk; g.fillStyle = rgba(P.ac, 0.95); g.beginPath(); g.arc(x + w - 70, yy - 14, 24, 0, 7); g.fill(); g.strokeStyle = '#04101f'; g.lineWidth = 5; g.beginPath(); g.moveTo(x + w - 82, yy - 14); g.lineTo(x + w - 73, yy - 5); g.lineTo(x + w - 58, yy - 23); g.stroke(); g.restore(); }
+      fx.forEach(([bad, good], i) => { const yy = y + 110 + i * 150, kk = cl((lt - 0.2 - i * 0.24) / 0.2); text(bad, x + 50, yy, 44, { align: 'left', w: 600, color: `rgba(255,120,140,${1 - kk})` }); if (kk > 0) { text(good, x + 50 + (1 - eo(kk)) * 30, yy, 44, { align: 'left', w: 700, a: kk }); g.save(); g.globalAlpha = kk; g.fillStyle = rgba(P.ac, 0.95); g.beginPath(); g.arc(x + w - 70, yy - 14, 24, 0, 7); g.fill(); g.strokeStyle = '#04101f'; g.lineWidth = 5; g.beginPath(); g.moveTo(x + w - 82, yy - 14); g.lineTo(x + w - 73, yy - 5); g.lineTo(x + w - 58, yy - 23); g.stroke(); g.restore(); }
         g.fillStyle = rgba(P.ac, 0.12); g.fillRect(x + 40, yy + 40, w - 80, 1.5); }); });
-    if (m === 3) panel(110, 520, 860, 900, t0 + 0.05, t, hd, (x, y, w, h) => { const chips = LG === 'en' ? ['Flighty', 'myFlightradar24', 'OpenFlights', '航旅纵横', 'Excel', 'CSV'] : ['航旅纵横', 'Flighty', 'myFlightradar24', 'OpenFlights', 'Excel', 'CSV'];
-      chips.forEach((c, i) => { const st = 0.2 + i * 0.12, kk = eo(cl((lt - st) / 0.5)), x0 = x + 60 + (i % 2) * 400, y0 = y + 110 + Math.floor(i / 2) * 150, x1 = x + w / 2, y1 = y + h - 120, k2 = eio(cl((lt - 1.2 - i * 0.05) / 0.5)), X = x0 + (x1 - x0 - 150) * k2, Yy = y0 + (y1 - y0) * k2;
+    if (m === 3) panel(110, 520, 860, 900, t0 + 0.05, t, hd, (x, y, w, h) => { const chips = LG === 'en' ? ['Flighty', 'myFlightradar24', 'OpenFlights', 'Excel', 'CSV', 'Google Sheets'] : ['航旅纵横', 'Flighty', 'myFlightradar24', 'OpenFlights', 'Excel', 'CSV'];
+      chips.forEach((c, i) => { const st = 0.02 + i * 0.1, kk = eo(cl((lt - st) / 0.5)), x0 = x + 60 + (i % 2) * 400, y0 = y + 110 + Math.floor(i / 2) * 150, x1 = x + w / 2, y1 = y + h - 120, k2 = eio(cl((lt - 1.2 - i * 0.05) / 0.5)), X = x0 + (x1 - x0 - 150) * k2, Yy = y0 + (y1 - y0) * k2;
         g.save(); g.globalAlpha = kk * (1 - k2 * 0.85); g.strokeStyle = rgba(P.ac, 0.7); g.lineWidth = 1.5; rr(g, X, Yy - 46, 330, 66, 33); g.stroke(); text(c, X + 165, Yy, 30, { w: 700, a: 1, max: 300 }); g.restore(); });
       const k3 = eo(cl((lt - 1.5) / 0.4)); if (k3 > 0) { g.save(); g.globalAlpha = k3; g.translate(x + w / 2, y + h - 150); g.strokeStyle = g.fillStyle = goldFill(-120, 120); emblem(g, 0.32 * (0.8 + 0.2 * k3), false); g.restore(); } });
-    if (m === 4) panel(110, 520, 860, 900, t0 + 0.05, t, hd, (x, y, w, h) => { const cx = x + w / 2, cy = y + h / 2 - 20, k1 = eo(cl((lt - 0.2) / 0.4));
+    if (m === 4) panel(110, 520, 860, 900, t0 + 0.05, t, hd, (x, y, w, h) => { const cx = x + w / 2, cy = y + h / 2 - 20, k1 = eo(cl((lt - 0.02) / 0.3));
       g.save(); g.globalAlpha = k1; g.strokeStyle = rgba(P.ac, 0.8); g.lineWidth = 3; rr(g, x + 80, y + 70, w - 160, h - 220, 18); g.stroke(); g.fillStyle = rgba(P.ac, 0.15); g.fillRect(x + 80, y + 70, w - 160, 50); [0, 1, 2].forEach(i => { g.fillStyle = rgba(P.ac, 0.7); g.beginPath(); g.arc(x + 110 + i * 26, y + 95, 7, 0, 7); g.fill(); });
       for (let i = 0; i < 7; i++) { const yy = y + 170 + i * 52; g.fillStyle = rgba(P.ac, 0.18 + 0.1 * (i % 2)); g.fillRect(x + 120, yy, (w - 240) * (0.5 + 0.5 * hash(i * 3)), 22); }
       const k2 = spring(lt - 0.6, 0.6, 0.18); g.translate(cx, cy + 40); g.scale(0.6 + 0.4 * k2, 0.6 + 0.4 * k2); g.globalAlpha = k1 * cl(k2 * 2);
@@ -384,6 +384,7 @@
     palettes: Object.keys(PAL),
     async init(pal, lang, sprites) {
       P = PAL[pal] || PAL.hud; LG = lang === 'en' ? 'en' : 'zh'; LANG = LG; // the product page's language too: long poster and badges follow
+      if (LG === 'en') { $('name').value = 'Lin Xiaozhou'; buildScene(); } // the sample traveller, written for English viewers
       await Promise.all([ensureFonts(), loadFlags(S.order)]); coverBuilt = false;
       const txt = ALL_TEXT(); await Promise.all(['400 30px "Open Sans"', '700 30px "Open Sans"', '800 30px "Open Sans"', '400 30px "Space Mono"', '700 30px "Space Mono"', '400 30px "Noto Sans SC"', '700 30px "Noto Sans SC"', '900 30px "Noto Serif SC"'].map(f => document.fonts.load(f, txt).catch(() => {})));
       FL = S.flights.filter(f => !f.vd && !f.up); F0 = S.final; APS = [...new Set(FL.flatMap(f => [f.f, f.to]))];

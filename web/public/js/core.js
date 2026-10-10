@@ -176,6 +176,6 @@ function demoRows(){
     ['PVG','CTS'],['CTS','PVG'],['PVG','SYD'],['SYD','MEL'],['MEL','PVG'],['SHA','TAO'],['TAO','SHA'],['PVG','DXB'],['DXB','PVG'],['SHA','HAK'],['HAK','SHA']];
   const rows=[];let y=2018,m=3;
   R.forEach((p,i)=>{m+= (i%2?0:2)+ (i%5===0?1:0);while(m>12){m-=12;y++;}const intl=!AP[p[0]]||!AP[p[1]]||AP[p[0]].iso!=='CN'||AP[p[1]].iso!=='CN'; // international legs carry 3-digit numbers, like real ones
-    rows.push({rawDate:`${y}-${m}-${5+(i*7)%20}`,al:'',fn:['MU','CA','CZ','FM','HO'][i%5]+(intl?101+(i*137)%880:5000+i*37),from:p[0],to:p[1],dt:'',at:'',km:'',up:y>=2027,vd:0});});
+    rows.push({rawDate:`${y}-${m}-${4+(i%4)*6}`, /* a return never dated before its outbound */al:'',fn:['MU','CA','CZ','FM','HO'][i%5]+(intl?101+(i*137)%880:5000+i*37),from:p[0],to:p[1],dt:'',at:'',km:'',up:y>=2027,vd:0});});
   return rows;}
 function rngF(seed){let a=seed>>>0;return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

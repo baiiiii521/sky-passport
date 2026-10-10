@@ -17,3 +17,13 @@ Picked and prepared with the method of [opus-sound-layer](https://github.com/Bod
 | `ding` | Glass ding — Counter-gamer | [freesound.org/404104](https://freesound.org/people/Counter-gamer/sounds/404104) | CC0 1.0 |
 | `chime` | Single chime — LloydEvans09 | [freesound.org/185822](https://freesound.org/people/LloydEvans09/sounds/185822) | CC0 1.0 |
 | `sparkle2` | Sparkle — nomiqbomi | [freesound.org/578803](https://freesound.org/people/nomiqbomi/sounds/578803) | CC0 1.0 |
+
+## v3 interface / data sounds (`sfx-tech.mp3`)
+
+| 名称 Name | 录音 Recording | 来源 Source | 许可 Licence |
+|---|---|---|---|
+| `data` | computerNoise_001 — Kenney (kenney.nl) | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | CC0 1.0 |
+| `blip` | select_001 — Kenney (kenney.nl) | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | CC0 1.0 |
+| `blip2` | maximize_001 — Kenney (kenney.nl) | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | CC0 1.0 |
+| `tone` | select_006 — Kenney (kenney.nl) | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | CC0 1.0 |
+| `glitchA` / `glitchB` | glitch_002 / glitch_004 — Kenney (kenney.nl) | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | CC0 1.0 |

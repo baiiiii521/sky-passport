@@ -29,7 +29,7 @@ function computeBadges(sc){
   const route=cnt(LF,f=>[f.f,f.to].sort().join('-'))[0];if(route&&route[1]>1){const [a,b]=route[0].split('-');out.push({id:'route',i:'🔁',k:L('最常飞航线','Most-flown route'),v:`${placeName(a)} ⇄ ${placeName(b)}`,d:L(`${route[1]} 次`,`${route[1]} times`)});}
   const aps=cnt(LF.flatMap(f=>[f.f,f.to]),x=>x),base=aps[0][0];out.push({id:'base',i:'🛫',k:L('最常去的机场','Most-visited airport'),v:`${placeName(base)} ${base}`,d:L(`${aps[0][1]} 次起降`,`${aps[0][1]} take-offs and landings`)});
   let far=null,fk=0;for(const [c] of aps){const d=hav(AP[base],AP[c]);if(d>fk){fk=d;far=c;}}if(far)out.push({id:'far',i:'🧭',k:L('飞得最远的地方','Farthest place'),v:placeName(far),d:L(`离${placeName(base)} ${fmt(fk)} km`,`${fmt(fk)} km from ${placeName(base)}`)});
-  const ys=cnt(LF,f=>f.y);if(ys.length>1)out.push({id:'busy',i:'📅',k:L('最忙的一年','Busiest year'),v:L(`${ys[0][0]} 年`,String(ys[0][0])),d:L(`${ys[0][1]} 段航班`,`${ys[0][1]} flights`)});
+  const ys=cnt(LF,f=>f.y);if(ys.length>1){const tie=ys.filter(y=>y[1]===ys[0][1]).map(y=>y[0]).sort();out.push({id:'busy',i:'📅',k:L('最忙的一年','Busiest year'),v:tie.length>1?L(`${tie[0]}–${tie[tie.length-1]} 年`,`${tie[0]}–${tie[tie.length-1]}`):L(`${ys[0][0]} 年`,String(ys[0][0])),d:tie.length>1?L(`${tie.length} 年并列，每年 ${ys[0][1]} 段`,`${tie.length} years tied, ${ys[0][1]} flights each`):L(`${ys[0][1]} 段航班`,`${ys[0][1]} flights`)});}
   const red=LF.filter(f=>f.hasT&&(+f.t.slice(0,2)>=22||+f.t.slice(0,2)<6)).length;if(red)out.push({id:'red',i:'🌙',k:L('红眼航班','Red-eyes'),v:L(`${red} 次`,String(red)),d:L('22:00–06:00 起飞','departing 22:00–06:00')});
   const km=LF.reduce((a,f)=>a+f.km,0),min=LF.reduce((a,f)=>a+f.min,0);
   out.push({id:'air',i:'⏱️',k:L('在空中的时间','Time in the air'),v:L(`${(min/1440).toFixed(1)} 天`,`${(min/1440).toFixed(1)} days`),d:L(`${Math.round(min/60)} 小时`,`${Math.round(min/60)} hours`)});
@@ -69,7 +69,7 @@ async function renderLongPoster(){
     const hd=g.createRadialGradient(W/2,180,40,W/2,300,900);hd.addColorStop(0,TH.c[0]);hd.addColorStop(.6,TH.c[1]);hd.addColorStop(1,TH.c[2]);g.fillStyle=hd;g.fillRect(0,0,W,Hd);
     g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=0.45;g.drawImage(GRAIN[0],0,0,W,Hd);g.restore();
     const gold=goldText(g,60,520);g.save();g.translate(W/2,215);g.strokeStyle=g.fillStyle=gold;emblem(g,0.6,false);g.restore();
-    g.textAlign='center';g.fillStyle=gold;g.font=`900 96px ${SERIF}`;spaced(g,'航迹护照',W/2,452,18);g.font='600 26px "Open Sans",sans-serif';spaced(g,'SKY PASSPORT',W/2,500,12);
+    g.textAlign='center';g.fillStyle=gold;if(EN()){g.font=`900 84px ${SERIF}`;spaced(g,'SKY PASSPORT',W/2,452,6);g.font=F(600,26);spaced(g,'航迹护照',W/2,500,12);}else{g.font=`900 96px ${SERIF}`;spaced(g,'航迹护照',W/2,452,18);g.font='600 26px "Open Sans",sans-serif';spaced(g,'SKY PASSPORT',W/2,500,12);}
     g.strokeStyle='rgba(227,189,132,.6)';g.lineWidth=2;rr(g,24,24,W-48,512,26);g.stroke();
     let y=Hd;
     // who and when

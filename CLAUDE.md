@@ -38,6 +38,15 @@ Two codebases live here:
 - Local dev with the API: `cd web && vercel dev` (pulls the development env). `npm run dev` serves the static page only; the AI button then reports that the service is unavailable.
 - When running as a claude.ai artifact, file saving goes through `claude.use('downloads')`; outside claude.ai it falls back to an `<a download>` link.
 
+## Versions (since 2026-10-10)
+- **Domestic** (passport.nybbq.art, render server, mini program 1.0.1 in WeChat review) is frozen at git tag `cn-review-1.0.1`. Don't deploy to Tencent until the owner says the review is done; then merge `feat/v3-vercel` (everything applies; English UI is harmless there) and ship mini program 1.0.3.
+- **Overseas** (sky-passport.vercel.app) runs v3 from branch `feat/v3-vercel`: English UI, overseas imports, hand entry, seam-aware map, intro film, og image. Deploy with `cd web && vercel deploy --prod`.
+- Language: `public/js/i18n.js` (loads before core.js). Static text uses `data-en` / `data-en-ph` / `data-en-aria` / `data-en-alt`; code uses `L('中文','English')` and `EN()`. Default = browser language; `?lang=en|zh` overrides; pages with `?render=` or `?site=` (server renders, promo pages) stay Chinese. Never name a local variable `L` in page scripts (it shadows the helper).
+- Imports (core.js): one column per role, whole-word header matching; myFlightradar24 `(PVG/ZSPD)`, Flighty (gate times, Canceled), OpenFlights (distance in miles: a bare "distance" column is checked against the route), English airport names (`APNAME`), 12-hour clocks, yyyymmdd. Fixtures in `web/tests/fixtures/`.
+- Promo v3: `web/promo/story.js` + `make_story.py` (stills / film / audio / posters; zh + en; palettes hud / gold / aurora). v2 (`film.js`) is kept.
+- Two traps that bit this round: (1) a `//` comment inside the long one-line statements swallows the rest of the line — use `/* */`; `npm test` now fails if any page script does not parse. (2) Promo scripts share the page's globals — never name anything `LAND`, `S`, `AP`, `L`, etc.
+- Review report: `docs/AUDIT-2026-10-10.md` (findings, risks, upgrade and feature proposals).
+
 ## Motion/music rules we settled on (keep these)
 - 112 BPM grid; one chord per bar (Fmaj7–Em7–Dm7–Cmaj7). Every year starts on a bar line; map-only punch (1.03→1.0 over 20 frames) + crash on each year downbeat. Do NOT scale the whole page (small text shimmers).
 - Pacing: sparse years (≤0.5 bar) = "gap" section (drums out, filtered pad); all-upcoming year = "dream" section.
@@ -64,8 +73,8 @@ ffmpeg -i ../out/out_noaudio.mp4 -i ../out/music.wav -c:v copy -c:a aac -shortes
 ```
 
 ## Known gaps / next steps (candidate backlog)
-1. Rows without a date (OPEN / 退票 tickets) are skipped and listed in the check panel; consider letting users type a date there.
-2. Individual rows can be excluded only when flagged as suspicious; a general per-segment toggle is still missing.
+1. ~~Undated rows / per-row toggle~~ Done: the check panel's "all rows" list excludes any row and takes a date for undated ones.
+2. Next ideas: see docs/AUDIT-2026-10-10.md §6–7 (year-in-review template, printed passport, photos per flight, couple/family merge, 4:5 cards).
 3. Chinese airport dictionary covers ~738 keywords; unresolved names fall back to manual IATA entry. Grow it from real uploads.
 4. Export speed: ~7 s for a 31 s film with hardware H.264 on a Mac; slower machines/software encoders still take minutes. OffscreenCanvas + Worker remains an option.
 5. ~~Deploy outside claude.ai~~ Done: Vercel (`sky-passport.vercel.app`, AI check on) and **mainland production `https://passport.nybbq.art`** (Tencent Cloud Lighthouse 49.233.168.199, ICP-filed nybbq.art; the BBQ ordering site was removed on 2026-10-10 at the owner's request; `/etc/nginx/sites-available/bbq-shop` still serves nybbq.art: `/` → 302 to passport.nybbq.art, `/vn/` → vietnam-finance (:8888, keep), `/hokkaido/` static (keep); MySQL on the box belongs to other apps — don't touch). Mainland notes: TypeSafe answers 451 from China, so the server runs with `TYPESAFE_DISABLED=1` and the page falls back to local airport suggestions; vercel.app, Google Fonts and jsDelivr are unreachable there, so fonts/vendor/flags/data are built on the server by `deploy/fetch_assets.sh` from npmmirror/DataV/fonts.googleapis.cn; updates: `cd web && DEPLOY_HOST=ubuntu@49.233.168.199 ./deploy/deploy.sh` (key `~/.ssh/sky_passport_deploy`); Node 20 lives in `/opt/node20` (system Node 12 untouched); TLS via certbot webroot; server bandwidth is 3 Mbps — move static files to COS+CDN before promoting.
