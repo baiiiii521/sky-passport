@@ -104,7 +104,7 @@ const HOME=(()=>{
   function show(view,step,keep){const d=document.documentElement,was=d.dataset.view+d.dataset.step;d.dataset.view=view;if(step)d.dataset.step=step;const st=d.dataset.step;
     document.querySelectorAll('[data-go]').forEach(a=>{const [v,s2]=a.dataset.go.split(':');if(a.closest('.stepper')){a.classList.toggle('on',s2===st);a.classList.toggle('done',STEPS.indexOf(s2)<STEPS.indexOf(st));}else if(a.closest('.topnav,.tabbar'))a.classList.toggle('on',v===view);});
     STEPS.forEach(id=>{const n=document.getElementById(id);if(n)n.classList.toggle('cur',view==='studio'&&id===st);});
-    if(!keep&&was!==view+st)scrollTo(0,0);if(view==='home')update();}
+    if(!keep&&was!==view+st)scrollTo(0,0);if(view==='home'){update();const t=q('#toast');if(t)t.classList.remove('on');}}
   function go(view,step){const h='#/'+view+(view==='studio'?'/'+(step||document.documentElement.dataset.step||'s1'):'');if(location.hash!==h)location.hash=h;else route();}
   function route(keep){const m=/^#\/(home|studio|badges)(?:\/(s[123]))?/.exec(location.hash)||[];show(m[1]||'home',m[2],keep===true);}
   function initViews(){document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-go]');if(!a)return;e.preventDefault();const [v,s2]=a.dataset.go.split(':');go(v,s2);});

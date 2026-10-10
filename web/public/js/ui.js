@@ -299,9 +299,15 @@ $('nat').addEventListener('change',()=>{NAT_TOUCHED=true;});
 function onLangChange(){if(typeof HOME!=='undefined')HOME.relang();initGuide();if(Object.keys(NAMES).length)natOptions();if(!playing)stopPlay();qaUpdate();if(S)rebuild();}
 $('btnLang').addEventListener('click',()=>setLang(EN()?'zh':'en'));
 /* ---------- hero: the traveller's numbers, counted up like a flight-log readout ---------- */
-let HERO_ANIM=0;
+let HERO_ANIM=0,HERO_MINE=false;
 function heroStats(){const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.final:{n:0,km:0,cc:0,min:0},to={n:F.n,km:F.km,cc:F.cc,h:Math.round(F.min/60)},id=++HERO_ANIM,t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  $('heroWho').textContent=SOURCE==='demo'?L('示例旅客 · 林小舟 · 虚构','Sample traveller · Lin Xiaozhou · fictional'):L('你的航迹','Your flight log');
+  /* the board says whose numbers these are: the fictional sample until the visitor's own flights are in, then theirs (with a notice) */
+  const mine=SOURCE!=='demo',who=$('heroWho'),nm=mine?(($('name').value||'').trim()||L('你','You')):L('林小舟','Lin Xiaozhou');who.textContent='';
+  who.append(el('span',{},mine?L('你的航迹 · ','Your flight log · '):L('示例旅客 · ','Sample traveller · '),el('b',{},nm)),el('span',{cls:'tag'},mine?L('已换成你的数据','YOUR DATA'):L('虚构示例','FICTIONAL')));
+  who.parentElement.classList.toggle('mine',mine);const note=$('heroNote');note.textContent='';
+  if(mine)note.append(L('地球、数字和成就都已换成你的航班。','The globe, the numbers and the medals now show your flights.'));else note.append(L('这是示例。','This is a sample. '),el('a',{href:'#/studio/s1','data-go':'studio:s1'},L('导入你的航班','Import your flights')),L('后，这里会换成你的名字和数字。',' and this becomes your name and numbers.'));
+  if(mine&&!HERO_MINE&&S.ok){const t=$('toast');t.textContent='';t.append(L('首页的地球和数字已换成你的航迹','The home page now shows your flights'),el('a',{href:'#/home','data-go':'home',on:{click:()=>t.classList.remove('on')}},L('去看看 →','See it →')));t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),7000);}
+  HERO_MINE=mine&&S.ok;
   $('heroLine').textContent=S.ok?L(`绕地球 ${(F.km/40075).toFixed(2)} 圈 · ${yearsLabel(S,' — ')}`,`${(F.km/40075).toFixed(2)}× around the Earth · ${yearsLabel(S,' — ')}`):L('导入航班后，这里会显示你的数字','Your numbers appear here once your flights are in');
   if(typeof HOME!=='undefined'){for(const [key,v] of Object.entries(to))HOME.flap(box.querySelector(`[data-k="${key}"]`),fmt(v));HOME.update();return;} /* split-flap board (home.js) */
   const step=now=>{if(id!==HERO_ANIM)return;const k=reduce?1:Math.min(1,(now-t0)/900),e=1-Math.pow(1-k,3);for(const [key,v] of Object.entries(to))box.querySelector(`[data-k="${key}"]`).textContent=fmt(v*e);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
