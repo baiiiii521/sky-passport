@@ -13,7 +13,10 @@ def sprite(name):
 with sync_playwright() as p:
     b = p.chromium.launch(channel='chrome', headless=True); pg = b.new_page(viewport={'width': 1300, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     site = 'https://sky-passport.vercel.app' if lang == 'en' else 'https://passport.nybbq.art'
-    pg.goto(f'http://localhost:5190/?site={site}&lang={lang}'); pg.wait_for_function('typeof S!=="undefined"&&S&&S.ok', timeout=60000); pg.wait_for_timeout(1200)
+    for attempt in range(4):   # the local static server sometimes stalls a load: reload instead of giving up
+        try: pg.goto(f'http://localhost:5190/?site={site}&lang={lang}', timeout=30000); pg.wait_for_function('typeof S!=="undefined"&&S&&S.ok', timeout=30000); break
+        except Exception as e: print('reload', attempt, str(e)[:60], flush=True)
+    pg.wait_for_timeout(1200)
     pg.add_script_tag(path=os.path.join(HERE, 'story.js')); pg.evaluate('([p,l,s])=>STORY.init(p,l,s)', ['hud', lang, [sprite('sfx-promo'), sprite('sfx-tech')]])
     pg.evaluate('([a,b])=>STORY.setNoQR(a,b)', [NOQR or NOURL, NOURL]); info = pg.evaluate('m=>STORY.setKinetic(m)', MODE); print(info, flush=True)
     if STILLS:
@@ -31,5 +34,16 @@ segs = info['segs']; n = len(segs)
 fc = ''.join(f"[0:a]atrim={a}:{e},asetpts=PTS-STARTPTS,afade=t=in:d=0.012,areverse,afade=t=in:d=0.012,areverse[a{i}];" for i, (a, e) in enumerate(segs)) + ''.join(f'[a{i}]' for i in range(n)) + f'concat=n={n}:v=0:a=1[a]'
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_a_src.wav'), '-filter_complex', fc, '-map', '[a]', os.path.join(out, '_a.wav')], check=True)
 full = os.path.join(out, f'promo-kinetic-{MODE}-{lang}.mp4')
+# --vo "<seconds in the cut>|<text>": one narrated line laid over the cut (the bed ducks under it), e.g. after the stamp
+if '--vo' in sys.argv:
+    import asyncio, edge_tts
+    tau, text = sys.argv[sys.argv.index('--vo') + 1].split('|', 1); mp3 = os.path.join(out, '_vo.mp3')
+    asyncio.run(edge_tts.Communicate(text, 'zh-CN-YunyangNeural' if lang == 'zh' else 'en-US-AndrewNeural', rate='-10%', pitch='-2Hz' if lang == 'zh' else '+0Hz').save(mp3))
+    vf = ('silenceremove=start_periods=1:start_threshold=-48dB:start_silence=0.01,highpass=f=80,equalizer=f=250:t=q:w=1.0:g=-2,equalizer=f=3200:t=q:w=1.2:g=2.5,'
+          f'acompressor=threshold=-22dB:ratio=2.5:attack=6:release=120:makeup=2,aresample=48000,volume=1.6,adelay={int(float(tau) * 1000)}:all=1,apad')
+    os.replace(os.path.join(out, '_a.wav'), os.path.join(out, '_a_bed.wav'))
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_a_bed.wav'), '-i', mp3, '-filter_complex',
+                    f'[1:a]{vf},asplit[v1][v2];[0:a][v1]sidechaincompress=threshold=0.02:ratio=8:attack=40:release=350[bed];[bed][v2]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.84,volume=-1.3dB[a]',
+                    '-map', '[a]', '-ac', '2', os.path.join(out, '_a.wav')], check=True)
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_v.mp4'), '-i', os.path.join(out, '_a.wav'), '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', full], check=True)
 print('wrote', full)

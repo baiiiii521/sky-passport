@@ -326,7 +326,7 @@
       g.strokeStyle = rgba(P.ac, 0.9); g.lineWidth = 3; const L = 40, e = 18; [[qx - e, qy - e, 1, 1], [qx + qs + e, qy - e, -1, 1], [qx - e, qy + qs + e, 1, -1], [qx + qs + e, qy + qs + e, -1, -1]].forEach(([x, y, sx, sy]) => { g.beginPath(); g.moveTo(x + sx * L, y); g.lineTo(x, y); g.lineTo(x, y + sy * L); g.stroke(); });
       const sy = qy + ((t - t0) * 0.6 % 1) * qs; g.fillStyle = rgba(P.ac, 0.5); g.fillRect(qx - 10, sy, qs + 20, 3); g.restore(); }
     if (!NOURL) decodeIn(URL_TEXT(), PW / 2, NOQR ? 1330 : 1560, 38, t0 + 1.4, t, { fam: 'SM', w: 700, color: rgba(P.ac, 0.95), dur: 0.6 });
-    blurIn(T('免费 · 隐私 · 一分钟出片 · 微信小程序同名', 'Free · private · made in your browser'), PW / 2, NOURL ? 1320 : NOQR ? 1400 : 1630, 30, t0 + 1.8, t, { w: 400, color: P.sub, max: PW - 140 });
+    blurIn(NOURL ? T('免费 · 隐私 · 一分钟出片', 'Free · private · made in your browser') : T('免费 · 隐私 · 一分钟出片 · 微信小程序同名', 'Free · private · made in your browser'), PW / 2, NOURL ? 1320 : NOQR ? 1400 : 1630, 30, t0 + 1.8, t, { w: 400, color: P.sub, max: PW - 140 });
     bloom(0.4);
   }
   const URL_TEXT = () => (LG === 'en' ? 'sky-passport.vercel.app' : 'passport.nybbq.art');
@@ -334,7 +334,7 @@
   /* ================= kinetic cut (~24 s): boarding passes at speed, no explaining =================
      Picture time runs through four pieces of the film's own timeline, cut on bar lines so the music and its hits stay on the grid:
      bars 0–3 passes (new) · 6–11 globe + slammed numbers, dead stop, title hit, two bars of montage (new) · 14–15 stamp · 17–end card. */
-  const KSEG = () => KIN === 'B' ? [[0, 3 * BAR], [6 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : KIN === 'C' ? [[0, 3 * BAR], [7 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : [[0, 3 * BAR], [6 * BAR, 11 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]];
+  const KSEG = () => KIN === 'B' ? [[0, 3 * BAR], [6 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : KIN === 'C' ? [[0, 3 * BAR], [5 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : [[0, 3 * BAR], [6 * BAR, 11 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]];
   const kinLen = () => KSEG().reduce((a, [x, y]) => a + y - x, 0);
   function kinMap(tau) { let acc = 0; for (const [a, b] of KSEG()) { if (tau < acc + b - a) return [a + tau - acc, a]; acc += b - a; } const L = KSEG(); return [L[L.length - 1][1] - 1e-3, L[L.length - 1][0]]; }
   function big(s, x, y, size, { fill, stroke, a = 1, align = 'center', fam = 'SM', w = 700, lw = 3 } = {}) { if (a <= 0) return; g.save(); g.globalAlpha *= a; g.font = font(w, size, fam); g.textAlign = align; if (stroke) { g.lineWidth = lw; g.strokeStyle = stroke; g.strokeText(s, x, y); } if (fill) { g.fillStyle = fill; g.fillText(s, x, y); } g.restore(); }
@@ -406,10 +406,24 @@
         if (chr !== ' ') { g.fillStyle = gold ? P.gold : (c >= 7 ? rgba(P.ac, 0.95) : '#fff6e2'); g.fillText(chr, x + cw / 2, y + ch * 0.72); } g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x, y + ch / 2 - 1, cw, 2); } }
     g.restore(); if (t >= T2) flash(0.3 * Math.exp(-(t - T2) * 14) + 0.35 * Math.exp(-Math.abs(t - T2 - 1.25) * 16)); bloom(0.45);
   }
+  function kinPassC(t, k2 = 0) {
+    const t0 = 5 * BAR, lt = t - t0, k = spring(lt - 0.15, 0.55, 0.2), tear = Math.max(0, t - (t0 + 5 * BEAT)), tk = eio(cl(tear / 0.9)), w = 900, h = 430, px = 250;
+    if (lt < 0.5) { kinBoard(T_F0 - 0.01, 0); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = `rgba(2,6,16,${cl(lt / 0.3)})`; g.fillRect(0, 0, PW, PH); g.restore(); } else backdrop(t, 0.3);
+    streaks(t, 16, 0.4); big('BOARDING PASS', PW / 2, 420, 36, { fill: rgba(P.ac, 0.9), a: cl((lt - 0.3) / 0.3) * (1 - k2) });
+    g.save(); g.translate(PW / 2, 900); g.scale((1.6 - 0.6 * k) * (1 - 0.97 * k2), (1.6 - 0.6 * k) * (1 - 0.97 * k2)); g.rotate(-0.04 - 0.25 * (1 - k)); g.globalAlpha = cl(lt / 0.12) * (1 - 0.4 * k2);
+    const body = (x0, x1, draw) => { g.save(); g.beginPath(); g.rect(x0, -h / 2 - 40, x1 - x0, h + 80); g.clip(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 40; g.shadowOffsetY = 18; rr(g, -w / 2, -h / 2, w, h, 26); const pg = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); pg.addColorStop(0, '#fbf6ef'); pg.addColorStop(1, '#e9e1d6'); g.fillStyle = pg; g.fill(); g.shadowColor = 'transparent'; g.fillStyle = '#8e1d38'; g.fillRect(-w / 2, -h / 2, w, 64); draw(); g.restore(); };
+    body(-w / 2, px, () => { g.fillStyle = '#f6dca6'; g.font = font(700, 26, 'SM'); g.textAlign = 'left'; g.fillText('SKY PASSPORT · BOARDING PASS', -w / 2 + 34, -h / 2 + 42);
+      g.fillStyle = '#8a7480'; g.font = font(400, 20, 'SM'); g.fillText(T('出发 FROM', 'FROM'), -w / 2 + 36, -78); g.fillText(T('到达 TO', 'TO'), -w / 2 + 330, -78); g.fillStyle = '#1d1420'; g.font = font(800, LG === 'en' ? 46 : 58); g.fillText(T('这些年', 'ALL THOSE YEARS'), -w / 2 + 34, -12); g.fillStyle = '#8e1d38'; g.fillText('→', -w / 2 + 250, -12); g.fillStyle = '#1d1420'; g.fillText(T('航迹护照', 'SKY PASSPORT'), -w / 2 + 330, -12);
+      [[T('旅客', 'PASSENGER'), (S.P && S.P.latin) || 'TRAVELLER'], [T('航班', 'FLIGHTS'), String(F0.n)], [T('座位', 'SEAT'), '1A']].forEach(([a, b], i) => { const x = -w / 2 + 36 + [0, 330, 470][i]; g.fillStyle = '#8a7480'; g.font = font(400, 18, 'SM'); g.fillText(a, x, 70); g.fillStyle = '#1d1420'; g.font = font(700, 30, 'SM'); g.fillText(b, x, 110); }); });
+    g.save(); g.setLineDash([8, 8]); g.strokeStyle = 'rgba(40,20,30,.4)'; g.lineWidth = 2; g.globalAlpha *= 1 - tk; g.beginPath(); g.moveTo(px, -h / 2 + 70); g.lineTo(px, h / 2 - 10); g.stroke(); g.restore();
+    g.save(); g.translate(px + 60 * tk + 700 * tk * tk, 900 * tk * tk); g.rotate(0.9 * tk); g.translate(-px, 0); g.globalAlpha *= 1 - cl((tk - 0.7) / 0.3);
+    body(px, w / 2, () => { g.fillStyle = '#1d1420'; let x = px + 40; for (let i = 0; x < w / 2 - 36; i++) { const bw = 3 + 7 * hash(i * 2.7); g.fillRect(x, -60, bw, 170); x += bw + 3 + 5 * hash(i * 5.1); } }); g.restore(); g.restore();
+    flash(0.5 * Math.exp(-Math.max(0, lt - 0.15) * 14) + 0.25 * Math.exp(-tear * 16) * (tear > 0 ? 1 : 0)); bloom(0.6);
+  }
   function kinFrame(i) {
     const tau = i / FPS, [t, seg0] = kinMap(tau), hit = Y[2].t + HERO;
-    if (KIN === 'B') { if (t < T_F0) kinB1(t); else if (t < Y[2].t) kinB2(t); else if (t < Y[3].t) act3a(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
-    if (KIN === 'C') { if (t < T_F0) kinBoard(t); else if (t < hit) { const k = eio(cl((t - (hit - BEAT)) / BEAT)); kinBoard(T_F0 - 0.01, k); const lp = eo(k); g.save(); g.globalCompositeOperation = 'lighter'; const lg = g.createRadialGradient(PW / 2, 900, 0, PW / 2, 900, 40 + 260 * lp); lg.addColorStop(0, `rgba(255,240,220,${0.9 * lp})`); lg.addColorStop(1, 'rgba(255,240,220,0)'); g.fillStyle = lg; g.fillRect(0, 0, PW, PH); g.restore(); }
+    if (KIN === 'B') { if (t < T_F0) kinB1(t); else if (t < Y[2].t) kinB2(t); else if (t < Y[3].t) { act3a(t); if (t < hit) { const k = eio(cl((t - Y[2].t) / (hit - Y[2].t))); for (let q = 0; q < 18; q++) { const a = q * 0.349 + t * (1.5 + 5 * k), r = 1 - k; pass(FL[q % FL.length], PW / 2 + Math.cos(a) * 520 * r, 900 + Math.sin(a) * 170 * r, 0.2 * (1 - 0.9 * k), a * 0.2, 1 - k * 0.7, q); } } } else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
+    if (KIN === 'C') { if (t < T_F0) kinBoard(t); else if (t < hit) { const k = eio(cl((t - (hit - BEAT)) / BEAT)); kinPassC(t, k); const lp = eo(k); g.save(); g.globalCompositeOperation = 'lighter'; const lg = g.createRadialGradient(PW / 2, 900, 0, PW / 2, 900, 40 + 260 * lp); lg.addColorStop(0, `rgba(255,240,220,${0.9 * lp})`); lg.addColorStop(1, 'rgba(255,240,220,0)'); g.fillStyle = lg; g.fillRect(0, 0, PW, PH); g.restore(); }
       else if (t < Y[3].t) act3a(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2 && seg0 > 16) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
     if (t < T_F0) kinA(t); else if (t < Y[2].t) { act2b(t); kinNums(t); } else if (t < Y[3].t) act3a(t); else if (t < 11 * BAR + 1e-6 && t < 14 * BAR - 1e-6 && t < SC.T_FE - 3 * BAR) kinMont(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t);
     if (tau > 0.2) glitch(t, seg0, 0.12, 0.9);
@@ -430,7 +444,7 @@
     const C2 = [], card = (t0, k = 0) => C2.push(['card' + (k % 2), t0 + SPR_MOVE, 0.3, 0.4 + 0.2 * (k % 3) / 2, 0.1, 1, 3000], ['place' + (k % 2), t0 + SPR_LAND, 0.28, 0.5, 0.1, 1, 3000]);
     // Act 1: the first pass settles, then passes fly past the camera (one swish per few, never stacked)
     if (KIN === 'B') { C2.push(['paper', 0.5, 0.24, 0.5, 0.15, 1, 4000], ['cov_sw', 3.6, 0.3, 0.5, 0.15, 1, 1500], ['swish', 4.6, 0.24, 0.4, 0.1, 1, 3000], ['swish', 5.3, 0.24, 0.6, 0.1, 1.1, 3000], ['glitchA', 6 * BAR, 0.4, 0.5, 0.05, 1, 5000]); }
-    else if (KIN === 'C') { for (let r = 0; r < 12; r++) C2.push(['tick' + (r % 2), 0.25 + r * 0.3 + 0.05, 0.2, 0.3 + 0.4 * hash(r), 0.08, 1, 4000], ['card' + (r % 2), 0.25 + r * 0.3 + 0.24, 0.2, 0.5, 0.06, 1, 3000]); C2.push(['data', 8 * BEAT + 0.75, 0.14, 0.5, 0.1, 1, 2000], ['place1', 8 * BEAT + 1.25, 0.4, 0.5, 0.12, 1, 3000]); }
+    else if (KIN === 'C') { for (let r = 0; r < 12; r++) C2.push(['tick' + (r % 2), 0.25 + r * 0.3 + 0.05, 0.2, 0.3 + 0.4 * hash(r), 0.08, 1, 4000], ['card' + (r % 2), 0.25 + r * 0.3 + 0.24, 0.2, 0.5, 0.06, 1, 3000]); C2.push(['data', 8 * BEAT + 0.75, 0.14, 0.5, 0.1, 1, 2000], ['place1', 8 * BEAT + 1.25, 0.4, 0.5, 0.12, 1, 3000], ['place0', 5 * BAR + 0.17, 0.42, 0.5, 0.12, 1, 3000], ['paper', 5 * BAR + 5 * BEAT + 0.05, 0.36, 0.6, 0.12, 1, 4000], ['swish', 5 * BAR + 5 * BEAT + 0.35, 0.26, 0.7, 0.1, 1, 3000]); }
     else if (KIN) { C2.push(['place0', 0.12 + 0.02, 0.4, 0.5, 0.12, 1, 3000], ['paper', 0.2, 0.2, 0.5, 0.1, 1, 4000]); KSLOT().forEach((ts, n) => C2.push(['card' + (n % 2), ts + 0.03, 0.3, n % 2 ? 0.72 : 0.28, 0.06, [1, 1.06, 0.94, 1.12][n % 4], 3000]));
       C2.push(['cov_sw', 8 * BEAT + 0.5, 0.3, 0.5, 0.15, 1, 1500], ['swish', 8 * BEAT + 0.2, 0.22, 0.4, 0.1, 1, 3000], ['swish', 8 * BEAT + 0.8, 0.22, 0.6, 0.1, 1.1, 3000]);
       for (let n = 0; n < 4; n++) C2.push(['place' + (n % 2), 6 * BAR + n * BEAT + 0.02, 0.34, n % 2 ? 0.7 : 0.3, 0.12, 1, 3000]); }
@@ -440,7 +454,7 @@
     const t0 = Y[0].t; C2.push(['data', t0 + 0.3 + 0.75, 0.12, 0.5, 0.1, 1, 2000], ['blip', t0 - 0.1, 0.3, 0.5, 0.05, 1, 3000]);
     for (let i = 0; i < 4; i++) C2.push(['tone', t0 + 0.4 + i * 0.5, 0.16, 0.35 + 0.1 * i, 0.08, [1, 1.122, 1.26, 1.5][i], 1500]);
     C2.push(['cov_sw', Y[0].end - 0.5, 0.26, 0.5, 0.15, 1, 1500], ['glitchA', Y[1].t, 0.4, 0.5, 0.05, 1, 5000], ['glitchB', Y[1].t + 0.03, 0.35, 0.55, 0.05, 1, 5000]);
-    for (let i = 0; i < FL.length; i += 6) C2.push(['tick' + (i / 6 % 2), Y[1].t + 0.2 + i * 2.9 / FL.length, 0.14, 0.3 + 0.4 * hash(i), 0.1, 1, 4000]);
+    if (KIN !== 'C') for (let i = 0; i < FL.length; i += 6) C2.push(['tick' + (i / 6 % 2), Y[1].t + 0.2 + i * 2.9 / FL.length, 0.14, 0.3 + 0.4 * hash(i), 0.1, 1, 4000]);
     // Act 3: the hero after a dead stop, the light sweep, five modules on the beat
     const hit = Y[2].t + HERO; C2.push(['rev_zoom', hit, 0.16, 0.5, 0.2], ['hit2', hit, 0.5, 0.5, 0.12], ['boom2', hit, 0.34, 0.5, 0], ['sparkle2', hit + 1.7, 0.16, 0.5, 0.25, 1, 2500], ['blip2', hit + 0.25, 0.3, 0.5, 0.05, 1, 5000]);
     for (let k = 3; k < 8; k++) { const ts = Y[k].t; C2.push(['glitchA', ts, 0.35, 0.5, 0.05, 1, 5000], ['blip2', ts + 0.05, 0.25, 0.5, 0.05, 1, 5000], ['card' + (k % 2), ts + 0.05 + SPR_MOVE, 0.24, 0.5, 0.1, 1, 3000]); }
