@@ -4,6 +4,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#2a0b12">
 <title>航迹护照 Sky Passport</title>
+<meta name="description" content="Upload your flight history and get a 1-minute vertical flight-passport film with an original score — free, in your browser. 上传航班记录，一键生成带原创配乐的飞行护照视频。">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Sky Passport 航迹护照">
+<meta property="og:title" content="Sky Passport · Turn your flights into a passport film">
+<meta property="og:description" content="Every flight you've taken, stamped into a passport that comes alive. Free, private, made in your browser.">
+<meta property="og:image" content="https://sky-passport.vercel.app/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://sky-passport.vercel.app/og.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%235a1424%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2218%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%223%22/%3E%3Cpath d=%22M14 32h36M32 14c-8 10-8 26 0 36M32 14c8 10 8 26 0 36%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%222.5%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="fonts/fonts.css"><!-- self-hosted (npm run build:fonts): Google Fonts is blocked in mainland China -->
 <style>
@@ -111,6 +117,14 @@ details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(
 .segrow.off{opacity:.45}.segrow .fn,.segrow .dt,.segrow .where{font-family:var(--f-mono);font-size:12px}.segrow .rt{overflow-wrap:anywhere}.segrow .st{color:var(--muted);font-size:12px}
 .segrow input[type=date]{font:12px var(--f-mono);background:var(--field);color:var(--ink);border:1px solid var(--warn);border-radius:6px;padding:3px 4px;min-width:0}
 @media (max-width:520px){.segrow{grid-template-columns:auto 8.5em minmax(0,1fr) auto}.segrow .fn,.segrow .where{display:none}}
+header.top{position:relative}
+.lang{position:absolute;top:22px;right:0;font-family:var(--f-mono);font-size:13px;padding:7px 12px;border-radius:999px;letter-spacing:.08em}
+.qa{display:grid;grid-template-columns:9.5em minmax(0,1fr) minmax(0,1fr) 8em;gap:10px;margin-top:12px}
+@media (max-width:620px){.qa{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.qa input[type=date]{font:15px var(--f-body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;width:100%;min-width:0;color-scheme:dark}
+.qahint{font-size:13px;color:var(--muted)}.qahint.ok{color:var(--ok)}.qahint.err{color:#ff9aa8}
+.foot a{color:var(--gold)}
+.mob{display:none}@media (max-width:900px){.mob{display:inline}.desk{display:none}}
 .mcta{display:none}
 @media (max-width:900px){.mcta{display:block;position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(26,6,11,.92);backdrop-filter:blur(6px);border-top:1px solid var(--line);z-index:5}
   .mcta button{width:100%;font-size:16px;padding:14px}body{padding-bottom:88px}}
@@ -123,122 +137,134 @@ details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(
   <header class="top">
     <div class="brand">
       <span class="eyebrow">Sky Passport · Flight Log Studio</span>
-      <h1>航迹护照</h1>
+      <h1 data-en="Sky Passport">航迹护照</h1>
     </div>
-    <p class="lede">上传你的航班记录，写上名字，一键生成竖屏飞行护照动画（MP4，带配乐）。记录在你的浏览器里处理；只有你点「AI 检查」时，才会把需要判断的几个单元格发给 AI。</p>
+    <button type="button" class="lang" id="btnLang" aria-label="Switch to English">EN</button>
+    <p class="lede" data-en="Upload your flight history, add your name, and get a vertical flight-passport film (MP4, with an original score) in one click. Everything is processed in your browser; only when you tap “AI check” are the few cells that need a judgment sent to the AI.">上传你的航班记录，写上名字，一键生成竖屏飞行护照动画（MP4，带配乐）。记录在你的浏览器里处理；只有你点「AI 检查」时，才会把需要判断的几个单元格发给 AI。</p>
   </header>
-  <div class="wxtip" id="wxTip" hidden>你正在微信里打开：微信不允许保存文件。请点右上角「···」→「在浏览器打开」，再生成视频并保存。</div>
+  <div class="wxtip" id="wxTip" hidden data-en="You're inside WeChat, which can't save files. Tap ··· (top right) → Open in browser, then make and save the film.">你正在微信里打开：微信不允许保存文件。请点右上角「···」→「在浏览器打开」，再生成视频并保存。</div>
   <div class="mrz" aria-hidden="true">P&lt;SKYPASSPORT&lt;&lt;FLIGHT&lt;LOG&lt;STUDIO&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
 
   <div class="grid">
     <div class="steps">
       <section class="step" aria-labelledby="h1">
-        <h2 id="h1"><span class="no">01</span>上传航班记录</h2>
-        <p class="hint">支持航旅纵横等 App 导出的 Excel（.xls / .xlsx），或按模板填写的 CSV。机场可以写中文名（如「广州白云」）或三字码（CAN）。</p>
+        <h2 id="h1"><span class="no">01</span><span data-en="Upload your flights">上传航班记录</span></h2>
+        <p class="hint" data-en="Exports from Flighty, myFlightradar24, OpenFlights or 航旅纵横 work as they are (.xls / .xlsx / .csv), or fill in the CSV template — or add a few flights by hand below. Airports can be codes (LHR), English names (London Heathrow) or Chinese names.">支持航旅纵横、Flighty、myFlightradar24、OpenFlights 等 App 导出的表格（.xls / .xlsx / .csv），或按模板填写的 CSV，也可以在下面手动添加几段。机场可以写中文名（如「广州白云」）、英文名或三字码（CAN）。</p>
         <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="dropHint">
-          <strong>点击选择文件，或拖到这里</strong>
+          <strong data-en="Choose a file, or drop it here">点击选择文件，或拖到这里</strong>
           <small id="dropHint">.xls · .xlsx · .csv</small>
         </div>
-        <input type="file" id="file" accept=".xls,.xlsx,.csv,.txt" class="sr" aria-label="选择航班记录文件">
+        <input type="file" id="file" accept=".xls,.xlsx,.csv,.txt" class="sr" aria-label="选择航班记录文件" data-en-aria="Choose your flight-log file">
         <div class="row" style="margin-top:12px">
-          <button type="button" id="btnTpl">下载 CSV 模板</button>
-          <button type="button" id="btnDemo">换回示例数据</button>
+          <button type="button" id="btnTpl" data-en="Download CSV template">下载 CSV 模板</button>
+          <button type="button" id="btnDemo" data-en="Back to the sample">换回示例数据</button>
         </div>
         <details class="guide" id="guide">
-          <summary>不知道怎么导出记录？看 3 步说明</summary>
+          <summary data-en="Where do I get my flight history? 3 steps">不知道怎么导出记录？看 3 步说明</summary>
           <ol id="guideSteps"></ol>
         </details>
+        <details class="more" id="quickAdd">
+          <summary data-en="No export? Add flights by hand">没有导出文件？手动添加航班</summary>
+          <div class="qa">
+            <label class="f" for="qaDate"><span data-en="Date">日期</span><input type="date" id="qaDate"></label>
+            <label class="f" for="qaFrom"><span data-en="From">出发</span><input type="text" id="qaFrom" placeholder="PVG / 上海浦东" data-en-ph="LHR / London Heathrow" autocomplete="off"></label>
+            <label class="f" for="qaTo"><span data-en="To">到达</span><input type="text" id="qaTo" placeholder="NRT / 东京成田" data-en-ph="JFK / New York JFK" autocomplete="off"></label>
+            <label class="f" for="qaFn"><span data-en="Flight no. (optional)">航班号（可选）</span><input type="text" id="qaFn" placeholder="MU523" autocomplete="off"></label>
+          </div>
+          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnQaAdd" data-en="Add flight">添加这一段</button><span class="qahint" id="qaHint" aria-live="polite"></span></div>
+          <p class="fine" data-en="Added flights stay in this browser tab only. To keep them, use “Download the corrected sheet” in the check panel.">添加的航段只保存在当前页面；想留着下次用，在「检查表格」里点「下载修正后的表格」。</p>
+        </details>
         <div class="chips" id="chips"></div>
-        <div class="seg" id="yearQuick" role="group" aria-label="年份范围"></div>
+        <div class="seg" id="yearQuick" role="group" aria-label="年份范围" data-en-aria="Year range"></div>
         <details class="more">
-          <summary>更多：自定义年份、待出行 / 退票</summary>
+          <summary data-en="More: years, upcoming and cancelled flights">更多：自定义年份、待出行 / 退票</summary>
           <div class="row" style="margin-top:12px;gap:18px" id="opts">
-            <label class="check"><input type="checkbox" id="optUp" checked> 计入待出行航班</label>
-            <label class="check"><input type="checkbox" id="optVoid"> 计入退票 / 作废</label>
+            <label class="check"><input type="checkbox" id="optUp" checked> <span data-en="Include upcoming flights">计入待出行航班</span></label>
+            <label class="check"><input type="checkbox" id="optVoid"> <span data-en="Include cancelled / void tickets">计入退票 / 作废</span></label>
           </div>
           <div class="fields" style="margin-top:14px">
-            <label class="f" for="yFrom">起始年份<select id="yFrom"></select></label>
-            <label class="f" for="yTo">结束年份<select id="yTo"></select></label>
+            <label class="f" for="yFrom"><span data-en="From year">起始年份</span><select id="yFrom"></select></label>
+            <label class="f" for="yTo"><span data-en="To year">结束年份</span><select id="yTo"></select></label>
           </div>
         </details>
       </section>
 
       <section class="step" id="stepCheck" hidden aria-labelledby="h2u">
-        <h2 id="h2u"><span class="no">01·B</span>检查表格</h2>
-        <p class="hint">上传后会先在浏览器里自动检查。有问题时点「AI 检查」，由 TypeSafe 的 Jev 模型判断没认出的地名、看不懂的状态和可疑的行，给出修改建议。采用后直接用于生成，也可以下载修正后的表格。</p>
+        <h2 id="h2u"><span class="no">01·B</span><span data-en="Check the spreadsheet">检查表格</span></h2>
+        <p class="hint" data-en="Your file is checked in the browser first. If something is off, tap “AI check”: TypeSafe's Jev model judges unknown place names, unclear statuses and suspicious rows and suggests fixes. Accepted fixes are used right away, and you can download the corrected sheet.">上传后会先在浏览器里自动检查。有问题时点「AI 检查」，由 TypeSafe 的 Jev 模型判断没认出的地名、看不懂的状态和可疑的行，给出修改建议。采用后直接用于生成，也可以下载修正后的表格。</p>
         <div id="checkHead" class="check-head" role="status" aria-live="polite"></div>
         <div class="row" style="margin-top:12px">
           <button type="button" class="primary" id="btnAI">AI 检查（Jev）</button>
           <button type="button" id="btnApplyAll" hidden>采用全部高把握建议</button>
-          <button type="button" id="btnFixedCsv">下载修正后的表格</button>
-          <button type="button" id="btnToMake" hidden>去生成视频 ↓</button>
+          <button type="button" id="btnFixedCsv" data-en="Download the corrected sheet">下载修正后的表格</button>
+          <button type="button" id="btnToMake" hidden data-en="Go to the film ↓">去生成视频 ↓</button>
         </div>
         <div class="status" id="aiStatus" role="status" aria-live="polite"></div>
         <div class="issues" id="issues"></div>
-        <p class="fine" id="aiNote">隐私：只有点「AI 检查」时，才会经本站服务器把这些内容发给 TypeSafe：没认出的地名（附所在行的航班号、日期、另一端地名）、看不懂的状态、可疑的行；认不出表格结构时，另加前 8 行。不会发送你的名字和照片。</p>
+        <p class="fine" id="aiNote" data-en="Privacy: only when you tap “AI check” does this site's server send TypeSafe the place names it couldn't recognise (with that row's flight number, date and other airport), unclear statuses and suspicious rows — plus the first 8 rows if the table structure isn't recognised. Your name and photo are never sent.">隐私：只有点「AI 检查」时，才会经本站服务器把这些内容发给 TypeSafe：没认出的地名（附所在行的航班号、日期、另一端地名）、看不懂的状态、可疑的行；认不出表格结构时，另加前 8 行。不会发送你的名字和照片。</p>
       </section>
 
       <section class="step" aria-labelledby="h2p">
-        <h2 id="h2p"><span class="no">02</span>护照信息</h2>
-        <p class="hint">名字会出现在护照页、机读码和片头片尾。机读码只用英文字母，中文名请另填拼音。</p>
+        <h2 id="h2p"><span class="no">02</span><span data-en="Passport details">护照信息</span></h2>
+        <p class="hint" data-en="Your name appears on the passport page, in the machine-readable zone and on the opening and closing posters. The machine-readable zone uses Latin letters only.">名字会出现在护照页、机读码和片头片尾。机读码只用英文字母，中文名请另填拼音。</p>
         <div class="fields">
-          <label class="f" for="name">名字（显示用）<input type="text" id="name" maxlength="24" placeholder="例如 林小舟 或 ALEX" autocomplete="off"></label>
-          <label class="f" for="latin">英文名 / 拼音（机读码）<input type="text" id="latin" maxlength="24" placeholder="例如 LIN XIAOZHOU" autocomplete="off"></label>
+          <label class="f" for="name"><span data-en="Name (as shown)">名字（显示用）</span><input type="text" id="name" maxlength="24" placeholder="例如 林小舟 或 ALEX" data-en-ph="e.g. Alex Chen" autocomplete="off"></label>
+          <label class="f" for="latin"><span data-en="Name in Latin letters (machine-readable zone)">英文名 / 拼音（机读码）</span><input type="text" id="latin" maxlength="24" placeholder="例如 LIN XIAOZHOU" data-en-ph="e.g. ALEX CHEN" autocomplete="off"></label>
         </div>
         <details class="more">
-          <summary>更多：国籍、照片、结尾文案</summary>
+          <summary data-en="More: nationality, photo, closing line">更多：国籍、照片、结尾文案</summary>
           <div class="fields" style="margin-top:12px">
-          <label class="f" for="nat">国籍 / 地区<select id="nat"></select></label>
-          <div class="f">照片（可选）
-            <div class="photo-row"><img class="thumb" id="thumb" alt="照片预览"><button type="button" id="btnPhoto">选择照片</button><button type="button" id="btnPhotoClear" hidden>移除</button></div>
-            <input type="file" id="photo" accept="image/*" class="sr" aria-label="选择照片">
+          <label class="f" for="nat"><span data-en="Nationality / region">国籍 / 地区</span><select id="nat"></select></label>
+          <div class="f"><span data-en="Photo (optional)">照片（可选）</span>
+            <div class="photo-row"><img class="thumb" id="thumb" alt="照片预览" data-en-alt="Photo preview"><button type="button" id="btnPhoto" data-en="Choose photo">选择照片</button><button type="button" id="btnPhotoClear" hidden data-en="Remove">移除</button></div>
+            <input type="file" id="photo" accept="image/*" class="sr" aria-label="选择照片" data-en-aria="Choose a photo">
           </div>
-          <label class="f" for="tagEn">结尾文案（英文）<input type="text" id="tagEn" maxlength="40" value="MY JOURNEY ACROSS THE GLOBE"></label>
-          <label class="f" for="tagZh">结尾文案（中文）<input type="text" id="tagZh" maxlength="24" value="一本护照，装下我的天空"></label>
+          <label class="f" for="tagEn"><span data-en="Closing line (English)">结尾文案（英文）</span><input type="text" id="tagEn" maxlength="40" value="MY JOURNEY ACROSS THE GLOBE"></label>
+          <label class="f" for="tagZh"><span data-en="Closing line (Chinese)">结尾文案（中文）</span><input type="text" id="tagZh" maxlength="24" value="一本护照，装下我的天空"></label>
           </div>
         </details>
       </section>
 
       <section class="step" aria-labelledby="h3">
-        <h2 id="h3"><span class="no">03</span>选风格，生成</h2>
+        <h2 id="h3"><span class="no">03</span><span data-en="Pick a style, make the film">选风格，生成</span></h2>
         <div class="style-grid">
-          <div class="f">封皮颜色<div class="seg" id="segTheme" role="group" aria-label="封皮颜色"><button type="button" data-v="burgundy" class="sw" style="--sw:#5a1424">酒红</button><button type="button" data-v="navy" class="sw" style="--sw:#1c2c4a">藏青</button><button type="button" data-v="green" class="sw" style="--sw:#1d4434">墨绿</button><button type="button" data-v="black" class="sw" style="--sw:#222225">黑</button></div></div>
-          <div class="f">配乐<div class="seg" id="segMusic" role="group" aria-label="配乐风格"><button type="button" data-v="groove">律动</button><button type="button" data-v="calm">舒缓</button></div></div>
-          <div class="f">片长<div class="seg" id="segLen" role="group" aria-label="片长"><button type="button" data-v="24">完整</button><button type="button" data-v="12.5">约 45 秒</button><button type="button" data-v="5.5">约 30 秒</button></div></div>
+          <div class="f"><span data-en="Cover colour">封皮颜色</span><div class="seg" id="segTheme" role="group" aria-label="封皮颜色" data-en-aria="Cover colour"><button type="button" data-v="burgundy" class="sw" style="--sw:#5a1424" data-en="Burgundy">酒红</button><button type="button" data-v="navy" class="sw" style="--sw:#1c2c4a" data-en="Navy">藏青</button><button type="button" data-v="green" class="sw" style="--sw:#1d4434" data-en="Green">墨绿</button><button type="button" data-v="black" class="sw" style="--sw:#222225" data-en="Black">黑</button></div></div>
+          <div class="f"><span data-en="Music">配乐</span><div class="seg" id="segMusic" role="group" aria-label="配乐风格" data-en-aria="Music style"><button type="button" data-v="groove" data-en="Groove">律动</button><button type="button" data-v="calm" data-en="Calm">舒缓</button></div></div>
+          <div class="f"><span data-en="Length">片长</span><div class="seg" id="segLen" role="group" aria-label="片长" data-en-aria="Length"><button type="button" data-v="24" data-en="Full">完整</button><button type="button" data-v="12.5" data-en="≈45 s">约 45 秒</button><button type="button" data-v="5.5" data-en="≈30 s">约 30 秒</button></div></div>
         </div>
-        <p class="hint" style="margin-top:12px">右侧是实时预览。生成会在你的设备上逐帧渲染 1080×1920 视频，电脑通常几秒到一分钟，手机会久一些，期间请保持页面打开。</p>
-        <div class="row"><button type="button" class="primary" id="btnMake">生成 MP4 视频</button><button type="button" id="btnCancel" hidden>取消</button></div>
+        <p class="hint" style="margin-top:12px" data-en="The live preview is &lt;span class=&quot;desk&quot;&gt;on the right&lt;/span&gt;&lt;span class=&quot;mob&quot;&gt;above&lt;/span&gt;. The film is rendered frame by frame on your device at 1080×1920 — seconds to a minute on a computer, longer on a phone. Keep this page open meanwhile.">实时预览在<span class="desk">右侧</span><span class="mob">上方</span>。生成会在你的设备上逐帧渲染 1080×1920 视频，电脑通常几秒到一分钟，手机会久一些，期间请保持页面打开。</p>
+        <div class="row"><button type="button" class="primary" id="btnMake" data-en="Make the MP4">生成 MP4 视频</button><button type="button" id="btnCancel" hidden data-en="Cancel">取消</button></div>
         <div class="bar" style="margin-top:14px" aria-hidden="true"><i id="prog"></i></div>
         <div class="status" id="status" role="status" aria-live="polite"></div>
         <div class="result" id="result" hidden>
           <video id="outVideo" controls playsinline></video>
-          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnSave">⬇ 保存视频（MP4）</button></div>
+          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnSave" data-en="⬇ Save video (MP4)">⬇ 保存视频（MP4）</button></div>
         </div>
         <div class="extras">
-          <h3 class="sub">晒图更方便</h3>
-          <p class="hint">朋友圈、小红书发图比发视频更容易被转发。</p>
-          <details class="more" id="posterOpts"><summary>长图显示哪些内容</summary><div id="posterChecks"></div></details>
-          <div class="row" style="margin-top:12px"><button type="button" id="btnLong">生成长图海报</button><button type="button" id="btnCoverImg">导出视频封面图</button></div>
-          <div class="imgout" id="imgOut" hidden><img id="imgPrev" alt="生成的图片预览"><div class="row"><button type="button" class="primary" id="btnSaveImg">⬇ 保存图片</button></div></div>
-          <h3 class="sub">你的飞行成就</h3>
+          <h3 class="sub" data-en="Pictures travel further">晒图更方便</h3>
+          <p class="hint" data-en="On Instagram, WeChat Moments or Xiaohongshu, a picture gets shared more than a video.">朋友圈、小红书发图比发视频更容易被转发。</p>
+          <details class="more" id="posterOpts"><summary data-en="What the long poster shows">长图显示哪些内容</summary><div id="posterChecks"></div></details>
+          <div class="row" style="margin-top:12px"><button type="button" id="btnLong" data-en="Make a long poster">生成长图海报</button><button type="button" id="btnCoverImg" data-en="Export the cover image">导出视频封面图</button></div>
+          <div class="imgout" id="imgOut" hidden><img id="imgPrev" alt="生成的图片预览" data-en-alt="Preview of the generated image"><div class="row"><button type="button" class="primary" id="btnSaveImg" data-en="⬇ Save image">⬇ 保存图片</button></div></div>
+          <h3 class="sub" data-en="Your flight achievements">你的飞行成就</h3>
           <div class="badges" id="badges"></div>
         </div>
       </section>
     </div>
 
-    <aside class="preview" aria-label="预览">
+    <aside class="preview" aria-label="预览" data-en-aria="Preview">
       <div class="phone"><canvas id="cv" width="1080" height="1920"></canvas></div>
-      <div class="savebar" id="saveBar" hidden><button type="button" class="primary" id="btnSave2">⬇ 保存视频</button><span id="saveInfo"></span></div>
+      <div class="savebar" id="saveBar" hidden><button type="button" class="primary" id="btnSave2" data-en="⬇ Save video">⬇ 保存视频</button><span id="saveInfo"></span></div>
       <div class="controls">
-        <button type="button" id="btnPlay" aria-label="播放预览">▶ 播放</button>
-        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="预览进度">
+        <button type="button" id="btnPlay" aria-label="播放预览" data-en-aria="Play the preview" data-en="▶ Play">▶ 播放</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="预览进度" data-en-aria="Preview position">
         <span class="time" id="time">0:00 / 0:00</span>
       </div>
     </aside>
   </div>
-  <div class="foot"><span>地图数据 Natural Earth、DataV.GeoAtlas（中国） · 机场数据 OpenFlights（ODbL，airports.json 同样以 ODbL 提供） · 国旗 flag-icons</span><span>配乐为程序实时合成的原创曲目，可自由使用</span></div>
+  <div class="foot"><span data-en="Map data Natural Earth, DataV.GeoAtlas (China) · Airports OpenFlights (ODbL; airports.json is offered under ODbL too) · Flags flag-icons">地图数据 Natural Earth、DataV.GeoAtlas（中国） · 机场数据 OpenFlights（ODbL，airports.json 同样以 ODbL 提供） · 国旗 flag-icons</span><span data-en="The music is an original score synthesised in your browser, free to use. Sound effects are public-domain (CC0) recordings from Kenney and Freesound — &lt;a href=&quot;sfx/CREDITS.md&quot;&gt;credits&lt;/a&gt;.">配乐为程序实时合成的原创曲目，可自由使用；音效是 Kenney、Freesound 的 CC0 公有领域真实录音（<a href="sfx/CREDITS.md">来源</a>）</span></div>
 </div>
-<div class="mcta" id="mcta"><button type="button" class="primary" id="btnMakeM">生成视频</button></div>
+<div class="mcta" id="mcta"><button type="button" class="primary" id="btnMakeM" data-en="Make the film">生成视频</button></div>
 
 <script src="vendor/d3.min.js"></script>
 <script src="vendor/topojson.min.js"></script>
@@ -246,6 +272,7 @@ details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(
 <script src="vendor/mp4-muxer.js"></script>
 <script src="vendor/qrcode.min.js"></script>
 <script>if(/\.vercel\.app$/.test(location.hostname)){const s=document.createElement('script');s.defer=true;s.src='/_vercel/insights/script.js';document.head.appendChild(s);}</script><!-- Vercel Web Analytics only where it exists -->
+<script src="js/i18n.js"></script>
 <script src="js/core.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/music.js"></script>

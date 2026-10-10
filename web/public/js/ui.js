@@ -20,10 +20,10 @@ async function ensureFonts(){const P=S&&S.P;const txt=(await cjkGlyphs())+(P?[P.
 document.fonts&&document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{coverBuilt=false;photoBuilt=false;if(S&&S.ok){S.stampReady=false;buildBg();}if(!playing&&!exporting)invalidate();});
 function renderSummary(){
   const r=S.res,c=$('chips');c.innerHTML='';const add=(txt,cls)=>{const s=document.createElement('span');s.className='chip '+(cls||'');s.textContent=txt;c.appendChild(s);};
-  if(SOURCE==='demo')add('示例数据 · 虚构旅客','demo');
-  const all=r.all;add(`${all.length} 段航班`);if(all.length)add(`${all[0].y} – ${all[all.length-1].y}`);
-  const nu=all.filter(f=>f.up).length,nv=all.filter(f=>f.vd).length;if(nu)add(`待出行 ${nu}`);if(nv)add(`退票/作废 ${nv}`);
-  if(S.ok)add(`动画 ${S.flights.length} 段 · ${mmss(S.T_END)}`,'ok');if(r.unres.size)add(`未识别地名 ${r.unres.size}`,'warn');if(r.skipped)add(`无日期已跳过 ${r.skipped}`,'warn');
+  if(SOURCE==='demo')add(L('示例数据 · 虚构旅客','Sample · fictional traveller'),'demo');
+  const all=r.all;add(L(`${all.length} 段航班`,`${all.length} flights`));if(all.length)add(`${all[0].y} – ${all[all.length-1].y}`);
+  const nu=all.filter(f=>f.up).length,nv=all.filter(f=>f.vd).length;if(nu)add(L(`待出行 ${nu}`,`${nu} upcoming`));if(nv)add(L(`退票/作废 ${nv}`,`${nv} cancelled / void`));
+  if(S.ok)add(L(`动画 ${S.flights.length} 段 · ${mmss(S.T_END)}`,`film: ${S.flights.length} flights · ${mmss(S.T_END)}`),'ok');if(r.unres.size)add(L(`未识别地名 ${r.unres.size}`,`${r.unres.size} unknown places`),'warn');if(r.skipped)add(L(`无日期已跳过 ${r.skipped}`,`${r.skipped} without a date, skipped`),'warn');
   $('optVoid').parentElement.hidden=!nv;$('optUp').parentElement.hidden=!nu;
   // years
   const ys=[...new Set(all.map(f=>f.y))].sort();const keepF=RESET_YEARS?'':$('yFrom').value,keepT=RESET_YEARS?'':$('yTo').value;const wasReset=RESET_YEARS;RESET_YEARS=false;
@@ -39,7 +39,6 @@ const top1=a=>a&&a.top&&a.top[0]?a.top[0][1]:0,pct=p=>Math.round(p*100)+'%';
 function resetFixes(){STFIX={};EXCL=new Set();KEEP=new Set();AIR={ap:{},st:{},row:{},cols:null,model:''};}
 // candidate airports for a name the dictionary missed: n-gram overlap against Chinese keywords, city and airport names
 let APIDX=null;
-function apNorm(s){return String(s).toLowerCase().replace(/国际机场|國際機場|机场|機場|航站楼|\bt\d\b|terminal\s*\d*|international|intl\.?|airport|aeropuerto|aéroport|flughafen/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ').trim();}
 function grams(s){const t=s.replace(/\s+/g,' '),g=new Set();if(/[㐀-鿿]/.test(t)){const c=[...t.replace(/\s/g,'')];c.forEach((x,i)=>{g.add(x);if(i)g.add(c[i-1]+x);});}else{const p=' '+t+' ';for(let i=0;i+3<=p.length;i++)g.add(p.slice(i,i+3));}return g;}
 function apIndex(){if(APIDX)return APIDX;const zh={},items=[];
   for(const k of ZHKEYS){const c=ZH[k];if(!AP[c])continue;if(!zh[c]||k.length>zh[c].length)zh[c]=k;items.push({c,t:k,g:grams(k),ini:''});}
@@ -72,117 +71,123 @@ function aiPending(){if(!S||!S.res)return 0;const d=S.res.diag;return [...d.refs
 let AI_PROBED=false; // one probe per page: does this server offer the AI check?
 function aiMsg(m,err){const s=$('aiStatus');s.textContent=m;s.classList.toggle('err',!!err);}
 async function runAI(){if(AI_BUSY||!S)return;const {p,idx}=aiPayload();
-  if(!p.airports.length&&!p.statuses.length&&!p.rows.length&&!p.columns){aiMsg('没有需要 AI 判断的内容。');renderCheck();return;}
-  AI_BUSY=true;$('btnAI').disabled=true;aiMsg('正在请 Jev 判断…');
+  if(!p.airports.length&&!p.statuses.length&&!p.rows.length&&!p.columns){aiMsg(L('没有需要 AI 判断的内容。','Nothing needs an AI judgment.'));renderCheck();return;}
+  AI_BUSY=true;$('btnAI').disabled=true;aiMsg(L('正在请 Jev 判断…','Asking Jev…'));
   try{const r=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-    if(!r.ok){const j=await r.json().catch(()=>({}));if(j.error==='disabled'||j.status===451){AI_OFF=true;aiMsg('当前站点没有 AI 检查（服务商不支持该地区）。下面已给出本地建议，也可以手动填写。');return;}throw new Error(r.status===404||r.status===405?'当前环境没有 AI 服务，请在线上网站使用':r.status===429?'请求太频繁，请稍等几分钟再试':j.error==='not_configured'?'服务器还没配置 API key':'AI 服务暂时不可用（'+r.status+'）');}
+    if(!r.ok){const j=await r.json().catch(()=>({}));if(j.error==='disabled'||j.status===451){AI_OFF=true;aiMsg(L('当前站点没有 AI 检查（服务商不支持该地区）。下面已给出本地建议，也可以手动填写。','The AI check is not available on this site. Local suggestions are shown below, or fill the codes in by hand.'));return;}throw new Error(r.status===404||r.status===405?L('当前环境没有 AI 服务，请在线上网站使用','no AI service here — use the live site'):r.status===429?L('请求太频繁，请稍等几分钟再试','too many requests, try again in a few minutes'):j.error==='not_configured'?L('服务器还没配置 API key','the server has no API key yet'):L('AI 服务暂时不可用（','AI service unavailable (')+r.status+L('）',')'));}
     const j=await r.json(),A=j.answers||{};AIR.model=j.model||'';
     for(const [id,name] of Object.entries(idx.a))if(A['ap_'+id])AIR.ap[name]=A['ap_'+id];
     for(const [id,s] of Object.entries(idx.s))if(A['st_'+id])AIR.st[s]=A['st_'+id];
     for(const [id,k] of Object.entries(idx.r))if(A['row_'+id])AIR.row[k]=A['row_'+id];
     if(idx.colSheet&&A.header_row){AIR.cols={sheet:idx.colSheet,header:A.header_row,roles:{}};for(const k of ['date','from','to','fn','al','dt','at','st','km'])if(A['col_'+k])AIR.cols.roles[k]=A['col_'+k];}
     for(const [k,a] of Object.entries(AIR.row))if(a.choice==='flight'&&top1(a)>=AI_HIGH)KEEP.add(k); // confirmed flights stop being flagged
-    aiMsg(`Jev 已给出建议（${AIR.model}）。高把握的可以一键采用，其余请逐条确认。`);
-  }catch(e){aiMsg('AI 检查失败：'+(e.message||e),true);}
+    aiMsg(L(`Jev 已给出建议（${AIR.model}）。高把握的可以一键采用，其余请逐条确认。`,`Jev has answered (${AIR.model}). Confident fixes can be applied in one click; please confirm the rest one by one.`));
+  }catch(e){aiMsg(L('AI 检查失败：','AI check failed: ')+(e.message||e),true);}
   finally{AI_BUSY=false;rebuild();}}
 // one column per role, assigned in order of importance (an airline guess must not take the flight-number column)
 function colsMap(c){const map={},used=new Set();for(const k of ['date','from','to','fn','dt','at','st','km','al']){const a=c.roles[k];if(a&&a.choice!=='none'&&top1(a)>=AI_MID&&!used.has(a.choice)){map[k]=a.choice;used.add(a.choice);}}return map;}
 function applyCols(){const c=AIR.cols;if(!c)return;const sh=SHEETS.find(s=>s.name===c.sheet);if(!sh)return;const map={};
   for(const [k,v] of Object.entries(colsMap(c)))map[k]=colIndex(v);
-  if(map.from==null||map.to==null){aiMsg('Jev 没能确定「出发」「到达」是哪一列，请按模板改表头后重新上传。',true);return;}
+  if(map.from==null||map.to==null){aiMsg(L('Jev 没能确定「出发」「到达」是哪一列，请按模板改表头后重新上传。','Jev could not tell which columns are “from” and “to”. Rename the headers like the template and upload again.'),true);return;}
   const hi=c.header.choice!=='none'?+c.header.choice.slice(1)-1:-1;
   RAW=RAW.filter(r=>!r.src||r.src.sheet!==sh.name).concat(readSheet(sh.aoa,sh.name,hi,map));detectDateOrder(RAW);c.applied=true;
-  RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';aiMsg(`已按 Jev 认出的结构重新读取「${sh.name}」。`);rebuild();}
+  RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';aiMsg(L(`已按 Jev 认出的结构重新读取「${sh.name}」。`,`Re-read “${sh.name}” with the structure Jev found.`));rebuild();}
 function highFixes(){if(!S||!S.res)return [];const d=S.res.diag,out=[];
   for(const name of d.refs.keys()){const a=AIR.ap[name];if(a&&a.choice&&a.choice!=='none'&&AP[a.choice]&&top1(a)>=AI_HIGH&&!manual[name])out.push(()=>{manual[name]=a.choice;});}
   for(const s of d.unknownSt.keys()){const a=AIR.st[s];if(a&&a.choice&&a.choice!=='unclear'&&top1(a)>=AI_HIGH)out.push(()=>{STFIX[s]=a.choice;});}
   for(const r of d.suspect){const k=rkey(r),a=AIR.row[k];if(a&&a.choice!=='flight'&&top1(a)>=AI_HIGH)out.push(()=>{EXCL.add(k);});}
   if(AIR.cols&&!AIR.cols.applied&&needColumns())out.push(applyCols);
   return out;}
-function applyAll(){const f=highFixes();f.forEach(fn=>fn());aiMsg(f.length?`已采用 ${f.length} 条高把握建议。`:'没有可以一键采用的建议，请逐条确认。');rebuild();}
+function applyAll(){const f=highFixes();f.forEach(fn=>fn());aiMsg(f.length?L(`已采用 ${f.length} 条高把握建议。`,`Applied ${f.length} confident fixes.`):L('没有可以一键采用的建议，请逐条确认。','No fix is confident enough for one click; please confirm them one by one.'));rebuild();}
 function fixedCsv(){const q=v=>{const s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;},tt=v=>{const t=parseTime(v);return t?`${String(t[0]).padStart(2,'0')}:${String(t[1]).padStart(2,'0')}`:cellText(v);};
-  const L=['日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态'];
+  const out=[L('日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态','Date,Flight,Airline,From,To,Departure time,Arrival time,Distance km,Status')];
   for(const r of RAW){const k=rkey(r);if(k&&EXCL.has(k))continue;const d=parseDate(r.rawDate);
-    L.push([d?ymd(d):cellText(r.rawDate),r.fn,r.al,resolveAirport(r.from)||r.from,resolveAirport(r.to)||r.to,tt(r.dt),tt(r.at),cellText(r.km),{flown:'已使用',upcoming:'未使用',void:'已退票'}[rowStatus(r)]].map(q).join(','));}
-  return '﻿'+L.join('\n');}
+    out.push([d?ymd(d):cellText(r.rawDate),r.fn,r.al,resolveAirport(r.from)||r.from,resolveAirport(r.to)||r.to,tt(r.dt),tt(r.at),cellText(r.km),(EN()?{flown:'flown',upcoming:'upcoming',void:'cancelled'}:{flown:'已使用',upcoming:'未使用',void:'已退票'})[rowStatus(r)]].map(q).join(','));}
+  return '﻿'+out.join('\n');}
 function el(t,a,...kids){const e=document.createElement(t);for(const k in a||{}){const v=a[k];if(k==='on')for(const ev in v)e.addEventListener(ev,v[ev]);else if(k==='cls')e.className=v;else if(k in e)e[k]=v;else e.setAttribute(k,v);}
   for(const c of kids.flat())if(c!=null&&c!==false)e.append(c.nodeType?c:String(c));return e;}
 const where=(rows,role)=>{const by={};for(const r of rows){if(!r.src)continue;(by[r.src.sheet]=by[r.src.sheet]||[]).push(r.src.row);}
-  return Object.entries(by).map(([s,l])=>{const u=[...new Set(l)];return `${SHEETS.length>1?`「${s}」`:''}第 ${u.slice(0,6).join('、')}${u.length>6?' 等':''} 行`;}).join('；')+(role&&rows[0]&&rows[0].src&&rows[0].src.cols[role]?` · ${rows[0].src.cols[role]} 列`:'');};
+  return Object.entries(by).map(([s,l])=>{const u=[...new Set(l)];return EN()?`${SHEETS.length>1?`“${s}” `:''}row ${u.slice(0,6).join(', ')}${u.length>6?' …':''}`:`${SHEETS.length>1?`「${s}」`:''}第 ${u.slice(0,6).join('、')}${u.length>6?' 等':''} 行`;}).join(L('；','; '))+(role&&rows[0]&&rows[0].src&&rows[0].src.cols[role]?L(` · ${rows[0].src.cols[role]} 列`,` · column ${rows[0].src.cols[role]}`):'');};
+// the check panel's headline when nothing can be animated although no row is broken: say which filter emptied the film
+function filteredOutMsg(){const a=S&&S.res?S.res.all:[];if(!a.length)return L('⛔ 还没有可用的航段：看下面的提示，或者手动添加航班。','⛔ No usable flights yet: see the notes below, or add flights by hand.');
+  const v=a.filter(f=>f.vd).length,u=a.filter(f=>f.up&&!f.vd).length;
+  if(v===a.length)return L(`⛔ ${v} 段都是退票 / 作废：在上面「更多」里勾选「计入退票 / 作废」才能放进动画。`,`⛔ All ${v} flights are cancelled or void: tick “Include cancelled / void tickets” under “More” above to use them.`);
+  if(v+u===a.length)return L('⛔ 剩下的都是待出行航班：在上面「更多」里勾选「计入待出行航班」。','⛔ Only upcoming flights are left: tick “Include upcoming flights” under “More” above.');
+  return L('⛔ 选中的年份里没有航班：换一个年份范围。','⛔ No flights in the chosen years: pick another range.');}
 function renderCheck(){
   const sec=$('stepCheck'),box=$('issues'),head=$('checkHead');box.innerHTML='';
   if(SOURCE!=='file'){sec.hidden=true;return;}sec.hidden=false;
   const d=S.res.diag,ok=S.ok;let bad=0,warn=0;
   const issue=(sev,title,guide,items)=>{if(sev==='bad')bad++;else if(sev==='warn')warn++;
-    box.append(el('div',{cls:'issue'},el('h3',{},el('span',{cls:'sev '+sev},{bad:'必须修改',warn:'建议修改',info:'提示'}[sev]),title),guide?el('p',{},guide):null,items||[]));};
+    box.append(el('div',{cls:'issue'},el('h3',{},el('span',{cls:'sev '+sev},(EN()?{bad:'must fix',warn:'worth fixing',info:'note'}:{bad:'必须修改',warn:'建议修改',info:'提示'})[sev]),title),guide?el('p',{},guide):null,items||[]));};
   const btn=(txt,fn,on)=>el('button',{type:'button',cls:'sm'+(on?' on':''),on:{click:fn}},txt);
-  const lean=(a,label,extra)=>{if(!a)return null;const p=top1(a);return el('div',{cls:'sug'},p>=AI_HIGH?'✨ Jev：':p>=AI_MID?'Jev 倾向（请确认）：':'Jev 把握不大，最像：',el('b',{},label(a.choice)),` · ${pct(p)}`,extra||'');};
+  const lean=(a,label,extra)=>{if(!a)return null;const p=top1(a);return el('div',{cls:'sug'},p>=AI_HIGH?L('✨ Jev：','✨ Jev: '):p>=AI_MID?L('Jev 倾向（请确认）：','Jev leans to (please confirm): '):L('Jev 把握不大，最像：','Jev is unsure; closest: '),el('b',{},label(a.choice)),` · ${pct(p)}`,extra||'');};
   // 1. table structure
   if(needColumns()){const c=AIR.cols,items=[];
-    if(c){const R={date:'日期',fn:'航班号',from:'出发',to:'到达',al:'航司',dt:'出发时间',at:'到达时间',st:'状态',km:'里程'};
-      const parts=Object.entries(colsMap(c)).map(([k,v])=>`${R[k]}=${v} 列`);
-      items.push(el('div',{cls:'item'},el('div',{cls:'sug'},'✨ Jev 认出的结构：',el('b',{},`${c.header.choice==='none'?'没有标题行':'标题在第 '+c.header.choice.slice(1)+' 行'}；${parts.join('，')||'没认出列'}`)),
-        el('div',{cls:'acts'},btn('按这个结构读取',applyCols))));}
-    issue('bad',RAW.length?'没找到「日期」这一列':'没认出表格结构',
-      (RAW.length?'每一行都没有日期，动画里一段也排不出来。':'表头里没找到「出发」「到达」「日期」这些列。')+'修改方法：把表头改成 日期、航班号、出发、到达（可以下载 CSV 模板对照），或点「AI 检查」让 Jev 认出每一列。',items);}
+    if(c){const R=EN()?{date:'date',fn:'flight',from:'from',to:'to',al:'airline',dt:'departure time',at:'arrival time',st:'status',km:'distance'}:{date:'日期',fn:'航班号',from:'出发',to:'到达',al:'航司',dt:'出发时间',at:'到达时间',st:'状态',km:'里程'};
+      const parts=Object.entries(colsMap(c)).map(([k,v])=>L(`${R[k]}=${v} 列`,`${R[k]} = column ${v}`));
+      items.push(el('div',{cls:'item'},el('div',{cls:'sug'},L('✨ Jev 认出的结构：','✨ Structure found by Jev: '),el('b',{},EN()?`${c.header.choice==='none'?'no header row':'header on row '+c.header.choice.slice(1)}; ${parts.join(', ')||'no columns recognised'}`:`${c.header.choice==='none'?'没有标题行':'标题在第 '+c.header.choice.slice(1)+' 行'}；${parts.join('，')||'没认出列'}`)),
+        el('div',{cls:'acts'},btn(L('按这个结构读取','Read it this way'),applyCols))));}
+    issue('bad',RAW.length?L('没找到「日期」这一列','No “date” column found'):L('没认出表格结构','Table structure not recognised'),
+      (RAW.length?L('每一行都没有日期，动画里一段也排不出来。','No row has a date, so nothing can be placed in the film. '):L('表头里没找到「出发」「到达」「日期」这些列。','The header has no “from”, “to” or “date” columns. '))+L('修改方法：把表头改成 日期、航班号、出发、到达（可以下载 CSV 模板对照），或点「AI 检查」让 Jev 认出每一列。','To fix: rename the headers to Date, Flight, From, To (see the CSV template), or tap “AI check” and let Jev read the columns.'),items);}
   // 2. airport names the dictionary does not know
   if(d.refs.size){const items=[];let lost=0;
     [...d.refs.entries()].sort((a,b)=>b[1].rows.length-a[1].rows.length).forEach(([name,e],i)=>{lost+=S.res.unres.get(name)||0;const a=AIR.ap[name];
-      const inp=el('input',{type:'text',cls:'code',id:'un'+i,maxLength:3,placeholder:'IATA',value:manual[name]||''}),st=el('span',{cls:'st'},'未识别');
-      inp.addEventListener('input',()=>{const v=inp.value.toUpperCase().trim();if(AP[v]){st.textContent=AP[v].city||v;st.classList.add('ok');}else{st.textContent=v.length===3?'没有这个代码':'未识别';st.classList.remove('ok');}});
+      const inp=el('input',{type:'text',cls:'code',id:'un'+i,maxLength:3,placeholder:'IATA',value:manual[name]||''}),st=el('span',{cls:'st'},L('未识别','unknown'));
+      inp.addEventListener('input',()=>{const v=inp.value.toUpperCase().trim();if(AP[v]){st.textContent=AP[v].city||v;st.classList.add('ok');}else{st.textContent=v.length===3?L('没有这个代码','no such code'):L('未识别','unknown');st.classList.remove('ok');}});
       inp.addEventListener('change',()=>{const v=inp.value.toUpperCase().trim();if(AP[v]){manual[name]=v;rebuild();}});
       const picks=a&&a.top?a.top.filter(([c,p])=>c!=='none'&&AP[c]&&p>=0.08).map(([c,p])=>btn(`${apShort(c)} · ${pct(p)}`,()=>{manual[name]=c;rebuild();})):[];
       let sug=null;
-      if(a&&a.nocand)sug=el('div',{cls:'sug'},'词典里没有相近的机场名：请在表格里改成机场三字码，或在右边直接填写。');
-      else if(a&&a.choice==='none')sug=el('div',{cls:'sug'},`Jev 判断这不像一个能确定的机场（${pct(top1(a))}）。请在表格里改正，或者删掉这一行。`);
+      if(a&&a.nocand)sug=el('div',{cls:'sug'},L('词典里没有相近的机场名：请在表格里改成机场三字码，或在右边直接填写。','No close airport name in the dictionary: put the airport code in the sheet, or type it on the right.'));
+      else if(a&&a.choice==='none')sug=el('div',{cls:'sug'},L(`Jev 判断这不像一个能确定的机场（${pct(top1(a))}）。请在表格里改正，或者删掉这一行。`,`Jev thinks this is not a definite airport (${pct(top1(a))}). Correct it in the sheet, or remove the row.`));
       else if(a)sug=lean(a,c=>apShort(c)+' · '+AP[c].name);
-      else{const loc=apCandidates(name,3);if(loc.length){sug=el('div',{cls:'sug'},'可能是（本地匹配）：');picks.push(...loc.map(c=>btn(apShort(c),()=>{manual[name]=c;rebuild();})));}}
-      items.push(el('div',{cls:'item'},el('div',{},el('label',{htmlFor:'un'+i},`「${name}」`),el('span',{cls:'where'},'  '+where(e.rows.map(x=>x.r),e.roles.has('from')?'from':'to'))),
-        sug,el('div',{cls:'acts'},inp,st,a&&a.choice&&a.choice!=='none'&&top1(a)>=AI_MID&&AP[a.choice]?btn('采用 '+a.choice,()=>{manual[name]=a.choice;rebuild();}):null,...picks.slice(top1(a)>=AI_MID?1:0,4))));});
-    issue('bad',`${d.refs.size} 个地名没认出来，${lost} 处航班会缺失`,'在右边填机场三字码（例如曼谷素万那普 BKK），或点「AI 检查」让 Jev 给建议。想一劳永逸：把表格里这些单元格改成三字码，或下载修正后的表格。',items);}
+      else{const loc=apCandidates(name,3);if(loc.length){sug=el('div',{cls:'sug'},L('可能是（本地匹配）：','Could be (local match): '));picks.push(...loc.map(c=>btn(apShort(c),()=>{manual[name]=c;rebuild();})));}}
+      items.push(el('div',{cls:'item'},el('div',{},el('label',{htmlFor:'un'+i},L(`「${name}」`,`“${name}”`)),el('span',{cls:'where'},'  '+where(e.rows.map(x=>x.r),e.roles.has('from')?'from':'to'))),
+        sug,el('div',{cls:'acts'},inp,st,a&&a.choice&&a.choice!=='none'&&top1(a)>=AI_MID&&AP[a.choice]?btn(L('采用 ','Use ')+a.choice,()=>{manual[name]=a.choice;rebuild();}):null,...picks.slice(top1(a)>=AI_MID?1:0,4))));});
+    issue('bad',L(`${d.refs.size} 个地名没认出来，${lost} 处航班会缺失`,`${d.refs.size} place names not recognised — ${lost} flights would be missing`),L('在右边填机场三字码（例如曼谷素万那普 BKK），或点「AI 检查」让 Jev 给建议。想一劳永逸：把表格里这些单元格改成三字码，或下载修正后的表格。','Type the airport code on the right (e.g. BKK for Bangkok Suvarnabhumi), or tap “AI check” for suggestions. For good: put codes in those cells, or download the corrected sheet.'),items);}
   // 3. dates
-  if(d.noDate.length&&!needColumns()){const why={empty:'没有日期（多半是退票或 OPEN 票）',no_year:'缺少年份，例如「5月1日」',open:'OPEN 票没有日期',bad:'格式认不出'},by={};
+  if(d.noDate.length&&!needColumns()){const why=EN()?{empty:'no date (usually a refund or an open ticket)',no_year:'no year, e.g. “May 1”',open:'open ticket without a date',bad:'format not recognised'}:{empty:'没有日期（多半是退票或 OPEN 票）',no_year:'缺少年份，例如「5月1日」',open:'OPEN 票没有日期',bad:'格式认不出'},by={};
     d.noDate.forEach(r=>{const k=dateProblem(r.rawDate);(by[k]=by[k]||[]).push(r);});
-    issue('warn',`${d.noDate.length} 行日期读不出来，已跳过`,'要放进动画，就把日期改成 2024-05-01 这种格式；退票、OPEN 票不需要的话可以不管。',
+    issue('warn',L(`${d.noDate.length} 行日期读不出来，已跳过`,`${d.noDate.length} rows without a readable date, skipped`),L('要放进动画，就把日期改成 2024-05-01 这种格式；退票、OPEN 票不需要的话可以不管。也可以在下面「逐条查看」里直接补日期。','To include them, write dates like 2024-05-01, or add a date in “All rows” below. Refunds and open tickets can be ignored.'),
       Object.entries(by).map(([k,rows])=>el('div',{cls:'item'},el('div',{},why[k],el('span',{cls:'where'},'  '+where(rows,'date'))),
-        el('div',{cls:'sug'},rows.slice(0,3).map(r=>`「${cellText(r.rawDate)||'空'}」${r.fn||''} ${r.from}→${r.to}`).join('；')))));}
-  if(DATE_AMBIG)issue('info',`日期像 03/04/2024 这样，目前按「${DMY?'日/月/年':'月/日/年'}」读取`,'如果你的表格是另一种写法，点下面切换。',
-    [el('div',{cls:'item'},el('div',{cls:'acts'},btn(DMY?'改成 月/日/年':'改成 日/月/年',()=>{DMY=!DMY;rebuild();})))]);
+        el('div',{cls:'sug'},rows.slice(0,3).map(r=>L(`「${cellText(r.rawDate)||'空'}」${r.fn||''} ${r.from}→${r.to}`,`“${cellText(r.rawDate)||'empty'}” ${r.fn||''} ${r.from}→${r.to}`)).join(L('；','; '))))));}
+  if(DATE_AMBIG)issue('info',L(`日期像 03/04/2024 这样，目前按「${DMY?'日/月/年':'月/日/年'}」读取`,`Dates look like 03/04/2024 and are read as ${DMY?'day/month/year':'month/day/year'}`),L('如果你的表格是另一种写法，点下面切换。','If your sheet means the other order, switch below.'),
+    [el('div',{cls:'item'},el('div',{cls:'acts'},btn(DMY?L('改成 月/日/年','Read as month/day/year'):L('改成 日/月/年','Read as day/month/year'),()=>{DMY=!DMY;rebuild();})))]);
   // 4. statuses
-  if(d.unknownSt.size){const L={flown:'已乘坐',upcoming:'待出行',void:'退票 / 作废',unclear:'看不出来'};
-    issue('warn',`${d.unknownSt.size} 种状态看不懂，暂时按「已乘坐」处理`,'选一下每种状态的意思；也可以点「AI 检查」让 Jev 判断。',
-      [...d.unknownSt.entries()].map(([s,rows])=>el('div',{cls:'item'},el('div',{},`「${s}」× ${rows.length}`,el('span',{cls:'where'},'  '+where(rows,'st'))),lean(AIR.st[s],c=>L[c]),
-        el('div',{cls:'acts'},...['flown','upcoming','void'].map(v=>btn(L[v],()=>{STFIX[s]=v;rebuild();},STFIX[s]===v))))));}
+  if(d.unknownSt.size){const SL=EN()?{flown:'flown',upcoming:'upcoming',void:'cancelled / void',unclear:'unclear'}:{flown:'已乘坐',upcoming:'待出行',void:'退票 / 作废',unclear:'看不出来'};
+    issue('warn',L(`${d.unknownSt.size} 种状态看不懂，暂时按「已乘坐」处理`,`${d.unknownSt.size} unknown statuses, treated as “flown” for now`),L('选一下每种状态的意思；也可以点「AI 检查」让 Jev 判断。','Pick what each status means, or tap “AI check” and let Jev decide.'),
+      [...d.unknownSt.entries()].map(([s,rows])=>el('div',{cls:'item'},el('div',{},L(`「${s}」× ${rows.length}`,`“${s}” × ${rows.length}`),el('span',{cls:'where'},'  '+where(rows,'st'))),lean(AIR.st[s],c=>SL[c]),
+        el('div',{cls:'acts'},...['flown','upcoming','void'].map(v=>btn(SL[v],()=>{STFIX[s]=v;rebuild();},STFIX[s]===v))))));}
   // 5. rows that look like trains or notes
-  if(d.suspect.length){const L={flight:'航班',train:'火车 / 高铁',other:'不是行程记录'};
-    issue('warn',`${d.suspect.length} 行看起来不像航班`,'火车、汇总行混进来会被当成航班画在地图上。确认后排除，或者从表格里删掉这些行。',
-      d.suspect.map(r=>{const k=rkey(r);return el('div',{cls:'item'},el('div',{},`${r.fn||'—'}  ${r.from} → ${r.to}`,el('span',{cls:'where'},'  '+where([r]))),lean(AIR.row[k],c=>L[c]),
-        el('div',{cls:'acts'},btn('排除这一行',()=>{EXCL.add(k);rebuild();}),btn('是航班，保留',()=>{KEEP.add(k);rebuild();})));}));}
+  if(d.suspect.length){const RL=EN()?{flight:'a flight',train:'a train',other:'not a trip'}:{flight:'航班',train:'火车 / 高铁',other:'不是行程记录'};
+    issue('warn',L(`${d.suspect.length} 行看起来不像航班`,`${d.suspect.length} rows don't look like flights`),L('火车、汇总行混进来会被当成航班画在地图上。确认后排除，或者从表格里删掉这些行。','Trains or summary rows would be drawn as flights. Exclude them here, or delete them from the sheet.'),
+      d.suspect.map(r=>{const k=rkey(r);return el('div',{cls:'item'},el('div',{},`${r.fn||'—'}  ${r.from} → ${r.to}`,el('span',{cls:'where'},'  '+where([r]))),lean(AIR.row[k],c=>RL[c]),
+        el('div',{cls:'acts'},btn(L('排除这一行','Exclude this row'),()=>{EXCL.add(k);rebuild();}),btn(L('是航班，保留','It is a flight, keep it'),()=>{KEEP.add(k);rebuild();})));}));}
   // 6. silent skips, for the record
-  if(d.sameAp.length)issue('info',`${d.sameAp.length} 行出发和到达是同一个机场，已跳过`,where(d.sameAp,'from'));
-  if(d.missingAp.length)issue('info',`${d.missingAp.length} 行缺出发地或到达地，已跳过`,where(d.missingAp,'from'));
-  if(d.dup)issue('info',`${d.dup} 段重复记录已合并`,'同一天、同航班号、同航线的记录只算一次。');
-  if(d.excluded)issue('info',`已排除 ${d.excluded} 行`,null,[el('div',{cls:'item'},el('div',{cls:'acts'},btn('全部恢复',()=>{EXCL.clear();rebuild();})))]);
+  if(d.sameAp.length)issue('info',L(`${d.sameAp.length} 行出发和到达是同一个机场，已跳过`,`${d.sameAp.length} rows start and end at the same airport, skipped`),where(d.sameAp,'from'));
+  if(d.missingAp.length)issue('info',L(`${d.missingAp.length} 行缺出发地或到达地，已跳过`,`${d.missingAp.length} rows miss the origin or destination, skipped`),where(d.missingAp,'from'));
+  if(d.dup)issue('info',L(`${d.dup} 段重复记录已合并`,`${d.dup} duplicates merged`),L('同一天、同航班号、同航线的记录只算一次。','The same day, flight number and route counts once.'));
+  if(d.excluded)issue('info',L(`已排除 ${d.excluded} 行`,`${d.excluded} rows excluded`),null,[el('div',{cls:'item'},el('div',{cls:'acts'},btn(L('全部恢复','Restore all'),()=>{EXCL.clear();rebuild();})))]);
   // every row, editable: drop a segment, or give an OPEN / refunded ticket a date
-  if(RAW.length){const det=el('details',{cls:'seglist'},el('summary',{},`逐条查看 / 删改航段（${RAW.length} 行）`));
+  if(RAW.length){const det=el('details',{cls:'seglist'},el('summary',{},L(`逐条查看 / 删改航段（${RAW.length} 行）`,`All rows — exclude or add a date (${RAW.length})`)));
     const fill=()=>{if(det.dataset.built)return;det.dataset.built=1;det.append(segTable());};det.addEventListener('toggle',()=>{SEG_OPEN=det.open;if(det.open)fill();});
     if(SEG_OPEN){det.open=true;fill();}box.append(det);}
   head.className='check-head '+(!ok||(bad&&needColumns())?'bad':bad||warn?'warn':'ok');
-  head.textContent=!ok?'⛔ 还不能生成视频：先处理下面「必须修改」的问题。':bad?'⚠️ 可以生成，但有航班会缺失，建议先按下面的提示修改。':warn?'⚠️ 可以生成，有几处建议确认一下。':'✅ 表格没有问题，可以直接生成视频。';
+  head.textContent=!ok?(bad?L('⛔ 还不能生成视频：先处理下面「必须修改」的问题。','⛔ Not ready yet: fix the “must fix” items below first.'):filteredOutMsg()):bad?L('⚠️ 可以生成，但有航班会缺失，建议先按下面的提示修改。','⚠️ Ready, but some flights would be missing — fixing the items below is recommended.'):warn?L('⚠️ 可以生成，有几处建议确认一下。','⚠️ Ready; a few items are worth a look.'):L('✅ 表格没有问题，可以直接生成视频。','✅ The sheet looks good — go ahead and make the film.');
   if(!AI_PROBED){AI_PROBED=true;fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.status===503?r.json():null).then(j=>{if(j&&(j.error==='disabled'||j.error==='not_configured')){AI_OFF=true;renderCheck();}}).catch(()=>{});}
   $('btnAI').hidden=AI_OFF;$('aiNote').hidden=AI_OFF;
-  const n=aiPending(),hf=highFixes().length;$('btnAI').disabled=AI_BUSY||!n;$('btnAI').textContent=n?`AI 检查（Jev · ${n} 项）`:'AI 检查（Jev）';
-  $('btnApplyAll').hidden=!hf;$('btnApplyAll').textContent=`采用全部高把握建议（${hf}）`;$('btnToMake').hidden=!ok;$('btnFixedCsv').disabled=!RAW.length;
+  const n=aiPending(),hf=highFixes().length;$('btnAI').disabled=AI_BUSY||!n;$('btnAI').textContent=n?L(`AI 检查（Jev · ${n} 项）`,`AI check (Jev · ${n})`):L('AI 检查（Jev）','AI check (Jev)');
+  $('btnApplyAll').hidden=!hf;$('btnApplyAll').textContent=L(`采用全部高把握建议（${hf}）`,`Apply all confident fixes (${hf})`);$('btnToMake').hidden=!ok;$('btnFixedCsv').disabled=!RAW.length;
 }
 // file input
 async function loadFile(file){
-  try{setStatus(`正在读取 ${file.name} …`);const buf=await file.arrayBuffer();let wb;
+  try{setStatus(L(`正在读取 ${file.name} …`,`Reading ${file.name} …`));const buf=await file.arrayBuffer();let wb;
     if(/\.csv$|\.txt$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes(String.fromCharCode(0xFFFD)))txt=new TextDecoder('gb18030').decode(buf);wb=XLSX.read(txt,{type:'string',raw:true});}
     else wb=XLSX.read(buf,{type:'array',cellDates:true});
-    const rows=readWorkbook(wb);if(!rows.length&&!SHEETS.length){setStatus('文件里没有内容。',true);return;}
-    resetFixes();aiMsg('');RAW=rows;SOURCE='file';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';
-    setStatus(rows.length?`已读取 ${rows.length} 行记录，检查结果见「检查表格」。`:'没认出表格结构，见「检查表格」。',!rows.length);rebuild();
-  }catch(e){console.error(e);setStatus('文件读取失败：'+(e.message||e)+'。可以另存为 .xlsx 或 CSV 再试。',true);}
+    const rows=readWorkbook(wb);if(!rows.length&&!SHEETS.length){setStatus(L('文件里没有内容。','The file is empty.'),true);return;}
+    resetFixes();aiMsg('');RAW=rows;SOURCE='file';natForUser();playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';
+    setStatus(rows.length?L(`已读取 ${rows.length} 行记录，检查结果见「检查表格」。`,`Read ${rows.length} rows — see “Check the spreadsheet”.`):L('没认出表格结构，见「检查表格」。','Table structure not recognised — see “Check the spreadsheet”.'),!rows.length);rebuild();
+  }catch(e){console.error(e);setStatus(L('文件读取失败：','Could not read the file: ')+(e.message||e)+L('。可以另存为 .xlsx 或 CSV 再试。','. Try saving it as .xlsx or CSV.'),true);}
 }
 const drop=$('drop');
 drop.addEventListener('click',()=>$('file').click());drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click();}});
@@ -190,13 +195,14 @@ $('file').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(
 ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
 drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
-$('btnDemo').addEventListener('click',()=>{resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus('已换回示例数据。');rebuild();});
+$('btnDemo').addEventListener('click',()=>{resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';if(!NAT_TOUCHED)$('nat').value='CN';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus(L('已换回示例数据。','Back to the sample data.'));rebuild();});
 $('btnAI').addEventListener('click',runAI);$('btnApplyAll').addEventListener('click',applyAll);
-$('btnFixedCsv').addEventListener('click',()=>saveFile('航迹护照_修正版.csv',new Blob([fixedCsv()],{type:'text/csv'})));
+$('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹护照_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
 $('btnToMake').addEventListener('click',()=>$('h3').scrollIntoView({behavior:'smooth',block:'start'}));
 $('btnTpl').addEventListener('click',async()=>{
-  const csv='﻿日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态\n2024-05-01,MU5101,东方航空,上海虹桥,北京首都,08:00,10:15,,已使用\n2024-05-06,CA1519,中国国航,PEK,SHA,19:00,21:10,,已使用\n2027-02-24,NH924,全日空,广州白云,东京羽田,15:05,20:00,,未使用\n';
-  await saveFile('航迹护照_模板.csv',new Blob([csv],{type:'text/csv'}));});
+  const csv=EN()?'﻿Date,Flight,Airline,From,To,Departure time,Arrival time,Distance km,Status\n2024-05-01,BA117,British Airways,London Heathrow,JFK,11:30,14:20,,flown\n2024-05-09,DL405,Delta,JFK,LHR,20:30,08:45,,flown\n2027-02-24,NH212,ANA,LHR,Tokyo Haneda,19:15,15:50,,upcoming\n'
+    :'﻿日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态\n2024-05-01,MU5101,东方航空,上海虹桥,北京首都,08:00,10:15,,已使用\n2024-05-06,CA1519,中国国航,PEK,SHA,19:00,21:10,,已使用\n2027-02-24,NH924,全日空,广州白云,东京羽田,15:05,20:00,,未使用\n';
+  await saveFile(L('航迹护照_模板.csv','sky-passport-template.csv'),new Blob([csv],{type:'text/csv'}));});
 ['optUp','optVoid','yFrom','yTo','nat'].forEach(id=>$(id).addEventListener('change',rebuild));
 ['name','latin','tagEn','tagZh'].forEach(id=>$(id).addEventListener('input',rebuild));
 $('btnPhoto').addEventListener('click',()=>$('photo').click());
@@ -228,15 +234,15 @@ function ensureAudio(){if(!S||!S.ok)return Promise.resolve(null);if(!SFXB&&!SFXF
   if(AUDIO_PENDING&&AUDIO_PENDING.key===key)return AUDIO_PENDING.p;const sc=S;
   const p=synthInWorker(sc).catch(()=>synth(sc,48000)).then(A=>{if(AUDIO_PENDING&&AUDIO_PENDING.key===key)AUDIO_PENDING=null;AUDIO=A;AUDIO_KEY=key;return A;});AUDIO_PENDING={key,p};return p;}
 let audioTimer=null;function scheduleAudio(){clearTimeout(audioTimer);audioTimer=setTimeout(()=>{if(!playing&&!exporting&&S&&S.ok)ensureAudio();},800);}
-function stopPlay(){playing=false;$('btnPlay').textContent='▶ 播放';$('btnPlay').setAttribute('aria-label','播放预览');if(audioSrc){try{audioSrc.stop();}catch(e){}audioSrc=null;}}
+function stopPlay(){playing=false;$('btnPlay').textContent=L('▶ 播放','▶ Play');$('btnPlay').setAttribute('aria-label',L('播放预览','Play the preview'));if(audioSrc){try{audioSrc.stop();}catch(e){}audioSrc=null;}}
 let starting=false;
 $('btnPlay').addEventListener('click',async()=>{if(!S||!S.ok||exporting||starting)return;if(playing){stopPlay();return;}
   if(playT>=S.T_END-0.05)playT=0;starting=true;
   try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});audioCtx.resume();}catch(e){} // unlock audio inside the click
-  if(!(AUDIO&&AUDIO_KEY===audioKey()))$('btnPlay').textContent='… 合成配乐';const A=await ensureAudio();starting=false;if(!A||!S||!S.ok)return;
+  if(!(AUDIO&&AUDIO_KEY===audioKey()))$('btnPlay').textContent=L('… 合成配乐','… scoring');const A=await ensureAudio();starting=false;if(!A||!S||!S.ok)return;
   try{const buf=audioCtx.createBuffer(2,A.L.length,A.SR);buf.copyToChannel(A.L,0);buf.copyToChannel(A.R,1);
     audioSrc=audioCtx.createBufferSource();audioSrc.buffer=buf;audioSrc.connect(audioCtx.destination);audioSrc.start(0,playT);audioCtx.resume();}catch(e){console.warn(e);}
-  playing=true;$('btnPlay').textContent='❚❚ 暂停';$('btnPlay').setAttribute('aria-label','暂停预览');const startT=playT,t0=performance.now(),a0=audioCtx?audioCtx.currentTime:0;
+  playing=true;$('btnPlay').textContent=L('❚❚ 暂停','❚❚ Pause');$('btnPlay').setAttribute('aria-label',L('暂停预览','Pause the preview'));const startT=playT,t0=performance.now(),a0=audioCtx?audioCtx.currentTime:0;
   const loop=()=>{if(!playing)return;playT=audioCtx&&audioSrc?startT+(audioCtx.currentTime-a0):startT+(performance.now()-t0)/1000;if(playT>=S.T_END){playT=S.T_END;drawAt(playT);stopPlay();return;}drawAt(playT);requestAnimationFrame(loop);};requestAnimationFrame(loop);});
 $('scrub').addEventListener('input',e=>{if(!S||!S.ok)return;stopPlay();playT=e.target.value/1000*S.T_END;drawAt(playT);});
 
@@ -248,22 +254,49 @@ function initSegs(){let pref={};try{pref=JSON.parse(localStorage.getItem(PREF_KE
     set([...box.querySelectorAll('button')].some(b=>b.dataset.v===want)?want:def);
     box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;set(b.dataset.v);pref[id]=b.dataset.v;try{localStorage.setItem(PREF_KEY,JSON.stringify(pref));}catch(e){}rebuild();});}}
 // how to get the spreadsheet out of 航旅纵横 (menu names differ between app versions — keep this list in sync with the app)
+const GUIDE_EN=[['In Flighty, myFlightradar24, OpenFlights or App in the Air, look for “Export” in the settings or your flight list and choose CSV','Menu names differ between apps and versions; any export with date, from and to columns works.'],
+  ['Save the file to your phone or computer, then tap the dashed box above to upload it','Columns, airport names (codes or English names) and date formats are recognised automatically.'],
+  ['No app history? Download the CSV template and fill it in, or add a few flights by hand below','Chinese exports from 航旅纵横 work as they are, too.']];
 const GUIDE=[['打开「航旅纵横」App，进入「我的」，找到全部行程 / 飞行记录','不同版本的叫法可能是「行程」「飞行足迹」或「出行记录」。'],
   ['点「导出」（常在右上角「···」里），选 Excel，发送到自己的邮箱','导出的 .xls 里通常有「已结束」「待出行」「无效票」几张表，不用改，直接上传。'],
   ['在电脑或手机上下载邮件附件，回到这里点上方虚线框上传','其他 App 导出的表格、自己整理的 Excel 也可以；什么都没有就点「下载 CSV 模板」手填。']];
-function initGuide(){const ol=$('guideSteps');for(const [t,d] of GUIDE)ol.append(el('li',{},t,el('small',{},d)));}
+function initGuide(){const ol=$('guideSteps');ol.innerHTML='';for(const [t,d] of (EN()?GUIDE_EN:GUIDE))ol.append(el('li',{},t,el('small',{},d)));}
 function renderYearQuick(ys){const box=$('yearQuick');box.innerHTML='';if(ys.length<2){box.hidden=true;return;}box.hidden=false;
   const yNow=new Date().getFullYear(),flown=S.res.all.filter(f=>!f.up&&!f.vd).map(f=>f.y),last=ys.includes(yNow)&&flown.includes(yNow)?yNow:(flown.length?Math.max(...flown):ys[ys.length-1]);
-  const opts=[['全部年份',ys[0],ys[ys.length-1]],[`${last} 年度`,last,last]];if(ys.length>3)opts.push(['最近 3 年',ys[ys.length-3],ys[ys.length-1]]);
+  const opts=[[L('全部年份','All years'),ys[0],ys[ys.length-1]],[L(`${last} 年度`,`${last} only`),last,last]];if(ys.length>3)opts.push([L('最近 3 年','Last 3 years'),ys[ys.length-3],ys[ys.length-1]]);
   const f=+$('yFrom').value,t=+$('yTo').value;
   for(const [lab,a,b] of opts){const bt=el('button',{type:'button','aria-pressed':String(f===+a&&t===+b)},lab);bt.addEventListener('click',()=>{$('yFrom').value=a;$('yTo').value=b;playT=0;rebuild();});box.append(bt);}}
 let SEG_OPEN=false;
-function segTable(){const wrap=el('div',{cls:'segtable'}),L={flown:'已乘坐',upcoming:'待出行',void:'退票'};
+function segTable(){const wrap=el('div',{cls:'segtable'}),SL=EN()?{flown:'flown',upcoming:'upcoming',void:'cancelled'}:{flown:'已乘坐',upcoming:'待出行',void:'退票'};
   RAW.slice(0,600).forEach(r=>{const k=rkey(r);if(!k)return;const d=parseDate(r.rawDate),on=!EXCL.has(k);
-    const cb=el('input',{type:'checkbox',checked:on,title:on?'取消勾选 = 不放进动画':'勾选 = 放回动画'});cb.addEventListener('change',()=>{if(cb.checked)EXCL.delete(k);else EXCL.add(k);rebuild();});
-    let date;if(d)date=el('span',{cls:'dt'},ymd(d));else{date=el('input',{type:'date',cls:'dt',title:'补上日期后这段会放进动画'});date.addEventListener('change',()=>{if(date.value){r.rawDate=date.value;rebuild();}});}
+    const cb=el('input',{type:'checkbox',checked:on,title:on?L('取消勾选 = 不放进动画','Untick to leave it out of the film'):L('勾选 = 放回动画','Tick to put it back')});cb.addEventListener('change',()=>{if(cb.checked)EXCL.delete(k);else EXCL.add(k);rebuild();});
+    let date;if(d)date=el('span',{cls:'dt'},ymd(d));else{date=el('input',{type:'date',cls:'dt',title:L('补上日期后这段会放进动画','Add a date to include this flight')});date.addEventListener('change',()=>{if(date.value){r.rawDate=date.value;rebuild();}});}
     const fa=resolveAirport(r.from),ta=resolveAirport(r.to);
-    wrap.append(el('label',{cls:'segrow'+(on?'':' off')},cb,date,el('span',{cls:'fn'},r.fn||'—'),el('span',{cls:'rt'},`${fa||r.from} → ${ta||r.to}`),el('span',{cls:'st'},L[rowStatus(r)]),el('span',{cls:'where'},'#'+r.src.row)));});
-  if(RAW.length>600)wrap.append(el('div',{cls:'where'},`只显示前 600 行`));return wrap;}
+    wrap.append(el('label',{cls:'segrow'+(on?'':' off')},cb,date,el('span',{cls:'fn'},r.fn||'—'),el('span',{cls:'rt'},`${fa||r.from} → ${ta||r.to}`),el('span',{cls:'st'},SL[rowStatus(r)]),el('span',{cls:'where'},'#'+r.src.row)));});
+  if(RAW.length>600)wrap.append(el('div',{cls:'where'},L('只显示前 600 行','Showing the first 600 rows')));return wrap;}
+/* ---------- add flights by hand: date + two airports (code, English or Chinese name) ---------- */
+let QA_N=0;
+function qaUpdate(){const fv=$('qaFrom').value.trim(),tv=$('qaTo').value.trim(),fa=fv&&resolveAirport(fv),ta=tv&&resolveAirport(tv),h=$('qaHint'),nm=c=>`${c} ${placeName(c)}`;
+  h.className='qahint';h.textContent=(fv||tv)?[fv?(fa?nm(fa):L(`「${fv}」没认出`,`“${fv}” not found`)):'…',tv?(ta?nm(ta):L(`「${tv}」没认出`,`“${tv}” not found`)):'…'].join(' → '):'';if(fa&&ta)h.classList.add('ok');else if((fv&&!fa)||(tv&&!ta))h.classList.add('err');}
+function qaAdd(){const d=$('qaDate').value,fa=resolveAirport($('qaFrom').value),ta=resolveAirport($('qaTo').value),h=$('qaHint');
+  const bad=m=>{h.className='qahint err';h.textContent=m;};
+  if(!d)return bad(L('先选日期','Pick a date first'));if(!fa||!ta)return bad(L('出发和到达都要能认出（三字码最稳）','Both airports must be recognised (codes are the safest)'));if(fa===ta)return bad(L('出发和到达是同一个机场','From and to are the same airport'));
+  if(SOURCE!=='file'){resetFixes();aiMsg('');RAW=[];SHEETS=[];SOURCE='file';natForUser();} // the sample makes way for the user's own flights
+  const fn=$('qaFn').value.toUpperCase().replace(/\s+/g,'');QA_N++;
+  RAW.push({rawDate:d,al:'',fn,from:fa,to:ta,dt:'',at:'',km:'',st:'',sheetUp:false,sheetVoid:false,src:{sheet:L('手动添加','Added by hand'),row:QA_N,cols:{}}});
+  playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';
+  h.className='qahint ok';h.textContent=L(`已添加 ${fa} → ${ta}（共 ${RAW.length} 段）`,`Added ${fa} → ${ta} (${RAW.length} in total)`);
+  $('qaFrom').value=$('qaTo').value='';$('qaFn').value='';$('qaFrom').value=ta;$('qaFrom').focus();rebuild();} // the next leg usually starts where this one ended
+['qaFrom','qaTo'].forEach(id=>$(id).addEventListener('input',qaUpdate));$('btnQaAdd').addEventListener('click',qaAdd);
+['qaFrom','qaTo','qaFn'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();qaAdd();}}));
+/* ---------- language switch: static text in i18n.js, everything rendered from code re-renders here ---------- */
+function natOptions(){const sel=$('nat'),keep=sel.value||'CN';sel.innerHTML='';const lab=v=>EN()?`${v[0]} · ${v[2]}`:`${v[1]} · ${v[2]}`;
+  Object.entries(NAMES).sort((a,b)=>EN()?a[1][0].localeCompare(b[1][0],'en'):a[1][1].localeCompare(b[1][1],'zh')).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=lab(v);sel.appendChild(o);});sel.value=keep;}
+// nationality: the sample is a Chinese traveller; once the data is the user's own and they have not picked one, use the browser's region
+let NAT_TOUCHED=false;
+function natForUser(){if(NAT_TOUCHED)return;const m=(navigator.language||'').match(/[-_]([A-Za-z]{2})\b/),r=m?m[1].toUpperCase():/^zh/i.test(navigator.language||'')?'CN':'';if(r&&NAMES[r])$('nat').value=r;}
+$('nat').addEventListener('change',()=>{NAT_TOUCHED=true;});
+function onLangChange(){initGuide();if(Object.keys(NAMES).length)natOptions();if(!playing)stopPlay();qaUpdate();if(S)rebuild();}
+$('btnLang').addEventListener('click',()=>setLang(EN()?'zh':'en'));
 $('btnMakeM').addEventListener('click',()=>{$('h3').scrollIntoView({behavior:'smooth',block:'start'});if(S&&S.ok&&!exporting)$('btnMake').click();});
 initSegs();initGuide();

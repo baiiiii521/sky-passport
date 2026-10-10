@@ -120,3 +120,52 @@ test('loudness meter and limiter (BS.1770)', () => {
   let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i]));
   assert.ok(pk <= ceil + 1e-6, 'peak ' + pk);
 });
+
+// ---- v3: overseas export formats and the column-mapping fixes (2026-10-10) ----
+test('findCols: one column per role, whole words only', () => {
+  const F = h => ({ ...core.findCols(h) });
+  // "Departure Time" used to be read as both the departure time and the origin airport
+  assert.deepEqual(F(['Date', 'Flight', 'Departure Time', 'Departure Airport', 'Arrival Airport', 'Arrival Time']), { date: 0, fn: 1, dt: 2, from: 3, to: 4, at: 5 });
+  // OpenFlights: "Distance" must not become the arrival time ("di-sta-nce"), and its unit is unknown
+  const of = F(['Date', 'From', 'To', 'Flight_Number', 'Airline', 'Distance', 'Duration']);
+  assert.equal(of.dist, 5); assert.equal(of.at, undefined); assert.equal(of.km, undefined); assert.equal(of.fn, 3);
+  // Flighty: scheduled gate times, cancellation flag
+  const fl = F(['Date', 'Airline', 'Flight', 'From', 'To', 'Canceled', 'Gate Departure (Scheduled)', 'Landing (Scheduled)', 'Gate Arrival (Scheduled)']);
+  assert.equal(fl.dt, 6); assert.equal(fl.at, 8); assert.equal(fl.cx, 5);
+  // 航旅纵横 / template still map as before
+  assert.deepEqual(F(['日期', '航班号', '航空公司', '出发', '到达', '出发时间', '到达时间', '里程数', '状态']), { date: 0, fn: 1, al: 2, from: 3, to: 4, dt: 5, at: 6, km: 7, st: 8 });
+});
+
+test('resolveAirport: myFlightradar24 brackets, English names, codes in mixed text', () => {
+  const R = core.resolveAirport;
+  assert.equal(R('Shanghai / Pudong (PVG/ZSPD)'), 'PVG');
+  assert.equal(R('Hong Kong / Chek Lap Kok (HKG/VHHH)'), 'HKG');
+  assert.equal(R('London Heathrow Airport'), 'LHR');
+  assert.equal(R('John F. Kennedy International Airport'), 'JFK');
+  assert.equal(R('Shanghai Pudong International Airport'), 'PVG');
+  assert.equal(R('PVG - Shanghai Pudong'), 'PVG');
+  assert.equal(R('上海浦东'), 'PVG');
+  assert.equal(R('Nowhere Field'), null);
+});
+
+test('parseDate / parseTime: compact dates and 12-hour clocks', () => {
+  assert.deepEqual([...core.parseDate('20240501')], [2024, 5, 1]);
+  assert.deepEqual([...core.parseDate(20240501)], [2024, 5, 1]);
+  assert.deepEqual([...core.parseTime('8:30 PM')], [20, 30]);
+  assert.deepEqual([...core.parseTime('12:05 am')], [0, 5]);
+  assert.deepEqual([...core.parseTime('2024-01-05T11:05')], [11, 5]);
+  assert.deepEqual([...core.parseTime('20:30')], [20, 30]);
+  assert.equal(core.parseTime('25:00'), null);
+});
+
+test('readSheet + buildFlights: miles, cancellations, bare flight numbers, time inside the date cell', () => {
+  const of = [['Date', 'From', 'To', 'Flight_Number', 'Airline', 'Distance'], ['2019-06-01 08:00:00', 'PEK', 'JFK', 'CA981', 'Air China', '6844']];
+  const fl = [['Date', 'Airline', 'Flight', 'From', 'To', 'Canceled'], ['2024-03-01', 'BAW', '117', 'LHR', 'JFK', 'true'], ['2024-03-05', 'BAW', '118', 'JFK', 'LHR', 'false']];
+  const rows = [...core.readSheet(of, 'openflights', 0, core.findCols(of[0])), ...core.readSheet(fl, 'flighty', 0, core.findCols(fl[0]))];
+  core.setRaw(rows); const { all } = core.buildFlights();
+  const pek = all.find(f => f.f === 'PEK');
+  assert.ok(pek.km > 10900 && pek.km < 11100, 'OpenFlights miles converted to km: ' + pek.km);
+  assert.equal(pek.t, '08:00');
+  const lhr = all.find(f => f.f === 'LHR'), jfk = all.find(f => f.f === 'JFK');
+  assert.equal(lhr.fn, 'BAW117'); assert.equal(lhr.vd, 1); assert.equal(jfk.vd, 0);
+});

@@ -43,7 +43,7 @@ function buildScene(){
   if(!scene.ok){S=scene;return scene;}
   // projection centred on the traveller's median longitude
   const lons=[];fl.forEach(f=>{lons.push(AP[f.f].lon,AP[f.to].lon);});lons.sort((a,b)=>a-b);const medLon=lons[lons.length>>1];
-  scene.rot=-(medLon+20);
+  scene.rot=-mapCentre(fl,medLon+20);
   scene.proj=d3.geoEquirectangular().rotate([scene.rot,0]).scale(MAP.w/(2*Math.PI)).translate([MAP.w/2,0]).precision(0.3);
   // years & schedule on the BPM grid
   const y0=fl[0].y,y1=fl[fl.length-1].y;const years=[];
@@ -79,6 +79,15 @@ function buildScene(){
   scene.stampReady=false;
   S=scene;buildBg();return scene;
 }
+// The map is a flat world cut at centre ± 180°. A route whose short way crosses that cut would be drawn the long way round
+// (SFO → NRT across Europe), so keep the usual centre (median longitude + 20°) when no route crosses it, otherwise move the
+// cut into the widest empty stretch: fewest crossings, then the most room around the airports, then closest to the usual centre.
+function mapCentre(fl,pref){const wrap=x=>((x%360)+540)%360-180,P=fl.map(f=>[AP[f.f].lon,AP[f.to].lon]);
+  const cross=c=>{let n=0;for(const [a,b] of P)if(Math.abs(wrap(a-c)-wrap(b-c))>180)n++;return n;};
+  pref=wrap(pref);if(!cross(pref))return pref;
+  const room=c=>Math.min(30,...P.flat().map(l=>180-Math.abs(wrap(l-c))));let best=pref,bs=1e9;
+  for(let c=-180;c<180;c+=2){const sc=cross(c)*1000-room(c)*10+Math.abs(wrap(c-pref))*0.05;if(sc<bs){bs=sc;best=c;}}
+  return best;}
 function boxPx(sc,b){const p1=sc.proj(b[0]),p2=sc.proj(b[1]);return [Math.min(p1[0],p2[0]),Math.min(p1[1],p2[1]),Math.max(p1[0],p2[0]),Math.max(p1[1],p2[1])];}
 function fit(bx,pad=40){const w=Math.max(1,bx[2]-bx[0]),h=Math.max(1,bx[3]-bx[1]);const z=Math.min((MAP.w-2*pad)/w,(MAP.h-2*pad)/h);return {cx:(bx[0]+bx[2])/2,cy:(bx[1]+bx[3])/2,z};}
 function buildCam(sc){
@@ -344,7 +353,7 @@ function coverPlane(t){const R=150,rot=-0.34,ph=1.85*Math.PI+t*0.55,ex=R*1.32*Ma
   if(Math.sin(ph)<0&&Math.hypot(x-W/2,y-600)<R+14)return; // far side of the orbit: behind the globe
   const ang=rot+Math.atan2(R*0.34*Math.cos(ph),-R*1.32*Math.sin(ph)),s=2.7*(0.9+0.1*Math.sin(ph));plane(ctx,x,y,ang,s*1.3,'rgba(34,6,13,.7)');plane(ctx,x,y,ang,s,goldText(ctx,y-30,y+30));}
 // "2018 — 2023", or "2026 年度" when the film covers a single year
-function yearsLabel(sc,sep,annual=' 年度'){const a=sc.years[0].y,b=sc.years[sc.years.length-1].y;return a===b?a+annual:a+sep+b;}
+function yearsLabel(sc,sep,annual=L(' 年度','')){const a=sc.years[0].y,b=sc.years[sc.years.length-1].y;return a===b?a+annual:a+sep+b;}
 function goldText(g,y0,y1){const gr=g.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'#fbe9c2');gr.addColorStop(.55,'#e2b670');gr.addColorStop(1,'#f6dca6');return gr;}
 function drawPoster(t,T0){
   const sc=S,P=sc.P,F0=sc.final;if(!coverBuilt||coverTheme!==(P.theme||'burgundy'))buildCover();const lt=Math.max(0,t-T0);
@@ -365,7 +374,7 @@ function drawPoster(t,T0){
   if(P.tagEn){const s=fitText(P.tagEn,900,30,400,'SM');ctx.font=F(400,s,'SM');ctx.fillStyle='#e8c38c';ctx.fillText(P.tagEn,W/2,1488);}
   if(P.tagZh){ctx.font=F(400,28);ctx.fillStyle='#d2b8ad';ctx.fillText(P.tagZh,W/2,1536);}
   if(T0===0){ctx.globalAlpha=k3*0.55;ctx.font=F(400,22,'SM');ctx.fillStyle='#c9ab92';ctx.fillText(('P<'+P.nat3+P.latin.replace(/ /g,'<')+'<<FLIGHT<LOG').padEnd(40,'<').slice(0,40),W/2,1792);}
-  else{ctx.globalAlpha=k3*0.8;ctx.font=F(400,24,'SM');ctx.fillStyle='#e8c38c';ctx.fillText(SITE_HOST,W/2,1792);ctx.textAlign='left';drawQrCard(ctx,868,1590,132,k3,'扫码生成你的护照');ctx.textAlign='center';} // end card: where to make one
+  else{ctx.globalAlpha=k3*0.8;ctx.font=F(400,24,'SM');ctx.fillStyle='#e8c38c';ctx.fillText(SITE_HOST,W/2,1792);ctx.textAlign='left';drawQrCard(ctx,868,1590,132,k3,L('扫码生成你的护照','Scan to make yours'));ctx.textAlign='center';} // end card: where to make one
   ctx.globalAlpha=1;ctx.textAlign='left';ctx.setTransform(1,0,0,1,0,0);
   // dust drifting in the light (continuous, seeded — no per-frame reshuffle)
   ctx.globalCompositeOperation='screen';for(let i=0;i<42;i++){const sp=10+20*hash(i+90),x=hash(i)*W+38*Math.sin(t*0.37+i*1.7),y=((hash(i+50)*(H+200)-t*sp)%(H+200)+H+200)%(H+200)-100;
@@ -390,4 +399,4 @@ function renderFrame(i){
   if(t<O0||t>=c1){ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawPoster(t,t<O0?0:TC);ctx=mainCtx;ctx.drawImage(posterCv,0,0);grain(i,0.05);return;}
   drawPassport(t,cam);if(t<o1)cover(t,0,easeInOut(clamp((t-O0)/SWG)));if(t>=c0)cover(t,TC,1-easeInOut(clamp((t-c0)/SWG)));grain(i,t<o1||t>=c0?0.045:0.03);
 }
-function drawEmpty(){ctx.fillStyle='#1a060b';ctx.fillRect(0,0,W,H);ctx.fillStyle='#e3bd84';ctx.textAlign='center';ctx.font=F(600,44);ctx.fillText('还没有可用的航段',W/2,H/2-20);ctx.font=F(400,30);ctx.fillStyle='#c3a99f';ctx.fillText('上传记录，或补全未识别的机场',W/2,H/2+40);ctx.textAlign='left';}
+function drawEmpty(){ctx.fillStyle='#1a060b';ctx.fillRect(0,0,W,H);ctx.fillStyle='#e3bd84';ctx.textAlign='center';ctx.font=F(600,44);ctx.fillText(L('还没有可用的航段','No flights to show yet'),W/2,H/2-20);ctx.font=F(400,30);ctx.fillStyle='#c3a99f';ctx.fillText(L('上传记录，或补全未识别的机场','Upload your log, or fix the unknown airports'),W/2,H/2+40);ctx.textAlign='left';}

@@ -10,12 +10,15 @@ const hash=n=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor
 let CHINA=null;
 function rewind(g){for(const p of g.type==='Polygon'?[g.coordinates]:g.coordinates)if(d3.geoArea({type:'Polygon',coordinates:p})>2*Math.PI)p.forEach(r=>r.reverse());return g;} // d3 wants clockwise rings
 const REGIONS=new Set(['CN','TW','HK','MO']);
-let AP={},ZH={},ZHKEYS=[],NUM={},NAMES={},CITY={},TOPO=null;
+let AP={},ZH={},ZHKEYS=[],NUM={},NAMES={},CITY={},APNAME={},TOPO=null;
+// airport names normalised for matching: no 'International Airport', 机场, terminals or punctuation
+function apNorm(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/国际机场|國際機場|机场|機場|航站楼|\bt\d\b|terminal\s*\d*|international|intl\.?|airport|aeropuerto|aeroport|flughafen/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ').trim();}
 const NAME_FIX={HK:['Hong Kong, China','中国香港'],MO:['Macao, China','中国澳门'],TW:['Taiwan, China','中国台湾'],US:['United States','美国'],GB:['United Kingdom','英国'],KR:['South Korea','韩国'],RU:['Russia','俄罗斯']};
 // airports.json → lookup tables (kept separate from fetching so tests can feed it directly)
 function ingestAirports(a){
   for(const r of a.rows){AP[r[0]]={iata:r[0],lat:r[1],lon:r[2],tz:r[3],iso:r[4],city:r[5],name:r[6]};const c=r[5].toLowerCase();(CITY[c]=CITY[c]||[]).push(r[0]);}
   ZH=a.zh;ZHKEYS=Object.keys(ZH).sort((x,y)=>y.length-x.length);NUM=a.num;NAMES=a.names;
+  for(const c in AP){for(const t of [AP[c].name,AP[c].name+' '+AP[c].city]){const n=apNorm(t);if(n&&!(n in APNAME))APNAME[n]=c;}} // "London Heathrow Airport" → LHR
   for(const k in NAME_FIX){if(NAMES[k]){NAMES[k][0]=NAME_FIX[k][0];NAMES[k][1]=NAME_FIX[k][1];}}
 }
 async function loadData(){
@@ -39,10 +42,13 @@ function resolveAirport(raw){
   if(manual[s]&&AP[manual[s]])return manual[s];
   const up=s.toUpperCase();
   if(/^[A-Z]{3}$/.test(up)&&AP[up])return up;
-  const m=up.match(/\(([A-Z]{3})\)|（([A-Z]{3})）/);if(m&&AP[m[1]||m[2]])return m[1]||m[2];
+  const m=up.match(/[(（\[]\s*([A-Z]{3})\s*(?:[\/|,]\s*[A-Z]{4})?\s*[)）\]]/);if(m&&AP[m[1]])return m[1]; // (PVG), （PVG）, (PVG/ZSPD) — myFlightradar24
+  if(/[a-z]/.test(s)){const codes=(s.match(/\b[A-Z]{3}\b/g)||[]).filter(c=>AP[c]);if(codes.length===1)return codes[0];} // "Shanghai PVG", "PVG - Shanghai Pudong" (mixed case, so the code stands out)
   const z=s.replace(/国际机场|机场|國際機場|機場/g,'');
   for(const k of ZHKEYS){if(z.includes(k))return ZH[k];}
   const c=CITY[s.toLowerCase()];if(c&&c.length)return c[0];
+  const n=apNorm(s);if(n&&APNAME[n])return APNAME[n]; // "John F. Kennedy International Airport", "London Heathrow Airport"
+  const cn=CITY[n];if(n&&cn&&cn.length===1)return cn[0]; // "Paris" is ambiguous, "Chiang Mai" is not
   return null;
 }
 /* ---------- time zones ---------- */
@@ -53,11 +59,29 @@ function localToUtc(tz,y,mo,d,h,mi){const g=Date.UTC(y,mo-1,d,h,mi);const off=tz
 function hav(a,b){const R=6371,toR=Math.PI/180;const dl=(b.lat-a.lat)*toR,dn=(b.lon-a.lon)*toR;const x=Math.sin(dl/2)**2+Math.cos(a.lat*toR)*Math.cos(b.lat*toR)*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)));}
 
 /* ---------- spreadsheet parsing ---------- */
-const COLS={date:['日期','出发日期','航班日期','date','flight date'],al:['航空公司','航司','airline','carrier'],fn:['航班号','航班','flight','flight no','flight_no','flightno','flight number'],
-  from:['出发','出发城市','出发机场','出发地','起飞机场','始发','from','origin','departure','dep'],to:['到达','到达城市','到达机场','目的地','到达地','降落机场','to','destination','arrival','arr'],
-  dt:['出发时间','起飞时间','计划起飞','dep_time','departure time','std'],at:['到达时间','降落时间','计划到达','arr_time','arrival time','sta'],km:['里程数','里程','距离','distance','km','distance_km'],st:['客票状态','状态','票状态','status']};
-function findCols(hdr){const map={};hdr.forEach((h,i)=>{const s=String(h||'').trim().toLowerCase();if(!s)return;for(const k in COLS){if(map[k]!=null)continue;if(COLS[k].some(w=>s===w.toLowerCase()))map[k]=i;}});
-  hdr.forEach((h,i)=>{const s=String(h||'').trim().toLowerCase();for(const k in COLS){if(map[k]!=null)continue;if(COLS[k].some(w=>w.length>1&&s.includes(w.toLowerCase())))map[k]=i;}});return map;}
+// header synonyms per role. Exact matches first, then whole-word / substring matches; every column serves one role only.
+// Covers 航旅纵横, the template, myFlightradar24, Flighty, OpenFlights and hand-made English sheets.
+const COLS={date:['日期','出发日期','航班日期','乘机日期','date','flight date','departure date'],
+  al:['航空公司','航司','airline','carrier','operator'],
+  fn:['航班号','航班','flight','flight no','flight no.','flight number','flight #','flight_no','flightno','flight_number','flight code'],
+  from:['出发','出发城市','出发机场','出发地','起飞机场','始发','始发地','from','origin','departure airport','departure','dep airport','from airport','dep'],
+  to:['到达','到达城市','到达机场','目的地','到达地','降落机场','to','destination','arrival airport','arrival','arr airport','to airport','arr'],
+  dt:['出发时间','起飞时间','计划起飞','dep time','dep_time','departure time','std','gate departure (scheduled)','gate departure','take off (scheduled)','scheduled departure'],
+  at:['到达时间','降落时间','计划到达','arr time','arr_time','arrival time','sta','gate arrival (scheduled)','gate arrival','landing (scheduled)','scheduled arrival'],
+  km:['里程数','里程','距离','公里','km','kilometers','kilometres','distance (km)','distance_km','distance km'],
+  mi:['miles','mi','distance (mi)','distance (miles)','distance_mi','mileage (mi)'],
+  dist:['distance'], // unit unknown (OpenFlights writes miles): checked against the great-circle distance per row
+  st:['客票状态','状态','票状态','status','ticket status'],
+  cx:['canceled','cancelled','is canceled','is cancelled','cancelled?']};
+const ROLE_ORDER=['from','to','date','fn','dt','at','al','st','km','mi','dist','cx'];
+const hnorm=h=>String(h||'').trim().toLowerCase().replace(/[_\s]+/g,' ');
+function findCols(hdr){const map={},used=new Set(),H=hdr.map(hnorm);
+  // 1. exact header text
+  for(const k of ROLE_ORDER)for(const w of COLS[k].map(hnorm)){const i=H.findIndex((h,j)=>h===w&&!used.has(j));if(i>=0){map[k]=i;used.add(i);break;}} // synonyms in order of preference
+  // 2. a synonym inside a longer header: whole words for Latin text ("dep" must not match "dependent", "sta" not "distance"), substring for Chinese
+  const inside=(h,w)=>/[㐀-鿿]/.test(w)?h.includes(w):new RegExp('(^|[^a-z])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^a-z])').test(h);
+  for(const k of ROLE_ORDER){if(map[k]!=null)continue;for(const w of COLS[k].map(hnorm).filter(w=>w.length>1).sort((x,y)=>y.length-x.length)){const i=H.findIndex((h,j)=>h&&!used.has(j)&&inside(h,w));if(i>=0){map[k]=i;used.add(i);break;}}}
+  return map;}
 let DMY=false,DATE_AMBIG=false; // slash dates: day-first only when the data proves it (a first part > 12)
 const MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
 const okYMD=(y,m,d)=>y>=1950&&y<=2100&&m>=1&&m<=12&&d>=1&&d<=31?[y,m,d]:null;
@@ -65,14 +89,18 @@ function parseDate(v){
   if(v==null||v==='')return null;
   if(v instanceof Date&&!isNaN(v))return [v.getFullYear(),v.getMonth()+1,v.getDate()];
   if(typeof v==='number'&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);return [d.y,d.m,d.d];}
-  const s=String(v);let m=s.match(/(\d{4})\s*[年\-\/.]\s*(\d{1,2})\s*[月\-\/.]\s*(\d{1,2})/);if(m)return okYMD(+m[1],+m[2],+m[3]);
+  const s=String(v);let m=s.match(/^\s*((?:19|20)\d{2})(\d{2})(\d{2})\s*$/);if(m)return okYMD(+m[1],+m[2],+m[3]); // 20240501
+  m=s.match(/(\d{4})\s*[年\-\/.]\s*(\d{1,2})\s*[月\-\/.]\s*(\d{1,2})/);if(m)return okYMD(+m[1],+m[2],+m[3]);
   m=s.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/);if(m)return DMY?okYMD(+m[3],+m[2],+m[1]):okYMD(+m[3],+m[1],+m[2]);
   m=s.match(/\b(\d{1,2})[\s\-\/.]*([A-Za-z]{3,9})\.?[\s\-\/.,]*(\d{4}|\d{2})\b/);if(m&&MONTHS[m[2].toLowerCase().slice(0,3)])return okYMD(m[3].length===2?2000+ +m[3]:+m[3],MONTHS[m[2].toLowerCase().slice(0,3)],+m[1]); // 1 May 2024, 01-May-24
   m=s.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/);if(m&&MONTHS[m[1].toLowerCase().slice(0,3)])return okYMD(+m[3],MONTHS[m[1].toLowerCase().slice(0,3)],+m[2]); // May 1, 2024
   return null;}
 // why a date did not parse — drives the guidance text
 function dateProblem(v){const s=String(v==null?'':v).trim();if(!s)return'empty';if(/^\d{1,2}\s*月\s*\d{1,2}|^\d{1,2}[\/.-]\d{1,2}$/.test(s))return'no_year';if(/open/i.test(s))return'open';return'bad';}
-function parseTime(v){if(v==null)return null;if(typeof v==='number'&&v<1){const m=Math.round(v*1440);return [Math.floor(m/60),m%60];}const m=String(v).match(/(\d{1,2}):(\d{2})/);return m?[+m[1],+m[2]]:null;}
+function parseTime(v){if(v==null)return null;if(typeof v==='number'&&v<1){const m=Math.round(v*1440);return [Math.floor(m/60),m%60];}
+  if(v instanceof Date&&!isNaN(v))return v.getHours()||v.getMinutes()?[v.getHours(),v.getMinutes()]:null;
+  const m=String(v).match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp])?\.?\s*[Mm]?\.?/);if(!m)return null;let h=+m[1];const ap=(m[3]||'').toLowerCase(); // 8:30 PM, 20:30, 2024-01-05T11:05
+  if(ap==='p'&&h<12)h+=12;else if(ap==='a'&&h===12)h=0;return h<24&&+m[2]<60?[h,+m[2]]:null;}
 const colName=i=>{let s='';for(i++;i>0;i=Math.floor((i-1)/26))s=String.fromCharCode(65+(i-1)%26)+s;return s;};
 const cellText=v=>v instanceof Date&&!isNaN(v)?`${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`:String(v==null?'':v).replace(/\s+/g,' ').trim();
 let SHEETS=[]; // raw sheets of the last upload, kept for AI column mapping
@@ -81,8 +109,13 @@ function readSheet(aoa,sn,hi,map){
   const sheetUp=/待出行|未出行|upcoming/i.test(sn),sheetVoid=/无效|退票|作废|void|refund|cancel/i.test(sn);
   for(let i=hi+1;i<aoa.length;i++){const r=aoa[i]||[];const g=k=>map[k]!=null?r[map[k]]:'';
     if(!String(g('from')).trim()&&!String(g('to')).trim())continue;
-    rows.push({rawDate:g('date'),al:String(g('al')||'').trim(),fn:String(g('fn')||'').trim(),from:String(g('from')).trim(),to:String(g('to')).trim(),dt:g('dt'),at:g('at'),km:g('km'),
-      st:String(g('st')||'').trim(),sheetUp,sheetVoid,src:{sheet:sn,row:i+1,cols}});}
+    const al=String(g('al')||'').trim();let fn=String(g('fn')||'').trim(),st=String(g('st')||'').trim();
+    if(/^\d{1,4}[A-Z]?$/.test(fn)&&/^[A-Z0-9]{2,3}$/.test(al))fn=al+fn; // Flighty: airline UAL + flight 857
+    if(map.cx!=null&&/^(true|yes|y|1|x|是|已取消|canceled|cancelled)$/i.test(String(g('cx')).trim()))st=st?st+' cancelled':'cancelled';
+    let dt=g('dt');if(map.dt==null&&typeof g('date')==='string'&&/\d{1,2}:\d{2}/.test(g('date')))dt=g('date'); // OpenFlights: "2019-06-01 08:00:00"
+    const km=map.km!=null?g('km'):map.mi!=null&&parseFloat(String(g('mi')).replace(/[^\d.]/g,''))>0?String(parseFloat(String(g('mi')).replace(/[^\d.]/g,''))*1.609344):'';
+    rows.push({rawDate:g('date'),al,fn,from:String(g('from')).trim(),to:String(g('to')).trim(),dt,at:g('at'),km,dist:map.dist!=null?g('dist'):'',
+      st,sheetUp,sheetVoid,src:{sheet:sn,row:i+1,cols}});}
   return rows;}
 function readWorkbook(wb){
   const rows=[];SHEETS=[];
@@ -119,7 +152,9 @@ function buildFlights(){
     if(!fa)note(r.from,'from',r.to);if(!ta)note(r.to,'to',r.from);
     if(!fa||!ta)return;if(fa===ta){diag.sameAp.push(r);return;}
     const A=AP[fa],B=AP[ta];
-    let km=parseFloat(String(r.km).replace(/[^\d.]/g,''));if(!(km>0))km=hav(A,B);
+    const gc=hav(A,B);let km=parseFloat(String(r.km).replace(/[^\d.]/g,''));
+    if(!(km>0)&&r.dist){const v=parseFloat(String(r.dist).replace(/[^\d.]/g,'')),q=v/gc;if(q>0.55&&q<0.72)km=v*1.609344;else if(q>0.85&&q<1.3)km=v;} // a bare "distance" column: miles or km, whichever fits the route
+    if(!(km>0)||km>gc*2.5+300)km=gc; // missing, or not a distance for this route
     const tm=parseTime(r.dt)||[12,0];const est=km/780*60+35;
     let min=Math.round(est);const at=parseTime(r.at);
     if(parseTime(r.dt)&&at){const dep=localToUtc(A.tz,d[0],d[1],d[2],tm[0],tm[1]);const arr0=localToUtc(B.tz,d[0],d[1],d[2],at[0],at[1]);
@@ -140,6 +175,7 @@ function demoRows(){
     ['PVG','HKG'],['HKG','PVG'],['PVG','CDG'],['CDG','FCO'],['FCO','PVG'],['SHA','CAN'],['CAN','SHA'],['PVG','KIX'],['KIX','PVG'],['PVG','SGN'],['SGN','HAN'],['HAN','PVG'],['SHA','XIY'],['XIY','SHA'],
     ['PVG','CTS'],['CTS','PVG'],['PVG','SYD'],['SYD','MEL'],['MEL','PVG'],['SHA','TAO'],['TAO','SHA'],['PVG','DXB'],['DXB','PVG'],['SHA','HAK'],['HAK','SHA']];
   const rows=[];let y=2018,m=3;
-  R.forEach((p,i)=>{m+= (i%2?0:2)+ (i%5===0?1:0);while(m>12){m-=12;y++;}rows.push({rawDate:`${y}-${m}-${5+(i*7)%20}`,al:'',fn:['MU','CA','CZ','FM','HO'][i%5]+(5000+i*37),from:p[0],to:p[1],dt:'',at:'',km:'',up:y>=2027,vd:0});});
+  R.forEach((p,i)=>{m+= (i%2?0:2)+ (i%5===0?1:0);while(m>12){m-=12;y++;}const intl=!AP[p[0]]||!AP[p[1]]||AP[p[0]].iso!=='CN'||AP[p[1]].iso!=='CN'; // international legs carry 3-digit numbers, like real ones
+    rows.push({rawDate:`${y}-${m}-${5+(i*7)%20}`,al:'',fn:['MU','CA','CZ','FM','HO'][i%5]+(intl?101+(i*137)%880:5000+i*37),from:p[0],to:p[1],dt:'',at:'',km:'',up:y>=2027,vd:0});});
   return rows;}
 function rngF(seed){let a=seed>>>0;return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
