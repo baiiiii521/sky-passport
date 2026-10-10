@@ -1,0 +1,3 @@
+Date,From,To,Flight_Number,Airline,Distance,Duration,Seat,Seat_Type,Class,Reason,Plane,Registration,Trip,Note,From_OID,To_OID,Airline_OID,Plane_OID
+2019-06-01 08:00:00,PEK,JFK,CA981,Air China,6844,13:30,,,Y,L,Boeing 777,,,,3364,3797,751,
+2019-06-20 12:30:00,JFK,PEK,CA982,Air China,6844,14:05,,,Y,L,Boeing 777,,,,3797,3364,751,

@@ -3,7 +3,10 @@
   "private": true,
   "scripts": {
     "build:data": "node scripts/build_data.js",
-    "dev": "npx --yes http-server@14.1.1 public -p 5173 -c-1"
+    "dev": "npx --yes http-server@14.1.1 public -p 5173 -c-1",
+    "build:china": "node scripts/build_china.js",
+    "test": "node --test tests/",
+    "build:fonts": "node scripts/vendor_fonts.js"
   },
   "devDependencies": {
     "@nwpr/airport-codes": "3.0.3",

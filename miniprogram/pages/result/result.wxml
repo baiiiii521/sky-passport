@@ -1,0 +1,84 @@
+<view class="wrap">
+  <view class="card">
+    <view class="h2"><text class="no">01</text>{{demo?'示例数据 · 虚构旅客':'你的航班记录'}}</view>
+    <view class="chips">
+      <view class="chip {{year===0?'on':''}}" data-y="0" bindtap="pickYear">全部年份</view>
+      <view wx:for="{{years}}" wx:key="*this" class="chip {{year===item?'on':''}}" data-y="{{item}}" bindtap="pickYear">{{item}} 年度</view>
+    </view>
+    <view class="row"><switch checked="{{up}}" bindchange="toggleUp" color="#b98a50"/><text class="small">计入待出行航班</text></view>
+    <view wx:if="{{unres.length||noDate}}" class="warn">
+      <text wx:if="{{unres.length}}">有 {{unres.length}} 个地名没认出来（{{unres[0]}}{{unres.length>1?' 等':''}}），这些航段没有算进去。</text>
+      <text wx:if="{{noDate}}">{{noDate}} 行没有日期，已跳过。</text>
+      <text>到网页版可以逐条补全，修正后的表格也能下载。</text>
+    </view>
+    <view wx:if="{{sum && sum.n}}" class="stats">
+      <view class="st"><text class="k">航班</text><text class="v">{{sum.n}}</text></view>
+      <view class="st"><text class="k">里程 km</text><text class="v">{{sum.kmText}}</text></view>
+      <view class="st"><text class="k">飞行小时</text><text class="v">{{sum.hours}}</text></view>
+      <view class="st"><text class="k">国家地区</text><text class="v">{{sum.cc}}</text></view>
+      <view class="st"><text class="k">机场</text><text class="v">{{sum.ap}}</text></view>
+      <view class="st"><text class="k">航司</text><text class="v">{{sum.al}}</text></view>
+    </view>
+    <text wx:else class="small">这个范围里没有可用的航班，换个年份试试。</text>
+  </view>
+
+  <view class="card" wx:if="{{sum && sum.n}}">
+    <view class="h2"><text class="no">02</text>飞行护照视频<text class="tag">{{label}}</text></view>
+    <view class="fields">
+      <input class="input" placeholder="名字（显示在护照上，可不填）" value="{{name}}" bindinput="onName" maxlength="16"/>
+      <input class="input" placeholder="拼音 / 英文名（机读码，可不填）" value="{{latin}}" bindinput="onLatin" maxlength="24"/>
+    </view>
+    <view class="opt"><text class="ol">封皮</text>
+      <view wx:for="{{themes}}" wx:key="v" class="sw {{theme===item.v?'on':''}}" data-k="theme" data-v="{{item.v}}" bindtap="pick"><view class="dot" style="background:{{item.c}}"></view>{{item.t}}</view>
+    </view>
+    <view class="opt"><text class="ol">配乐</text>
+      <view class="sw {{mstyle==='groove'?'on':''}}" data-k="mstyle" data-v="groove" bindtap="pick">律动</view>
+      <view class="sw {{mstyle==='calm'?'on':''}}" data-k="mstyle" data-v="calm" bindtap="pick">舒缓</view>
+    </view>
+    <view class="opt"><text class="ol">片长</text>
+      <view wx:for="{{lens}}" wx:key="v" class="sw {{len===item.v?'on':''}}" data-k="len" data-v="{{item.v}}" bindtap="pick">{{item.t}}</view>
+    </view>
+
+    <button wx:if="{{video.state!=='done'}}" class="primary" bindtap="makeVideo" disabled="{{video.state==='queued'||video.state==='rendering'||video.state==='sending'}}">
+      {{video.state==='sending'?'正在提交…':video.state==='queued'?(video.ahead?'排队中，前面还有 '+video.ahead+' 个':'马上开始…'):video.state==='rendering'?'正在生成 '+video.progress+'%':'生成视频'}}
+    </button>
+    <text wx:if="{{!video.state}}" class="small center">在服务器上生成，约 40 秒；会上传航段（日期、航班号、出发/到达地）和名字，24 小时后自动删除</text>
+    <view wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="bar"><view class="fill" style="width:{{video.progress}}%"></view></view>
+    <text wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="small center">通常 40 秒左右，可以先去生成下面的长图</text>
+    <text wx:if="{{video.state==='error'}}" class="errline">{{video.err}}</text>
+
+    <block wx:if="{{video.state==='done'}}">
+      <video class="player" src="{{video.url}}" controls autoplay object-fit="contain" show-fullscreen-btn></video>
+      <view class="two">
+        <button class="primary" bindtap="saveVideo" disabled="{{!!saving}}">{{saving||'存到相册'}}</button>
+        <button class="primary" bindtap="sendVideo" disabled="{{!!saving}}">发给朋友</button>
+      </view>
+      <text class="small center">视频 {{video.size}} · 发朋友圈请先存到相册，再在朋友圈选择这段视频</text>
+      <button class="ghost" bindtap="makeVideo" data-again="1">换个风格重新生成</button>
+    </block>
+  </view>
+
+  <view class="card" wx:if="{{sum && sum.n}}">
+    <view class="h2"><text class="no">03</text>飞行成就</view>
+    <view class="badges">
+      <view wx:for="{{badges}}" wx:key="k" class="badge"><text class="k">{{item.i}} {{item.k}}</text><text class="v">{{item.v}}</text><text class="d">{{item.d}}</text></view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{sum && sum.n}}">
+    <view class="h2"><text class="no">04</text>长图海报</view>
+    <button class="primary" bindtap="makePoster" disabled="{{!!busy}}">生成长图海报</button>
+    <block wx:if="{{poster}}">
+      <image class="poster" src="{{poster}}" mode="widthFix" bindtap="previewPoster"/>
+      <view class="two">
+        <button class="primary" bindtap="sharePoster">分享到朋友圈</button>
+        <button class="primary" bindtap="savePoster">存到相册</button>
+      </view>
+      <text class="small center">「分享到朋友圈」里也可以发给朋友、收藏；点图片可以放大查看</text>
+    </block>
+  </view>
+
+  <view wx:if="{{busy}}" class="busy">{{busy}}</view>
+  <view wx:if="{{err}}" class="err">{{err}}</view>
+  <canvas type="2d" id="poster" class="offscreen" style="width:1080px;height:{{posterH}}px"></canvas>
+</view>

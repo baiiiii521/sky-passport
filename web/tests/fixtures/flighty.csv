@@ -1,0 +1,4 @@
+Date,Airline,Flight,From,To,Dep Terminal,Dep Gate,Arr Terminal,Arr Gate,Canceled,Diverted To,Gate Departure (Scheduled),Gate Departure (Actual),Take off (Scheduled),Take off (Actual),Landing (Scheduled),Landing (Actual),Gate Arrival (Scheduled),Gate Arrival (Actual),Aircraft Type Name,Tail Number,PNR,Seat,Seat Type,Cabin Class,Flight Reason,Notes
+2024-01-05,UAL,857,SFO,PVG,I,G98,2,,false,,2024-01-05T11:05,2024-01-05T11:20,,,,,2024-01-06T15:45,2024-01-06T15:30,Boeing 777-300ER,N2331U,,34L,,Economy,Leisure,
+2024-02-11,DAL,405,JFK,LHR,4,B30,3,,false,,2024-02-11T20:30,2024-02-11T20:41,,,,,2024-02-12T08:45,2024-02-12T08:30,Airbus A330-900,N401DZ,,22C,,Economy,Business,
+2024-03-01,BAW,117,LHR,JFK,5,A10,7,,true,,2024-03-01T11:30,,,,,,2024-03-01T14:20,,Boeing 777-200,G-VIIA,,,,,,

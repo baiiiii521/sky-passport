@@ -1,697 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#02040b">
+<script>(function(){var d=document.documentElement,m=/^#\/(home|studio|badges)(?:\/(s[123]))?/.exec(location.hash)||[];d.classList.add('js');d.dataset.view=m[1]||'home';d.dataset.step=m[2]||'s1';})()</script><!-- the view is set before first paint -->
 <title>航迹护照 Sky Passport</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Space+Mono:wght@400;700&family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<meta name="description" content="Upload your flight history and get a 1-minute vertical flight-passport film with an original score — free, in your browser. 上传航班记录，一键生成带原创配乐的飞行护照视频。">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Sky Passport 航迹护照">
+<meta property="og:title" content="Sky Passport · Turn your flights into a passport film">
+<meta property="og:description" content="Every flight you've taken, stamped into a passport that comes alive. Free, private, made in your browser.">
+<meta property="og:image" content="https://sky-passport.vercel.app/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://sky-passport.vercel.app/og.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%235a1424%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2218%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%223%22/%3E%3Cpath d=%22M14 32h36M32 14c-8 10-8 26 0 36M32 14c8 10 8 26 0 36%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%222.5%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts/fonts.css"><!-- self-hosted (npm run build:fonts): Google Fonts is blocked in mainland China -->
 <style>
-/* Layout: passport-cover dark studio; controls column left, phone-frame preview right; stacks on phones */
+/* Sky Passport · v3.1 interface — "night flight control".
+   A deep-space field with stars, a living globe, cyan HUD lines and gold only for the brand and the main actions.
+   Chapters tell the story: memory (import) → decode (check) → identity → passport (make) → achievements & share. */
 :root{
-  --cover:#2a0b12; --cover-2:#3a111b; --ink:#f4e9df; --muted:#c3a99f; --gold:#e3bd84; --gold-2:#b88f55;
-  --line:rgba(227,189,132,.22); --field:#1d070c; --stamp:#e2334f; --ok:#7fd3b0; --warn:#f0b35a;
-  --f-display:"Noto Serif SC","Songti SC",serif; --f-body:"Open Sans","Noto Sans SC","PingFang SC",system-ui,sans-serif; --f-mono:"Space Mono",ui-monospace,Menlo,monospace;
-  color-scheme:dark;
+  --bg0:#02040b;--bg1:#061230;--panel:rgba(8,18,40,.82);--field:#040b1c;
+  --ac:#5eeaff;--ac2:#ff4f9a;--ac3:#a78bfa;--acl:rgba(94,234,255,.22);--acm:rgba(94,234,255,.5);--acs:rgba(94,234,255,.07);
+  --gold:#e9c58e;--gold-2:#b88f55;--ink:#eaf4ff;--muted:#8fa6c2;--line:rgba(94,234,255,.16);--ok:#6ff7c8;--warn:#ffc56b;--stamp:#ff7a93;
+  --f-display:"Noto Serif SC","Songti SC",serif;--f-body:"Open Sans","Noto Sans SC","PingFang SC",system-ui,sans-serif;--f-mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);color-scheme:dark;
 }
-html,body{background:var(--cover);color:var(--ink)}
-body{font-family:var(--f-body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 48px;
-  background:radial-gradient(1200px 700px at 80% -10%,#4a1622 0%,transparent 60%),var(--cover)}
-*{box-sizing:border-box}
-.wrap{max-width:1180px;margin:0 auto}
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-block:28px 22px;border-bottom:1px solid var(--line)}
-.brand{display:flex;flex-direction:column;gap:2px}
-.brand .eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.24em;color:var(--gold-2);text-transform:uppercase}
-.brand h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(30px,5vw,46px);letter-spacing:.06em;color:var(--gold);
-  background:linear-gradient(100deg,#f6d9a6 0%,#c89a5c 40%,#f9e3bb 55%,#b98a50 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-wrap:balance}
-.lede{max-width:46ch;color:var(--muted);margin:0;font-size:14px}
-.mrz{font-family:var(--f-mono);font-size:12px;color:rgba(227,189,132,.45);letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:clip;padding-block:10px}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:32px;padding-block:24px}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes ang{to{--ang:360deg}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html{background:var(--bg0)}
+body{margin:0;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;padding-inline:16px;padding-block:0 56px;min-height:100vh;overflow-x:hidden;background:var(--bg0)}
+::selection{background:rgba(94,234,255,.3)}
+/* ---------- background: stars, aurora, grid floor, a plane crossing now and then ---------- */
+/* the backdrop is one fixed, pre-composited layer: a fixed body background or a full-screen overlay repaints on every scroll frame */
+.fx{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;transform:translateZ(0);contain:strict;
+  background:radial-gradient(1200px 700px at 80% -10%,rgba(56,90,210,.30),transparent 60%),radial-gradient(900px 600px at -10% 35%,rgba(255,79,154,.10),transparent 60%),radial-gradient(900px 700px at 110% 80%,rgba(167,139,250,.10),transparent 60%),linear-gradient(180deg,var(--bg0),var(--bg1) 50%,var(--bg0))}
+.stars i{position:absolute;left:0;top:0;width:1px;height:1px;border-radius:50%;animation:twinkle 5s ease-in-out infinite alternate}
+.stars i:nth-child(2){animation-duration:7s;animation-delay:-2s}.stars i:nth-child(3){animation-duration:3.6s;animation-delay:-1s}
+@keyframes twinkle{from{opacity:.35}to{opacity:1}}
+.aurora{display:none}
+.floor{position:absolute;left:-50%;right:-50%;bottom:-10vh;height:50vh;background:linear-gradient(rgba(94,234,255,.09) 1px,transparent 1px) 0 0/100% 44px,linear-gradient(90deg,rgba(94,234,255,.09) 1px,transparent 1px) 0 0/44px 100%;
+  transform:perspective(420px) rotateX(64deg);transform-origin:50% 100%;-webkit-mask:linear-gradient(transparent,#000 75%);mask:linear-gradient(transparent,#000 75%)}
+.jet{position:absolute;top:18%;left:-20vw;width:18vw;height:2px;transform:rotate(-8deg);animation:jet 22s linear infinite;animation-delay:4s;opacity:0}
+.jet::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(234,244,255,.5));border-radius:2px}
+.jet::after{content:"✈";position:absolute;right:-14px;top:-10px;font-size:15px;color:#eaf4ff;text-shadow:0 0 8px rgba(94,234,255,.8)}
+@keyframes jet{0%{transform:translate3d(0,0,0) rotate(-8deg);opacity:0}3%{opacity:.8}30%{opacity:.8}36%,100%{transform:translate3d(150vw,-20vh,0) rotate(-8deg);opacity:0}}
+.wrap{max-width:1240px;margin:0 auto}
+a{color:var(--ac)}
+/* ---------- top bar with scroll progress as a flight path ---------- */
+header.top{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 16px;margin-inline:-16px;
+  background:rgba(2,4,11,.94)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none;color:inherit}
+.brand svg{width:34px;height:34px;flex:none;filter:drop-shadow(0 0 8px rgba(94,234,255,.35))}.brand svg .orbit{transform-origin:32px 32px;animation:spin 14s linear infinite}
+.brand .eyebrow{display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.24em;color:var(--ac);text-transform:uppercase;white-space:nowrap}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:20px;letter-spacing:.12em;line-height:1.2;white-space:nowrap;
+  background:linear-gradient(100deg,#f6d9a6,#c89a5c 40%,#fff1d2 50%,#c89a5c 60%,#b98a50);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+@keyframes foil{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+.topnav{display:none;gap:4px;font-family:var(--f-mono);font-size:12px}
+.topnav a{color:var(--muted);text-decoration:none;padding:7px 11px;border-radius:999px;letter-spacing:.06em;transition:color .2s,background .2s}
+.topnav a b{color:var(--ac);margin-right:5px}.topnav a:hover{color:var(--ink)}.topnav a.on{color:var(--ink);background:rgba(94,234,255,.1);box-shadow:inset 0 0 0 1px var(--acl)}
+@media (min-width:901px){.topnav{display:flex}}
+.topbtns{display:flex;gap:8px;flex:none}
+.pill{font-family:var(--f-mono);font-size:12.5px;padding:8px 12px;border-radius:999px;letter-spacing:.06em}
+.fbar{position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--line)}
+.fbar::before{content:"";position:absolute;left:0;top:0;height:1px;width:100%;transform-origin:0 0;transform:scaleX(var(--p,0));background:linear-gradient(90deg,var(--ac2),var(--ac))}
+/* ---------- hero ---------- */
+.hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.02fr);gap:20px 40px;align-items:center;min-height:min(860px,calc(100svh - 120px));padding:40px 0 24px}
+@media (max-width:900px){.hero{grid-template-columns:minmax(0,1fr);min-height:0;padding:26px 0 8px;gap:8px}}
+.kicker{font-family:var(--f-mono);font-size:12px;letter-spacing:.24em;color:var(--ac);text-transform:uppercase;margin:0 0 18px;display:flex;align-items:center;gap:10px}
+.kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok);animation:blink 1.6s steps(2) infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(111,247,200,.55)}80%,100%{box-shadow:0 0 0 12px rgba(111,247,200,0)}}
+.hero h2.big{margin:0;font-family:var(--f-body);font-weight:800;font-size:clamp(38px,6vw,76px);line-height:1.06;letter-spacing:-.01em;text-wrap:balance}
+.hero h2.big .g{background:linear-gradient(100deg,#f6d9a6,#e1b06b 30%,#fff3d6 45%,#d8a865 60%,#ffd9a0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero h2.big .c{color:var(--ac);text-shadow:0 0 24px rgba(94,234,255,.35)}
+.lede{color:var(--muted);font-size:16.5px;max-width:52ch;margin:22px 0 28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}.cta button{font-size:15.5px;padding:15px 22px;border-radius:12px}
+.trust{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font-size:12.5px;color:var(--muted);font-family:var(--f-mono);letter-spacing:.04em}
+.trust span::before{content:"◆";color:var(--ac);margin-right:7px;font-size:9px;vertical-align:2px}
+/* globe stage */
+.stage{position:relative;min-width:0}
+.globe-box{position:relative;width:min(100%,600px);aspect-ratio:1;margin-inline:auto;overflow:hidden}
+.globe-box canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:pan-y}.globe-box canvas.grab{cursor:grabbing}
+.globe-box .ring{position:absolute;inset:4%;border-radius:50%;border:1px dashed rgba(94,234,255,.22);pointer-events:none;animation:spin 60s linear infinite}
+.globe-box .ring::before{content:"";position:absolute;inset:-4%;border-radius:50%;border:1px solid transparent;border-top-color:rgba(94,234,255,.55);border-right-color:rgba(94,234,255,.15);animation:spin 9s linear infinite reverse}
+.globe-box .ring::after{content:"";position:absolute;left:50%;top:-5px;width:9px;height:9px;margin-left:-4px;border-radius:50%;background:var(--ac2);box-shadow:0 0 12px var(--ac2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ghud{position:absolute;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--ac);text-transform:uppercase;pointer-events:none;line-height:1.5}
+.ghud b{color:var(--ink);font-weight:700}.ghud.tl{left:2%;top:4%}.ghud.tr{right:2%;top:4%;text-align:right}.ghud.bl{left:2%;bottom:3%}.ghud.br{right:2%;bottom:3%;text-align:right;color:var(--muted)}
+.ghud .live::before{content:"●";color:var(--ac2);margin-right:6px;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+/* split-flap board */
+.board{position:relative;margin:-56px auto 0;width:min(100%,560px);border-radius:18px;padding:16px 16px 14px;background:linear-gradient(180deg,rgba(10,24,56,.86),rgba(4,10,26,.92));border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden}
+.board::before{content:"";position:absolute;inset:0;background:radial-gradient(400px circle at var(--mx,50%) var(--my,0%),rgba(94,234,255,.10),transparent 45%);pointer-events:none}
+@media (max-width:900px){.board{margin-top:-34px}}
+.board .who{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;color:var(--ac);text-transform:uppercase;margin-bottom:12px;display:flex;justify-content:space-between;gap:10px}
+.board .who::after{content:"DEP · ARR";color:var(--muted);flex:none}
+.stats{display:grid;grid-template-columns:repeat(4,auto);justify-content:space-between;gap:12px 14px}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));justify-content:stretch}}
+.stat{min-width:0}
+.stat b{display:flex;gap:2px;font-family:var(--f-mono);font-size:clamp(18px,2.3vw,26px);font-weight:700;color:#fff6e2;line-height:1;height:1.55em;align-items:stretch}
+.fl{display:inline-grid;place-items:center;min-width:.82em;padding:0 .08em;border-radius:4px;background:linear-gradient(180deg,#14284f 0 49%,#0c1a38 51% 100%);box-shadow:inset 0 0 0 1px rgba(94,234,255,.14),inset 0 -1px 0 rgba(0,0,0,.6);position:relative}
+.fl::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.55)}
+.fl.sep{min-width:auto;background:none;box-shadow:none;padding:0}.fl.sep::after{display:none}
+.fl.set{animation:flip .26s var(--ease)}@keyframes flip{from{transform:rotateX(-80deg);filter:brightness(1.8)}to{transform:none}}
+.stat>span{display:block;margin-top:7px;font-size:12px;color:var(--muted)}
+.board .line{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted);font-family:var(--f-mono)}
+/* ---------- departures ticker ---------- */
+.ticker{position:relative;margin:26px -16px 0;padding:11px 0;border-block:1px solid var(--line);background:linear-gradient(90deg,rgba(2,4,11,.9),rgba(8,18,40,.6) 20% 80%,rgba(2,4,11,.9));overflow:hidden;contain:content}
+.ticker-track{display:flex;width:max-content;will-change:transform;animation:tick var(--dur,60s) linear infinite}.ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes tick{to{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:9px;padding:0 26px;font-family:var(--f-mono);font-size:13px;letter-spacing:.08em;color:var(--ink);white-space:nowrap;border-right:1px solid var(--line)}
+.tk b{color:var(--gold)}.tk i{font-style:normal;color:var(--ac)}.tk small{color:var(--muted);font-size:11px}
+.tk em{font-style:normal;font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid currentColor}.tk em.ok{color:var(--ok)}.tk em.up{color:var(--warn)}.tk em.cx{color:var(--stamp)}
+/* ---------- how it works ---------- */
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:44px 0 26px}
+.how .card{position:relative;display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:18px;padding:20px 18px 18px;background:linear-gradient(170deg,rgba(14,30,64,.7),rgba(5,12,30,.8));overflow:hidden;
+  transform:perspective(800px) rotateX(var(--rx,0)) rotateY(var(--ry,0));transition:transform .25s var(--ease),border-color .25s,box-shadow .25s}
+.how .card:hover{border-color:var(--acm);box-shadow:0 18px 50px rgba(0,0,0,.4),0 0 30px rgba(94,234,255,.12)}
+.how .card::before{content:"";position:absolute;inset:0;background:radial-gradient(300px circle at var(--mx,50%) var(--my,0%),rgba(94,234,255,.12),transparent 45%);pointer-events:none}
+.how .n{font-family:var(--f-mono);font-size:44px;font-weight:700;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(94,234,255,.45);position:absolute;right:16px;top:14px}
+.how svg{width:64px;height:64px;display:block;margin-bottom:12px}
+.how h3{margin:0 0 4px;font-size:17px}.how p{margin:0;color:var(--muted);font-size:13.5px}
+@media (max-width:760px){.how{grid-template-columns:minmax(0,1fr);gap:10px;padding:30px 0 14px}.how .card{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 14px;align-items:center;padding:14px 16px}.how svg{width:52px;height:52px;margin:0;grid-row:span 2}.how .n{font-size:30px}}
+.ic-doc .ln{stroke-dasharray:30;stroke-dashoffset:30;animation:draw 2.4s var(--ease) infinite}.ic-doc .ln:nth-of-type(2){animation-delay:.25s}.ic-doc .ln:nth-of-type(3){animation-delay:.5s}
+@keyframes draw{40%,80%{stroke-dashoffset:0}100%{stroke-dashoffset:-30}}
+.ic-doc .ar{animation:bob 1.6s ease-in-out infinite}@keyframes bob{50%{transform:translateY(4px)}}
+.ic-scan .sl{animation:scanY 2s ease-in-out infinite alternate}@keyframes scanY{from{transform:translateY(0)}to{transform:translateY(34px)}}
+.ic-scan .cell{animation:cell 2s steps(1) infinite}.ic-scan .cell:nth-of-type(odd){animation-delay:-1s}@keyframes cell{50%{fill:rgba(94,234,255,.85)}}
+/* chapter rail (phones and tablets) */
+.rail{position:relative;display:flex;gap:6px;overflow-x:auto;padding:6px 0 14px;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+.rail a{flex:none;text-decoration:none;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 12px;background:rgba(5,12,30,.6);transition:color .2s,border-color .2s,background .2s}
+.rail a:hover,.rail a.on{color:var(--ink);border-color:var(--acm);background:rgba(94,234,255,.1)}.rail a b{color:var(--ac);font-weight:700;margin-right:6px}
+.mrz{font-family:var(--f-mono);font-size:12px;color:rgba(94,234,255,.28);letter-spacing:.08em;white-space:nowrap;overflow:hidden;padding-block:4px 0}
+/* ---------- chapters ---------- */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,430px);gap:30px;padding-block:14px 24px}
 @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.preview{order:-1}}
-.steps{display:flex;flex-direction:column;gap:18px;min-width:0}
-.step{border:1px solid var(--line);border-radius:14px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));min-width:0}
-.step h2{margin:0 0 4px;font-size:17px;font-weight:700;display:flex;align-items:baseline;gap:10px}
-.step h2 .no{font-family:var(--f-mono);font-size:12px;color:var(--gold-2);letter-spacing:.12em}
-.step p.hint{margin:0 0 14px;color:var(--muted);font-size:13px}
-.drop{border:1.5px dashed var(--gold-2);border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;transition:background .2s,border-color .2s;background:rgba(227,189,132,.04)}
-.drop:hover,.drop.over{background:rgba(227,189,132,.10);border-color:var(--gold)}
-.drop strong{color:var(--gold);font-size:15px}
-.drop small{display:block;color:var(--muted);margin-top:4px}
+.steps{display:flex;flex-direction:column;gap:20px;min-width:0}
+.step{position:relative;border:1px solid var(--line);border-radius:20px;padding:24px 22px 22px;min-width:0;scroll-margin-top:86px;isolation:isolate;
+  background:radial-gradient(520px circle at var(--mx,30%) var(--my,-10%),rgba(94,234,255,.065),transparent 42%),var(--panel)}
+.step::before{content:attr(data-n);position:absolute;right:16px;top:6px;z-index:-1;font-family:var(--f-mono);font-weight:700;font-size:86px;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(94,234,255,.10);pointer-events:none}
+.step::after{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;opacity:0;transition:opacity .5s;
+  background:conic-gradient(from var(--ang),transparent 0 55%,rgba(94,234,255,.9) 70%,rgba(255,79,154,.8) 82%,transparent 94%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.step.cur::after{opacity:1}
+.step h2{margin:0 0 6px;font-size:20px;font-weight:800;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.step h2 .no{font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--bg0);background:linear-gradient(90deg,var(--ac),#a7f3ff);border-radius:6px;padding:3px 8px;letter-spacing:.08em}
+.step h2 .ch{font-family:var(--f-mono);font-size:12px;font-weight:400;color:var(--ac);letter-spacing:.14em;text-transform:uppercase}
+.step p.hint{margin:0 0 16px;color:var(--muted);font-size:13.5px}
+/* reveal on scroll (only when scripts run) */
+.js .rv{opacity:0;transform:translateY(28px);transition:opacity .8s var(--ease),transform .8s var(--ease)}.js .rv.in{opacity:1;transform:none}
+.js .how .rv:nth-child(2){transition-delay:.12s}.js .how .rv:nth-child(3){transition-delay:.24s}
+/* drop zone */
+.drop{position:relative;border:1.5px dashed var(--acm);border-radius:16px;padding:30px 16px;text-align:center;cursor:pointer;background:rgba(94,234,255,.035);overflow:hidden;transition:background .2s,border-color .2s,transform .2s}
+.drop::after{content:"";position:absolute;left:0;right:0;top:0;height:40%;transform:translateY(-110%);background:linear-gradient(180deg,transparent,rgba(94,234,255,.16),transparent);opacity:0}
+.drop:hover,.drop.over{background:rgba(94,234,255,.09);border-color:var(--ac);transform:translateY(-1px)}.drop:hover::after,.drop.over::after{opacity:1;animation:scan 1.4s linear infinite}
+@keyframes scan{to{transform:translateY(260%)}}
+.drop strong{color:var(--ink);font-size:16px}.drop strong::before{content:"⇪ ";color:var(--ac)}
+.drop small{display:block;color:var(--muted);margin-top:4px;font-family:var(--f-mono);font-size:12px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.chip{font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums}
-.chip.warn{border-color:var(--warn);color:var(--warn)}
-.chip.ok{border-color:var(--ok);color:var(--ok)}
-.chip.demo{border-color:var(--stamp);color:#ffb3bf}
-button,.btn{font:600 14px/1 var(--f-body);border-radius:10px;padding:11px 16px;border:1px solid var(--gold-2);background:transparent;color:var(--gold);cursor:pointer}
-button:hover{background:rgba(227,189,132,.1)}
-button.primary{background:linear-gradient(180deg,#e9c58e,#b98a50);color:#2a0b12;border-color:#f3d7a6}
-button.primary:hover{filter:brightness(1.06)}
-button:disabled{opacity:.45;cursor:not-allowed}
-button:focus-visible,input:focus-visible,select:focus-visible,.drop:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);color:var(--ink);background:rgba(94,234,255,.05);font-variant-numeric:tabular-nums}
+.chip.warn{border-color:var(--warn);color:var(--warn)}.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.demo{border-color:var(--ac2);color:#ff9cc3}
+/* controls */
+button,.btn{font:600 14px/1 var(--f-body);border-radius:10px;padding:11px 16px;border:1px solid var(--acm);background:rgba(94,234,255,.05);color:var(--ac);cursor:pointer;transition:background .15s,box-shadow .2s,filter .15s,transform .15s}
+button:hover{background:rgba(94,234,255,.12);box-shadow:0 0 0 1px rgba(94,234,255,.25),0 0 22px rgba(94,234,255,.18)}
+button:active{transform:translateY(1px)}
+button.primary{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,#f6d7a2,#c69652);color:#1a0d04;border-color:#f8e0b4;box-shadow:0 10px 28px rgba(233,197,142,.22),inset 0 1px 0 rgba(255,255,255,.5)}
+button.primary::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-130%);animation:shine 5s ease-in-out infinite;pointer-events:none}
+@keyframes shine{0%,62%{transform:translateX(-130%)}82%,100%{transform:translateX(130%)}}
+button.primary:hover{filter:brightness(1.07);box-shadow:0 14px 36px rgba(233,197,142,.34),inset 0 1px 0 rgba(255,255,255,.5)}
+button.ghost{border-color:var(--acm);color:var(--ac);background:rgba(94,234,255,.06)}
+button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+button:focus-visible,input:focus-visible,select:focus-visible,.drop:focus-visible,.rail a:focus-visible,.topnav a:focus-visible,.how .card:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);min-width:0}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 @media (max-width:520px){.fields{grid-template-columns:minmax(0,1fr)}}
-input[type=text],select{font:15px var(--f-body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;min-width:0}
+input[type=text],input[type=date],select{font:15px var(--f-body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;color-scheme:dark;transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus,input[type=date]:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(94,234,255,.15),0 0 18px rgba(94,234,255,.12);outline:none}
 input.code{font-family:var(--f-mono);text-transform:uppercase;width:90px;letter-spacing:.1em}
-.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink)}
-.check input{accent-color:var(--gold);width:16px;height:16px}
-.unres{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto;padding-right:4px}
-.unres .u{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:14px;padding:6px 0;border-bottom:1px dashed var(--line)}
-.unres .u span.st{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:9ch}
-.unres .u span.st.ok{color:var(--ok)}
-.photo-row{display:flex;gap:14px;align-items:center}
-.thumb{width:64px;height:80px;border-radius:8px;border:1px solid var(--line);object-fit:cover;background:var(--field)}
-.preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);align-self:start;display:flex;flex-direction:column;gap:12px;min-width:0}
-.phone{position:relative;border-radius:28px;padding:10px;background:#120407;border:1px solid var(--line);box-shadow:0 30px 60px rgba(0,0,0,.45)}
-.phone canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;border-radius:20px;background:#000;max-width:100%}
-.controls{display:flex;gap:10px;align-items:center}
-.controls input[type=range]{flex:1;accent-color:var(--gold);min-width:0}
-.time{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:11ch;text-align:right}
-.bar{height:8px;border-radius:99px;background:var(--field);border:1px solid var(--line);overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold-2),var(--gold))}
-.status{font-size:13px;color:var(--muted);min-height:1.4em}
-.status.err{color:#ff9aa8}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink)}.check input{accent-color:var(--ac);width:16px;height:16px}
+.photo-row{display:flex;gap:14px;align-items:center}.thumb{width:64px;height:80px;border-radius:8px;border:1px solid var(--line);object-fit:cover;background:var(--field)}
+details.guide,details.more{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(94,234,255,.03);transition:border-color .2s}
+details.guide[open],details.more[open]{border-color:var(--acl)}
+details.guide summary,details.more summary{cursor:pointer;color:var(--ink);font-size:14px;font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details.guide summary::before,details.more summary::before,details.seglist summary::before{content:"▸";color:var(--ac);display:inline-block;width:1.2em;transition:transform .2s}
+details[open]>summary::before{transform:rotate(90deg)}
+details.guide ol{margin:10px 0 2px;padding-left:20px;font-size:14px;line-height:1.7}details.guide li::marker{color:var(--ac);font-family:var(--f-mono)}details.guide li small{display:block;color:var(--muted);font-size:12.5px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.seg button{font-size:13px;padding:8px 13px;border-radius:999px;color:var(--ink);border-color:var(--line);background:rgba(5,12,30,.6)}
+.seg button[aria-pressed="true"]{background:rgba(94,234,255,.16);border-color:var(--ac);color:var(--ac);box-shadow:0 0 16px rgba(94,234,255,.2)}
+.seg button small{color:var(--muted);font-family:var(--f-mono);font-size:11px;font-weight:400}
+.seg button.sw::before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--sw);border:1px solid var(--gold-2);margin-right:6px;vertical-align:-1px}
+.style-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:4px 0 6px}
+.qa{display:grid;grid-template-columns:9.5em minmax(0,1fr) minmax(0,1fr) 8em;gap:10px;margin-top:12px}
+@media (max-width:620px){.qa{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.qahint{font-size:13px;color:var(--muted);font-family:var(--f-mono)}.qahint.ok{color:var(--ok)}.qahint.err{color:var(--stamp)}
+/* progress, status, results */
+.bar{height:6px;border-radius:99px;background:var(--field);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac2),var(--ac3),var(--ac));background-size:200% 100%;box-shadow:0 0 12px var(--ac);animation:flow 1.6s linear infinite}
+@keyframes flow{to{background-position:-200% 0}}
+.diag{margin:6px 0 0;padding:8px 10px;border:1px dashed var(--line);border-radius:8px;font:11px/1.5 var(--f-mono);color:var(--muted);white-space:pre-wrap;word-break:break-all;user-select:all}
+.status{font-size:13px;color:var(--muted);min-height:1.4em;font-family:var(--f-mono);margin-top:6px}.status.err,#aiStatus.err{color:var(--stamp)}
 .result video{width:100%;border-radius:12px;border:1px solid var(--line);max-width:100%}
-.foot{color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-block:16px;display:flex;flex-wrap:wrap;gap:8px 24px}
+.savebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);font-family:var(--f-mono)}.savebar button{font-size:16px;padding:13px 20px}
+.wxtip{background:var(--warn);color:#1a0d04;border-radius:10px;padding:10px 14px;font-size:14px;margin-top:14px}
+/* check panel */
+.check-head{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(94,234,255,.04);font-size:14px}
+.check-head.ok{border-color:var(--ok)}.check-head.warn{border-color:var(--warn)}.check-head.bad{border-color:var(--stamp)}
+.issues{display:flex;flex-direction:column;gap:12px;margin-top:12px;max-height:620px;overflow:auto;padding-right:4px}
+.issue{border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0;background:rgba(5,12,30,.5)}
+.issue h3{margin:0 0 6px;font-size:15px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.sev{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;padding:2px 8px;border-radius:6px;border:1px solid currentColor;font-weight:400}
+.sev.bad{color:var(--stamp)}.sev.warn{color:var(--warn)}.sev.info{color:var(--muted)}
+.issue>p{margin:0 0 6px;color:var(--muted);font-size:13px}
+.item{display:flex;flex-direction:column;gap:6px;padding:9px 0 3px;border-top:1px dashed var(--line);font-size:14px;min-width:0;overflow-wrap:anywhere}
+.item .where{font-family:var(--f-mono);font-size:12px;color:var(--muted)}.item .acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.item .st{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:7ch}.item .st.ok{color:var(--ok)}
+.sug{font-size:13px;color:var(--ink)}.sug b{color:var(--ac);font-weight:600}
+button.sm{font-size:13px;padding:7px 10px;border-radius:8px}button.on{background:rgba(111,247,200,.12);border-color:var(--ok);color:var(--ok)}
+.fine{font-size:12px;color:var(--muted);margin:12px 0 0}
+details.seglist{margin-top:4px}details.seglist summary{cursor:pointer;color:var(--ink);font-size:14px;padding:6px 0;list-style:none}
+.segtable{display:flex;flex-direction:column;max-height:420px;overflow:auto;border-top:1px dashed var(--line)}
+.segrow{display:grid;grid-template-columns:auto 9.5em 5.5em minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 2px;border-bottom:1px dashed var(--line);font-size:13px}
+.segrow.off{opacity:.45}.segrow .fn,.segrow .dt,.segrow .where{font-family:var(--f-mono);font-size:12px}.segrow .rt{overflow-wrap:anywhere}.segrow .st{color:var(--muted);font-size:12px}
+.segrow input[type=date]{font:12px var(--f-mono);border-color:var(--warn);padding:3px 4px}
+@media (max-width:520px){.segrow{grid-template-columns:auto 8.5em minmax(0,1fr) auto}.segrow .fn,.segrow .where{display:none}}
+/* ---------- achievements: collectible medals ---------- */
+.ach{margin-top:20px}
+.achtop{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 20px;margin-bottom:14px}
+.achmeter{flex:1 1 280px;min-width:0}.achmeter .sum{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);letter-spacing:.04em}
+.achmeter .track{height:8px;margin-top:8px;border-radius:99px;background:var(--field);border:1px solid var(--line);overflow:hidden}
+.achmeter .track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--ac2),var(--ac3),var(--ac));transition:width 1.2s var(--ease);box-shadow:0 0 14px rgba(94,234,255,.5)}
+.achtools{display:flex;flex-wrap:wrap;gap:6px}.achtools button{font-size:12.5px;padding:7px 11px;border-radius:999px}
+.medals{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:14px}
+.medal{position:relative;display:grid;grid-template-columns:58px minmax(0,1fr);gap:14px;align-items:center;text-align:left;padding:16px 16px 18px;border-radius:16px;border:1px solid var(--line);color:var(--ink);font:inherit;line-height:1.35;
+  background:linear-gradient(160deg,rgba(16,32,68,.9),rgba(5,12,30,.94));cursor:pointer;overflow:hidden;isolation:isolate;
+  transform:perspective(700px) rotateX(var(--rx,0)) rotateY(var(--ry,0));transition:transform .25s var(--ease),border-color .25s,box-shadow .25s,opacity .25s}
+.medal:hover{background:linear-gradient(160deg,rgba(20,40,82,.95),rgba(6,14,34,.96));box-shadow:0 16px 40px rgba(0,0,0,.45)}
+.medal::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.10),transparent 45%);opacity:0;transition:opacity .25s}
+.medal:hover::before{opacity:1}
+.emb{position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:27px;background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.5),transparent 42%),var(--medal);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.22),inset 0 -6px 12px rgba(0,0,0,.25),0 0 0 3px rgba(0,0,0,.35),0 8px 20px rgba(0,0,0,.45)}
+.emb::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:1px dashed rgba(255,255,255,.18)}
+.ico{filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.r-base{--medal:linear-gradient(145deg,#2a6a95,#0f2b4c)}
+.r-silver{--medal:linear-gradient(145deg,#f2f6fb,#8e9db2 55%,#dfe6ef)}
+.r-gold{--medal:linear-gradient(145deg,#ffe9b5,#c58b3a 55%,#f9d78f)}
+.r-legend{--medal:conic-gradient(from var(--ang),#ff4f9a,#ffc56b,#6ff7c8,#5eeaff,#a78bfa,#ff4f9a)}
+.medal.r-legend:not(.locked){border-color:transparent;background:linear-gradient(160deg,rgba(18,30,66,.96),rgba(6,12,30,.97)) padding-box,conic-gradient(from 40deg,#ff4f9a,#ffc56b,#6ff7c8,#5eeaff,#a78bfa,#ff4f9a) border-box}
+.medal.r-gold:not(.locked){border-color:rgba(233,197,142,.35)}
+.mt{display:flex;flex-direction:column;min-width:0}
+.mk{font-size:12px;color:var(--muted);letter-spacing:.02em}.mv{font-size:17px;font-weight:800;margin:2px 0;overflow-wrap:anywhere}.md{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.rar{position:absolute;top:9px;right:36px;font:700 9.5px var(--f-mono);letter-spacing:.14em;padding:2px 6px;border-radius:4px;color:var(--bg0)}
+.r-legend .rar{background:linear-gradient(90deg,#ff4f9a,#ffc56b,#5eeaff)}.r-gold .rar{background:var(--gold)}.r-silver .rar{background:#cfd8e4}
+.tick{position:absolute;top:9px;right:9px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;border:1px solid var(--acl);color:transparent;transition:background .2s,color .2s,transform .3s var(--ease)}
+.medal[aria-pressed="true"]{border-color:var(--ac);box-shadow:0 0 0 1px rgba(94,234,255,.6),0 0 26px rgba(94,234,255,.22)}
+.medal.r-legend[aria-pressed="true"]{box-shadow:0 0 0 1px rgba(255,197,107,.5),0 0 30px rgba(255,79,154,.25)}
+.medal[aria-pressed="true"] .tick{background:var(--ac);color:var(--bg0);border-color:var(--ac);transform:scale(1.1)}
+.medal.locked{cursor:default;opacity:.62}.medal.locked .emb{background:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 4px,transparent 4px 8px),#0b1630;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.medal.locked .ico{filter:grayscale(1);opacity:.8}.medal.locked .mv{color:var(--muted);font-weight:600;font-size:14px}.medal.locked .tick{display:none}
+.medal.locked:hover{box-shadow:none}
+.mp{position:absolute;left:16px;right:16px;bottom:8px;height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.mp i{display:block;height:100%;width:calc(var(--p,0)*100%);background:linear-gradient(90deg,var(--ac2),var(--ac))}
+.js .ach:not(.in) .medal{visibility:hidden}
+.ach.in .medal{animation:medalIn .6s var(--ease) backwards;animation-delay:calc(var(--i,0)*35ms)}
+@keyframes medalIn{from{opacity:0;transform:translateY(18px) scale(.96)}}
+@media (max-width:560px){.medals{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.medal{grid-template-columns:minmax(0,1fr);gap:10px;padding:14px 12px 16px}.emb{width:46px;height:46px;font-size:22px}.mv{font-size:15px}.rar{top:9px;right:34px}}
+.share{margin-top:26px;padding-top:18px;border-top:1px dashed var(--line)}
+.sub{margin:4px 0 4px;font-size:17px;display:flex;gap:10px;align-items:baseline}
+.sub::before{content:attr(data-k);font-family:var(--f-mono);font-size:11px;color:var(--ac);letter-spacing:.14em}
+.imgout{margin-top:12px}.imgout img{width:100%;max-width:360px;border-radius:10px;border:1px solid var(--line);display:block;margin-bottom:10px}
+.chkrow{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px}.chkhead{margin-top:12px;font-size:13px;color:var(--muted)}
+/* ---------- preview: a floating device in a HUD frame ---------- */
+.preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 82px);align-self:start;display:flex;flex-direction:column;gap:12px;min-width:0}
+.devhead{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;color:var(--ac);text-transform:uppercase}
+.devhead .rec::before{content:"●";color:var(--ac2);margin-right:6px;animation:blink 1.2s steps(2) infinite}
+.phone{position:relative;border-radius:30px;padding:10px;background:linear-gradient(160deg,#0b1428,#03070f);border:1px solid var(--acl);box-shadow:0 30px 60px rgba(0,0,0,.55),0 0 0 6px rgba(94,234,255,.04)}
+@keyframes float{50%{transform:translateY(-8px)}}
+.phone::before,.phone::after{content:"";position:absolute;width:26px;height:26px;border:2px solid var(--ac);pointer-events:none}
+.phone::before{left:-9px;top:-9px;border-right:0;border-bottom:0}.phone::after{right:-9px;bottom:-9px;border-left:0;border-top:0}
+.phone .sheen{display:none}
+.phone canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;border-radius:21px;background:#000;max-width:100%}
+.controls{display:flex;gap:10px;align-items:center}.controls input[type=range]{flex:1;accent-color:var(--ac);min-width:0}
+.time{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:11ch;text-align:right}
+/* ---------- footer ---------- */
+.foot{position:relative;margin-top:40px;padding:40px 0 18px;border-top:1px solid var(--line);overflow:hidden}
+.foot .mark{font-family:var(--f-mono);font-weight:700;font-size:clamp(46px,11vw,150px);line-height:.9;letter-spacing:-.02em;color:transparent;-webkit-text-stroke:1px rgba(94,234,255,.22);white-space:nowrap;
+  background:linear-gradient(90deg,transparent 30%,rgba(94,234,255,.35) 50%,transparent 70%);-webkit-background-clip:text;background-clip:text}
+.foot .mrzf{font-family:var(--f-mono);font-size:12px;color:rgba(94,234,255,.3);letter-spacing:.08em;white-space:nowrap;overflow:hidden;margin:14px 0 16px}
+.foot .cred{color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:8px 24px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+dialog.intro{border:1px solid var(--acm);border-radius:18px;padding:0;background:#02040b;max-width:min(420px,92vw);width:100%;box-shadow:0 0 80px rgba(94,234,255,.22)}dialog.intro::backdrop{background:rgba(1,3,10,.84);backdrop-filter:blur(6px)}
+dialog.intro video{display:block;width:100%;aspect-ratio:9/16;background:#000}dialog.intro .x{position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,.6)}
+.mob{display:none}@media (max-width:900px){.mob{display:inline}.desk{display:none}}
+/* ---------- views: one page at a time ---------- */
+html[data-view="home"] .view:not([data-v="home"]),html[data-view="studio"] .view:not([data-v="studio"]),html[data-view="badges"] .view:not([data-v="badges"]){display:none}
+html[data-step="s1"] #s2,html[data-step="s1"] #s3,html[data-step="s2"] #s1,html[data-step="s2"] #stepCheck,html[data-step="s2"] #s3,html[data-step="s3"] #s1,html[data-step="s3"] #stepCheck,html[data-step="s3"] #s2{display:none}
+.view{animation:viewIn .28s var(--ease)}@keyframes viewIn{from{opacity:0;transform:translateY(10px)}}
+.topnav a.on,.tabbar a.on{color:var(--ink)}
+.stepper{display:flex;align-items:center;gap:10px;padding:22px 0 6px;font-size:14px}
+.stepper a{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--muted);white-space:nowrap}
+.stepper a b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);font:700 13px var(--f-mono);color:var(--muted)}
+.stepper a.on{color:var(--ink);font-weight:700}.stepper a.on b{background:var(--ac);border-color:var(--ac);color:var(--bg0)}
+.stepper a.done b{border-color:var(--ok);color:var(--ok)}
+.stepper>i{flex:1;height:1px;background:var(--line);min-width:12px;max-width:90px}
+.wiz{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px dashed var(--line)}.wiz button{font-size:15px;padding:13px 18px}
+.next{display:flex;align-items:center;justify-content:space-between;gap:16px;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin-bottom:10px;background:linear-gradient(170deg,rgba(14,30,64,.7),rgba(5,12,30,.8))}
+.next b{display:block;font-size:17px}.next small{color:var(--muted);font-size:13.5px}.next i{font-style:normal;font-size:22px;color:var(--ac)}.next:hover{border-color:var(--acm)}
+.tabbar{display:none}
+@media (max-width:900px){.tabbar{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));background:rgba(2,4,11,.97);border-top:1px solid var(--line);z-index:25}
+  .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;text-decoration:none;color:var(--muted);font-size:12px;border-radius:10px}.tabbar a i{font-style:normal;font-size:18px;line-height:1}
+  .tabbar a.on{color:var(--ac)}body{padding-bottom:78px}}
+/* phones: the preview scrolls with the page, the bar stays compact */
+@media (max-width:900px){.preview{position:static;width:min(100%,62vw);max-width:300px;margin-inline:auto}html[data-step="s1"] .preview,html[data-step="s2"] .preview{display:none}
+  .stepper{padding-top:14px;font-size:13px;gap:6px}.stepper a b{width:24px;height:24px}.stepper a:not(.on) span{display:none}
+  .stars i{animation:none}.jet,.floor{display:none}.phone{animation:none}}
+@media (pointer:fine) and (min-width:901px){.phone{animation:float 7s ease-in-out infinite}}
+@media (max-width:560px){.brand .eyebrow{display:none}.brand svg{width:28px;height:28px}.pill{padding:7px 10px;font-size:12px}.brand h1{font-size:17px;letter-spacing:.08em}.lede{font-size:15px;margin:16px 0 20px}.ghud{font-size:9.5px}.ghud.br{display:none}.step{padding:20px 16px 18px}.step::before{font-size:64px}}
+@media (max-width:420px){.pill .wide{display:none}}
+@media (max-width:360px){.brand h1{font-size:14px;letter-spacing:.04em}.brand{gap:8px}.pill{padding:6px 8px}}
+section[id],.ach[id]{scroll-margin-top:90px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}.js .rv{opacity:1;transform:none}.js .ach:not(.in) .medal{visibility:visible}}
 </style>
 
+<div class="fx" aria-hidden="true"><div class="aurora"></div><div class="stars"></div><div class="floor"></div><div class="jet"></div></div>
 <div class="wrap">
   <header class="top">
-    <div class="brand">
-      <span class="eyebrow">Sky Passport · Flight Log Studio</span>
-      <h1>航迹护照</h1>
-    </div>
-    <p class="lede">上传你的航班记录，写上名字，一键生成竖屏飞行护照动画（MP4，带配乐）。全部在你的浏览器里完成，记录不会上传到任何服务器。</p>
+    <a class="brand" href="#/home" data-go="home" aria-label="航迹护照" data-en-aria="Sky Passport">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="20" fill="none" stroke="#e9c58e" stroke-width="2.6"/><ellipse cx="32" cy="32" rx="8" ry="20" fill="none" stroke="#e9c58e" stroke-width="2"/><path d="M12 32h40M15 22h34M15 42h34" stroke="#e9c58e" stroke-width="1.6"/><g class="orbit"><ellipse cx="32" cy="32" rx="29" ry="8" fill="none" stroke="#5eeaff" stroke-width="2" transform="rotate(-20 32 32)"/><circle cx="59" cy="22" r="2.6" fill="#5eeaff"/></g></svg>
+      <div><span class="eyebrow">Sky Passport // Flight Log</span><h1 data-en="SKY PASSPORT">航迹护照</h1></div>
+    </a>
+    <nav class="topnav" aria-label="页面" data-en-aria="Pages"><a href="#/home" data-go="home" data-en="Home">首页</a><a href="#/studio" data-go="studio" data-en="Make">制作</a><a href="#/badges" data-go="badges" data-en="Achievements">成就</a></nav>
+    <div class="topbtns"><button type="button" class="pill" id="btnIntro" data-en="▶ <span class=wide>40-second </span>intro">▶ 40 秒看懂</button><button type="button" class="pill" id="btnLang" aria-label="Switch to English">EN</button></div>
   </header>
-  <div class="mrz" aria-hidden="true">P&lt;SKYPASSPORT&lt;&lt;FLIGHT&lt;LOG&lt;STUDIO&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+  <div class="wxtip" id="wxTip" hidden data-en="You're inside WeChat, which can't save files. Tap ··· (top right) → Open in browser, then make and save the film.">你正在微信里打开：微信不允许保存文件。请点右上角「···」→「在浏览器打开」，再生成视频并保存。</div>
 
+  <div class="view" data-v="home">
+  <section class="hero" id="top" aria-labelledby="heroH">
+    <div class="hero-copy">
+      <p class="kicker" data-en="Flight log online · decode your sky">FLIGHT LOG ONLINE · 解码你的天空</p>
+      <h2 class="big" id="heroH" data-en="Every take-off&lt;br&gt;&lt;span class=&quot;g&quot;&gt;deserves to be&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;remembered&lt;/span&gt;">每一次起飞<br><span class="g">都值得被</span><span class="c">记住</span></h2>
+      <p class="lede" data-en="Boarding passes expire. Flight records scatter across apps and spreadsheets. Hand them to Sky Passport and they are decoded, in seconds, into a passport that comes alive — routes on the map, a stamp, an original score.">登机牌会过期，航班记录散落在 App 和表格里。把它们交给航迹护照：几秒钟，解码成一本会动的护照——航线、盖章、原创配乐。</p>
+      <div class="cta"><button type="button" class="primary" id="btnStart" data-en="Start with my flights ↓">开始，导入我的航班 ↓</button><button type="button" class="introBtn ghost" data-en="▶ Watch the 40-second intro">▶ 看 40 秒介绍</button></div>
+      <div class="trust"><span data-en="Your sheet never leaves the browser">表格只在你的浏览器里处理</span><span data-en="Free · no sign-up">免费 · 无需注册</span><span data-en="1080×1920 MP4 + original score">1080×1920 MP4 + 原创配乐</span></div>
+    </div>
+    <div class="stage">
+      <div class="globe-box">
+        <canvas id="globe" aria-label="你的航线地球，可拖动旋转" data-en-aria="Your routes on a globe — drag to turn it" role="img"></canvas>
+        <div class="ring" aria-hidden="true"></div>
+        <div class="ghud tl" aria-hidden="true"><span class="live" data-en="Live routes">实时航迹</span><br><b id="gRoutes">0</b> <span data-en="routes">条航线</span></div>
+        <div class="ghud tr" aria-hidden="true">ORBIT · <b id="gPos">—</b><br><span data-en="Drag to turn">拖动旋转</span> ⟲</div>
+      </div>
+      <div class="board" aria-live="off">
+        <div class="who" id="heroWho">SAMPLE TRAVELLER</div>
+        <div class="stats" id="heroStats">
+          <div class="stat"><b data-k="n">0</b><span data-en="take-offs">次起飞</span></div>
+          <div class="stat"><b data-k="km">0</b><span data-en="km flown">公里</span></div>
+          <div class="stat"><b data-k="cc">0</b><span data-en="countries &amp; regions">个国家地区</span></div>
+          <div class="stat"><b data-k="h">0</b><span data-en="hours aloft">小时在空中</span></div>
+        </div>
+        <div class="line" id="heroLine"></div>
+      </div>
+    </div>
+  </section>
+  <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+
+  <section class="how" aria-label="三步完成" data-en-aria="Three steps">
+    <a class="card rv" href="#/studio/s1" data-go="studio:s1"><span class="n">01</span>
+      <svg class="ic-doc" viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="8" width="30" height="40" rx="4" fill="rgba(94,234,255,.08)" stroke="#5eeaff" stroke-width="2"/><path class="ln" d="M20 20h18" stroke="#5eeaff" stroke-width="2.5" stroke-linecap="round"/><path class="ln" d="M20 28h18" stroke="#5eeaff" stroke-width="2.5" stroke-linecap="round"/><path class="ln" d="M20 36h12" stroke="#5eeaff" stroke-width="2.5" stroke-linecap="round"/><g class="ar"><path d="M50 30v20M43 43l7 7 7-7" fill="none" stroke="#e9c58e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+      <h3 data-en="Memory · bring your flights">记忆 · 导入航班</h3><p data-en="Exports from Flighty, myFlightradar24, 航旅纵横 — or type a few by hand.">航旅纵横、Flighty、myFlightradar24 导出的表格，或手动添加。</p></a>
+    <a class="card rv" href="#/studio/s1" data-go="studio:s1"><span class="n">02</span>
+      <svg class="ic-scan" viewBox="0 0 64 64" aria-hidden="true"><g fill="rgba(94,234,255,.18)"><rect class="cell" x="10" y="12" width="12" height="9" rx="2"/><rect x="26" y="12" width="12" height="9" rx="2"/><rect class="cell" x="42" y="12" width="12" height="9" rx="2"/><rect x="10" y="26" width="12" height="9" rx="2"/><rect class="cell" x="26" y="26" width="12" height="9" rx="2"/><rect x="42" y="26" width="12" height="9" rx="2"/><rect class="cell" x="10" y="40" width="12" height="9" rx="2"/><rect x="26" y="40" width="12" height="9" rx="2"/><rect class="cell" x="42" y="40" width="12" height="9" rx="2"/></g><rect class="sl" x="6" y="10" width="52" height="3" rx="1.5" fill="#ff4f9a"/></svg>
+      <h3 data-en="Decode · check the sheet">解码 · 自动检查</h3><p data-en="Airports, dates and statuses are recognised; AI helps with the rest.">机场、日期、状态自动识别，认不出的交给 AI 帮你判断。</p></a>
+    <a class="card rv" href="#/studio/s3" data-go="studio:s3"><span class="n">03</span>
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="6" width="40" height="52" rx="5" fill="#5a1424" stroke="#e9c58e" stroke-width="2"/><circle cx="32" cy="28" r="10" fill="none" stroke="#e9c58e" stroke-width="2"/><ellipse cx="32" cy="28" rx="4" ry="10" fill="none" stroke="#e9c58e" stroke-width="1.5"/><path d="M22 46h20" stroke="#e9c58e" stroke-width="2"/><g><path d="M-3 0l6 0M0-2l3 2-3 2" fill="none" stroke="#5eeaff" stroke-width="2" stroke-linecap="round"/><animateMotion dur="3.2s" repeatCount="indefinite" rotate="auto" path="M32 12a16 16 0 1 1-0.1 0"/></g></svg>
+      <h3 data-en="Passport · make the film">护照 · 生成影片</h3><p data-en="A one-minute vertical film with an original score, rendered on your device.">一分钟竖屏影片，原创配乐，在你的设备上渲染。</p></a>
+  </section>
+
+    <a class="next rv" href="#/badges" data-go="badges"><span><b data-en="Your flight achievements">你的飞行成就</b><small data-en="33 medals worked out from your flights — pick the ones for your long poster">33 枚勋章由航班自动算出，选几枚印上长图海报</small></span><i aria-hidden="true">→</i></a>
+  </div>
+
+  <div class="view" data-v="studio">
+  <nav class="stepper" aria-label="制作步骤" data-en-aria="Steps">
+    <a href="#/studio/s1" data-go="studio:s1"><b>1</b><span data-en="Import">导入航班</span></a><i aria-hidden="true"></i>
+    <a href="#/studio/s2" data-go="studio:s2"><b>2</b><span data-en="Identity">护照信息</span></a><i aria-hidden="true"></i>
+    <a href="#/studio/s3" data-go="studio:s3"><b>3</b><span data-en="Make">生成视频</span></a>
+  </nav>
   <div class="grid">
     <div class="steps">
-      <section class="step" aria-labelledby="h1">
-        <h2 id="h1"><span class="no">01</span>上传航班记录</h2>
-        <p class="hint">支持航旅纵横等 App 导出的 Excel（.xls / .xlsx），或按模板填写的 CSV。机场可以写中文名（如「广州白云」）或三字码（CAN）。</p>
+      <section class="step" id="s1" data-n="01" aria-labelledby="h1">
+        <h2 id="h1"><span class="no">CH.01</span><span data-en="Memory · bring your flights">记忆 · 导入你的航班</span><span class="ch">import</span></h2>
+        <p class="hint" data-en="Exports from Flighty, myFlightradar24, OpenFlights or 航旅纵横 work as they are (.xls / .xlsx / .csv), or fill in the CSV template — or add a few flights by hand below. Airports can be codes (LHR), English names (London Heathrow) or Chinese names.">支持航旅纵横、Flighty、myFlightradar24、OpenFlights 等 App 导出的表格（.xls / .xlsx / .csv），或按模板填写的 CSV，也可以在下面手动添加几段。机场可以写中文名（如「广州白云」）、英文名或三字码（CAN）。</p>
         <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="dropHint">
-          <strong>点击选择文件，或拖到这里</strong>
+          <strong data-en="Choose a file, or drop it here">点击选择文件，或拖到这里</strong>
           <small id="dropHint">.xls · .xlsx · .csv</small>
         </div>
-        <input type="file" id="file" accept=".xls,.xlsx,.csv,.txt" class="sr" aria-label="选择航班记录文件">
+        <input type="file" id="file" accept=".xls,.xlsx,.csv,.txt" class="sr" aria-label="选择航班记录文件" data-en-aria="Choose your flight-log file">
         <div class="row" style="margin-top:12px">
-          <button type="button" id="btnTpl">下载 CSV 模板</button>
-          <button type="button" id="btnDemo">换回示例数据</button>
+          <button type="button" id="btnTpl" data-en="Download CSV template">下载 CSV 模板</button>
+          <button type="button" id="btnDemo" data-en="Back to the sample">换回示例数据</button>
         </div>
-        <div class="chips" id="chips"></div>
-        <div class="row" style="margin-top:12px;gap:18px" id="opts">
-          <label class="check"><input type="checkbox" id="optUp" checked> 计入待出行航班</label>
-          <label class="check"><input type="checkbox" id="optVoid"> 计入退票 / 作废</label>
-        </div>
-        <div class="fields" style="margin-top:14px">
-          <label class="f" for="yFrom">起始年份<select id="yFrom"></select></label>
-          <label class="f" for="yTo">结束年份<select id="yTo"></select></label>
-        </div>
-      </section>
-
-      <section class="step" id="stepUnres" hidden aria-labelledby="h2u">
-        <h2 id="h2u"><span class="no">01·B</span>补全未识别的机场</h2>
-        <p class="hint">下面这些地名没认出来。填上机场三字码（例如曼谷素万那普是 BKK），识别成功会显示城市名。不填的航段不会出现在动画里。</p>
-        <div class="unres" id="unres"></div>
-      </section>
-
-      <section class="step" aria-labelledby="h2p">
-        <h2 id="h2p"><span class="no">02</span>护照信息</h2>
-        <p class="hint">名字会出现在护照页、机读码和片头片尾。机读码只用英文字母，中文名请另填拼音。</p>
-        <div class="fields">
-          <label class="f" for="name">名字（显示用）<input type="text" id="name" maxlength="24" placeholder="例如 BARRY 或 小白" autocomplete="off"></label>
-          <label class="f" for="latin">英文名 / 拼音（机读码）<input type="text" id="latin" maxlength="24" placeholder="例如 BAI YIBING" autocomplete="off"></label>
-          <label class="f" for="nat">国籍 / 地区<select id="nat"></select></label>
-          <div class="f">照片（可选）
-            <div class="photo-row"><img class="thumb" id="thumb" alt="照片预览"><button type="button" id="btnPhoto">选择照片</button><button type="button" id="btnPhotoClear" hidden>移除</button></div>
-            <input type="file" id="photo" accept="image/*" class="sr" aria-label="选择照片">
+        <details class="guide" id="guide">
+          <summary data-en="Where do I get my flight history? 3 steps">不知道怎么导出记录？看 3 步说明</summary>
+          <ol id="guideSteps"></ol>
+        </details>
+        <details class="more" id="quickAdd">
+          <summary data-en="No export? Add flights by hand">没有导出文件？手动添加航班</summary>
+          <div class="qa">
+            <label class="f" for="qaDate"><span data-en="Date">日期</span><input type="date" id="qaDate"></label>
+            <label class="f" for="qaFrom"><span data-en="From">出发</span><input type="text" id="qaFrom" placeholder="PVG / 上海浦东" data-en-ph="LHR / London Heathrow" autocomplete="off"></label>
+            <label class="f" for="qaTo"><span data-en="To">到达</span><input type="text" id="qaTo" placeholder="NRT / 东京成田" data-en-ph="JFK / New York JFK" autocomplete="off"></label>
+            <label class="f" for="qaFn"><span data-en="Flight no. (optional)">航班号（可选）</span><input type="text" id="qaFn" placeholder="MU523" autocomplete="off"></label>
           </div>
-          <label class="f" for="tagEn">结尾文案（英文）<input type="text" id="tagEn" maxlength="40" value="MY JOURNEY ACROSS THE GLOBE"></label>
-          <label class="f" for="tagZh">结尾文案（中文）<input type="text" id="tagZh" maxlength="24" value="一本护照，装下我的天空"></label>
-        </div>
+          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnQaAdd" data-en="Add flight">添加这一段</button><span class="qahint" id="qaHint" aria-live="polite"></span></div>
+          <p class="fine" data-en="Added flights stay in this browser tab only. To keep them, use “Download the corrected sheet” in the check panel.">添加的航段只保存在当前页面；想留着下次用，在「检查表格」里点「下载修正后的表格」。</p>
+        </details>
+        <div class="chips" id="chips"></div>
+        <div class="seg" id="yearQuick" role="group" aria-label="年份范围" data-en-aria="Year range"></div>
+        <details class="more">
+          <summary data-en="More: years, upcoming and cancelled flights">更多：自定义年份、待出行 / 退票</summary>
+          <div class="row" style="margin-top:12px;gap:18px" id="opts">
+            <label class="check"><input type="checkbox" id="optUp" checked> <span data-en="Include upcoming flights">计入待出行航班</span></label>
+            <label class="check"><input type="checkbox" id="optVoid"> <span data-en="Include cancelled / void tickets">计入退票 / 作废</span></label>
+          </div>
+          <div class="fields" style="margin-top:14px">
+            <label class="f" for="yFrom"><span data-en="From year">起始年份</span><select id="yFrom"></select></label>
+            <label class="f" for="yTo"><span data-en="To year">结束年份</span><select id="yTo"></select></label>
+          </div>
+        </details>
+        <div class="wiz"><span></span><button type="button" class="primary" data-go="studio:s2" data-en="Next: passport details →">下一步：护照信息 →</button></div>
       </section>
 
-      <section class="step" aria-labelledby="h3">
-        <h2 id="h3"><span class="no">03</span>生成视频</h2>
-        <p class="hint">右侧是实时预览。生成会逐帧渲染约一分钟的 1080×1920 视频，通常需要 1–3 分钟，期间请保持页面打开。</p>
-        <div class="row"><button type="button" class="primary" id="btnMake">生成 MP4 视频</button><button type="button" id="btnCancel" hidden>取消</button></div>
+      <section class="step" id="stepCheck" data-n="02" hidden aria-labelledby="h2u">
+        <h2 id="h2u"><span class="no">CH.02</span><span data-en="Decode · check the sheet">解码 · 检查表格</span><span class="ch">decode</span></h2>
+        <p class="hint" data-en="Your file is checked in the browser first. If something is off, tap “AI check”: TypeSafe's Jev model judges unknown place names, unclear statuses and suspicious rows and suggests fixes. Accepted fixes are used right away, and you can download the corrected sheet.">上传后会先在浏览器里自动检查。有问题时点「AI 检查」，由 TypeSafe 的 Jev 模型判断没认出的地名、看不懂的状态和可疑的行，给出修改建议。采用后直接用于生成，也可以下载修正后的表格。</p>
+        <div id="checkHead" class="check-head" role="status" aria-live="polite"></div>
+        <div class="row" style="margin-top:12px">
+          <button type="button" class="primary" id="btnAI">AI 检查（Jev）</button>
+          <button type="button" id="btnApplyAll" hidden>采用全部高把握建议</button>
+          <button type="button" id="btnFixedCsv" data-en="Download the corrected sheet">下载修正后的表格</button>
+          <button type="button" id="btnToMake" hidden data-en="Go to the film ↓">去生成视频 ↓</button>
+        </div>
+        <div class="status" id="aiStatus" role="status" aria-live="polite"></div>
+        <div class="issues" id="issues"></div>
+        <p class="fine" id="aiNote" data-en="Privacy: only when you tap “AI check” does this site's server send TypeSafe the place names it couldn't recognise (with that row's flight number, date and other airport), unclear statuses and suspicious rows — plus the first 8 rows if the table structure isn't recognised. Your name and photo are never sent.">隐私：只有点「AI 检查」时，才会经本站服务器把这些内容发给 TypeSafe：没认出的地名（附所在行的航班号、日期、另一端地名）、看不懂的状态、可疑的行；认不出表格结构时，另加前 8 行。不会发送你的名字和照片。</p>
+      </section>
+
+      <section class="step" id="s2" data-n="03" aria-labelledby="h2p">
+        <h2 id="h2p"><span class="no">CH.03</span><span data-en="Identity · whose passport">身份 · 这是谁的护照</span><span class="ch">identity</span></h2>
+        <p class="hint" data-en="Your name appears on the passport page, in the machine-readable zone and on the opening and closing posters. The machine-readable zone uses Latin letters only.">名字会出现在护照页、机读码和片头片尾。机读码只用英文字母，中文名请另填拼音。</p>
+        <div class="fields">
+          <label class="f" for="name"><span data-en="Name (as shown)">名字（显示用）</span><input type="text" id="name" maxlength="24" placeholder="例如 林小舟 或 ALEX" data-en-ph="e.g. Alex Chen" autocomplete="off"></label>
+          <label class="f" for="latin"><span data-en="Name in Latin letters (machine-readable zone)">英文名 / 拼音（机读码）</span><input type="text" id="latin" maxlength="24" placeholder="例如 LIN XIAOZHOU" data-en-ph="e.g. ALEX CHEN" autocomplete="off"></label>
+        </div>
+        <details class="more">
+          <summary data-en="More: nationality, photo, closing line">更多：国籍、照片、结尾文案</summary>
+          <div class="fields" style="margin-top:12px">
+          <label class="f" for="nat"><span data-en="Nationality / region">国籍 / 地区</span><select id="nat"></select></label>
+          <div class="f"><span data-en="Photo (optional)">照片（可选）</span>
+            <div class="photo-row"><img class="thumb" id="thumb" alt="照片预览" data-en-alt="Photo preview"><button type="button" id="btnPhoto" data-en="Choose photo">选择照片</button><button type="button" id="btnPhotoClear" hidden data-en="Remove">移除</button></div>
+            <input type="file" id="photo" accept="image/*" class="sr" aria-label="选择照片" data-en-aria="Choose a photo">
+          </div>
+          <label class="f" for="tagEn"><span data-en="Closing line (English)">结尾文案（英文）</span><input type="text" id="tagEn" maxlength="40" value="MY JOURNEY ACROSS THE GLOBE"></label>
+          <label class="f" for="tagZh"><span data-en="Closing line (Chinese)">结尾文案（中文）</span><input type="text" id="tagZh" maxlength="24" value="一本护照，装下我的天空"></label>
+          </div>
+        </details>
+        <div class="wiz"><button type="button" data-go="studio:s1" data-en="← Back">← 上一步</button><button type="button" class="primary" data-go="studio:s3" data-en="Next: make the film →">下一步：生成视频 →</button></div>
+      </section>
+
+      <section class="step" id="s3" data-n="04" aria-labelledby="h3">
+        <h2 id="h3"><span class="no">CH.04</span><span data-en="Passport · pick a style, make the film">护照 · 选风格，生成</span><span class="ch">render</span></h2>
+        <div class="style-grid">
+          <div class="f"><span data-en="Cover colour">封皮颜色</span><div class="seg" id="segTheme" role="group" aria-label="封皮颜色" data-en-aria="Cover colour"><button type="button" data-v="burgundy" class="sw" style="--sw:#5a1424" data-en="Burgundy">酒红</button><button type="button" data-v="navy" class="sw" style="--sw:#1c2c4a" data-en="Navy">藏青</button><button type="button" data-v="green" class="sw" style="--sw:#1d4434" data-en="Green">墨绿</button><button type="button" data-v="black" class="sw" style="--sw:#222225" data-en="Black">黑</button></div></div>
+          <div class="f"><span data-en="Music">配乐</span><div class="seg" id="segMusic" role="group" aria-label="配乐风格" data-en-aria="Music style"><button type="button" data-v="groove" data-en="Groove">律动</button><button type="button" data-v="calm" data-en="Calm">舒缓</button></div></div>
+          <div class="f"><span data-en="Length">片长</span><div class="seg" id="segLen" role="group" aria-label="片长" data-en-aria="Length"><button type="button" data-v="24" data-en="Full">完整</button><button type="button" data-v="12.5" data-en="≈45 s">约 45 秒</button><button type="button" data-v="5.5" data-en="≈30 s">约 30 秒</button></div></div>
+        </div>
+        <p class="hint" style="margin-top:12px" data-en="The live preview is &lt;span class=&quot;desk&quot;&gt;on the right&lt;/span&gt;&lt;span class=&quot;mob&quot;&gt;above&lt;/span&gt;. The film is rendered frame by frame on your device at 1080×1920 — seconds to a minute on a computer, longer on a phone. Keep this page open meanwhile.">实时预览在<span class="desk">右侧</span><span class="mob">上方</span>。生成会在你的设备上逐帧渲染 1080×1920 视频，电脑通常几秒到一分钟，手机会久一些，期间请保持页面打开。</p>
+        <div class="row"><button type="button" class="primary" id="btnMake" data-en="Make the MP4">生成 MP4 视频</button><button type="button" id="btnCancel" hidden data-en="Cancel">取消</button></div>
         <div class="bar" style="margin-top:14px" aria-hidden="true"><i id="prog"></i></div>
         <div class="status" id="status" role="status" aria-live="polite"></div>
+        <pre class="diag" id="diag" hidden></pre>
         <div class="result" id="result" hidden>
           <video id="outVideo" controls playsinline></video>
-          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnSave">保存视频</button></div>
+          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnSave" data-en="⬇ Save video (MP4)">⬇ 保存视频（MP4）</button></div>
         </div>
+        <div class="wiz"><button type="button" data-go="studio:s2" data-en="← Back">← 上一步</button><button type="button" data-go="badges" data-en="Achievements &amp; long poster →">看成就 · 做长图 →</button></div>
       </section>
     </div>
 
-    <aside class="preview" aria-label="预览">
-      <div class="phone"><canvas id="cv" width="1080" height="1920"></canvas></div>
+    <aside class="preview" aria-label="预览" data-en-aria="Preview">
+      <div class="devhead"><span class="rec" data-en="Live preview">实时预览</span><span>1080 × 1920 · 30 FPS</span></div>
+      <div class="phone"><canvas id="cv" width="1080" height="1920"></canvas><i class="sheen" aria-hidden="true"></i></div>
+      <div class="savebar" id="saveBar" hidden><button type="button" class="primary" id="btnSave2" data-en="⬇ Save video">⬇ 保存视频</button><span id="saveInfo"></span></div>
       <div class="controls">
-        <button type="button" id="btnPlay" aria-label="播放预览">▶ 播放</button>
-        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="预览进度">
+        <button type="button" id="btnPlay" aria-label="播放预览" data-en-aria="Play the preview" data-en="▶ Play">▶ 播放</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="预览进度" data-en-aria="Preview position">
         <span class="time" id="time">0:00 / 0:00</span>
       </div>
     </aside>
   </div>
-  <div class="foot"><span>地图数据 Natural Earth · 机场数据 OpenFlights · 国旗 flag-icons</span><span>配乐为程序实时合成的原创曲目，可自由使用</span></div>
+  </div>
+
+  <div class="view" data-v="badges">
+  <section class="step ach in" id="s4" data-n="05" aria-labelledby="h5">
+    <h2 id="h5"><span class="no">CH.05</span><span data-en="Achievements · your flight record">成就 · 你的飞行档案</span><span class="ch">badges</span></h2>
+    <p class="hint" data-en="Medals are worked out from your flights. Tap the ones you like — they are printed on the long poster. Locked ones tell you how to get them.">勋章由你的航班自动算出。点一下选中，选中的会印在长图海报上；灰色的还没解锁，卡片上写着怎么拿到。</p>
+    <div class="achtop">
+      <div class="achmeter"><div class="sum" id="achSum"></div><div class="track"><i id="achBar"></i></div></div>
+      <div class="achtools"><button type="button" id="achRec" data-en="Recommended">推荐组合</button><button type="button" id="achAll" data-en="Select all">全选</button><button type="button" id="achNone" data-en="Clear">清空</button></div>
+    </div>
+    <div class="seg" id="achCats" role="group" aria-label="成就分类" data-en-aria="Achievement groups"></div>
+    <div class="medals" id="badges"></div>
+    <div class="share">
+      <h3 class="sub" data-k="SHARE" data-en="Share · pictures travel further">分享 · 晒图更方便</h3>
+      <p class="hint" data-en="On Instagram, WeChat Moments or Xiaohongshu, a picture gets shared more than a video. The long poster carries the medals you picked above.">朋友圈、小红书发图比发视频更容易被转发。长图会印上你在上面选中的勋章。</p>
+      <div class="f" style="margin-top:4px"><span data-en="Poster style">长图风格</span><div class="seg" id="segPoster" role="group" aria-label="长图风格" data-en-aria="Poster style"><button type="button" data-v="night" data-en="Night flight · new">夜航 · 新</button><button type="button" data-v="classic" data-en="Classic passport">经典护照</button></div></div>
+      <details class="more" id="posterOpts"><summary data-en="What else the long poster shows">长图还显示哪些内容</summary><div id="posterChecks"></div></details>
+      <div class="row" style="margin-top:12px"><button type="button" class="primary" id="btnLong" data-en="Make a long poster">生成长图海报</button><button type="button" id="btnCoverImg" data-en="Export the cover image">导出视频封面图</button></div>
+      <div class="imgout" id="imgOut" hidden><img id="imgPrev" alt="生成的图片预览" data-en-alt="Preview of the generated image"><div class="row"><button type="button" class="primary" id="btnSaveImg" data-en="⬇ Save image">⬇ 保存图片</button></div></div>
+    </div>
+  </section>
+  </div>
+  <footer class="foot rv">
+    <div class="mark" aria-hidden="true">SKY PASSPORT</div>
+    <div class="mrzf" aria-hidden="true">P&lt;SKY&lt;&lt;PASSPORT&lt;&lt;&lt;EVERY&lt;FLIGHT&lt;TOLD&lt;AS&lt;A&lt;STORY&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+    <div class="cred"><span data-en="Map data Natural Earth, DataV.GeoAtlas (China) · Airports OpenFlights (ODbL; airports.json is offered under ODbL too) · Flags flag-icons">地图数据 Natural Earth、DataV.GeoAtlas（中国） · 机场数据 OpenFlights（ODbL，airports.json 同样以 ODbL 提供） · 国旗 flag-icons</span><span data-en="The music is an original score synthesised in your browser, free to use. Sound effects are public-domain (CC0) recordings from Kenney and Freesound — &lt;a href=&quot;sfx/CREDITS.md&quot;&gt;credits&lt;/a&gt;.">配乐为程序实时合成的原创曲目，可自由使用；音效是 Kenney、Freesound 的 CC0 公有领域真实录音（<a href="sfx/CREDITS.md">来源</a>）</span></div>
+  </footer>
 </div>
+<dialog class="intro" id="intro" aria-label="宣传片" data-en-aria="Intro film"><button type="button" class="x sm" id="btnIntroX" aria-label="关闭" data-en-aria="Close">✕</button><video id="introV" controls playsinline preload="none"></video></dialog>
+<nav class="tabbar" id="mcta" aria-label="页面" data-en-aria="Pages"><a href="#/home" data-go="home"><i aria-hidden="true">◎</i><span data-en="Home">首页</span></a><a href="#/studio" data-go="studio"><i aria-hidden="true">✈</i><span data-en="Make">制作</span></a><a href="#/badges" data-go="badges"><i aria-hidden="true">★</i><span data-en="Achievements">成就</span></a><button type="button" id="btnMakeM" hidden></button></nav>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.js"></script>
-<script>
-"use strict";
-/* ================= data & helpers ================= */
-const $=id=>document.getElementById(id);
-const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
-const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,easeOut=t=>1-Math.pow(1-t,3),easeInOut=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
-const hash=n=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor(x);};
-let AP={},ZH={},ZHKEYS=[],NUM={},NAMES={},CITY={},FLAGS={},TOPO=null;
-const NAME_FIX={HK:['Hong Kong','中国香港'],MO:['Macao','中国澳门'],TW:['Taiwan','中国台湾'],US:['United States','美国'],GB:['United Kingdom','英国'],KR:['South Korea','韩国'],RU:['Russia','俄罗斯']};
-async function loadData(){
-  const [a,w]=await Promise.all([fetch('airports.json').then(r=>r.json()),fetch('world-50m.json').then(r=>r.json())]);
-  for(const r of a.rows){AP[r[0]]={iata:r[0],lat:r[1],lon:r[2],tz:r[3],iso:r[4],city:r[5],name:r[6]};const c=r[5].toLowerCase();(CITY[c]=CITY[c]||[]).push(r[0]);}
-  ZH=a.zh;ZHKEYS=Object.keys(ZH).sort((x,y)=>y.length-x.length);NUM=a.num;NAMES=a.names;
-  for(const k in NAME_FIX){if(NAMES[k]){NAMES[k][0]=NAME_FIX[k][0];NAMES[k][1]=NAME_FIX[k][1];}}
-  TOPO=w;
-  fetch('flags.json').then(r=>r.json()).then(f=>{FLAGS=f;flagImgs={};invalidate();}).catch(()=>{});
-}
-let flagImgs={};
-function flagImg(iso){if(!FLAGS[iso])return null;if(!flagImgs[iso]){const i=new Image();i.onload=()=>invalidate();i.src=FLAGS[iso];flagImgs[iso]=i;}return flagImgs[iso].complete?flagImgs[iso]:null;}
-
-/* ---------- airport resolution ---------- */
-const manual={}; // raw name -> IATA
-function resolveAirport(raw){
-  if(raw==null)return null;let s=String(raw).trim();if(!s)return null;
-  if(manual[s]&&AP[manual[s]])return manual[s];
-  const up=s.toUpperCase();
-  if(/^[A-Z]{3}$/.test(up)&&AP[up])return up;
-  const m=up.match(/\(([A-Z]{3})\)|（([A-Z]{3})）/);if(m&&AP[m[1]||m[2]])return m[1]||m[2];
-  const z=s.replace(/国际机场|机场|國際機場|機場/g,'');
-  for(const k of ZHKEYS){if(z.includes(k))return ZH[k];}
-  const c=CITY[s.toLowerCase()];if(c&&c.length)return c[0];
-  return null;
-}
-/* ---------- time zones ---------- */
-const tzf={};
-function tzOffsetMin(tz,utcMs){if(!tz)return 0;try{const f=tzf[tz]||(tzf[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
-  const p={};for(const x of f.formatToParts(new Date(utcMs)))p[x.type]=x.value;return (Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute)-utcMs)/60000;}catch(e){return 0;}}
-function localToUtc(tz,y,mo,d,h,mi){const g=Date.UTC(y,mo-1,d,h,mi);const off=tzOffsetMin(tz,g);return g-off*60000;}
-function hav(a,b){const R=6371,toR=Math.PI/180;const dl=(b.lat-a.lat)*toR,dn=(b.lon-a.lon)*toR;const x=Math.sin(dl/2)**2+Math.cos(a.lat*toR)*Math.cos(b.lat*toR)*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)));}
-
-/* ---------- spreadsheet parsing ---------- */
-const COLS={date:['日期','出发日期','航班日期','date','flight date'],al:['航空公司','航司','airline','carrier'],fn:['航班号','航班','flight','flight no','flight_no','flightno','flight number'],
-  from:['出发','出发城市','出发机场','出发地','起飞机场','始发','from','origin','departure','dep'],to:['到达','到达城市','到达机场','目的地','到达地','降落机场','to','destination','arrival','arr'],
-  dt:['出发时间','起飞时间','计划起飞','dep_time','departure time','std'],at:['到达时间','降落时间','计划到达','arr_time','arrival time','sta'],km:['里程数','里程','距离','distance','km','distance_km'],st:['客票状态','状态','票状态','status']};
-function findCols(hdr){const map={};hdr.forEach((h,i)=>{const s=String(h||'').trim().toLowerCase();if(!s)return;for(const k in COLS){if(map[k]!=null)continue;if(COLS[k].some(w=>s===w.toLowerCase()))map[k]=i;}});
-  hdr.forEach((h,i)=>{const s=String(h||'').trim().toLowerCase();for(const k in COLS){if(map[k]!=null)continue;if(COLS[k].some(w=>w.length>1&&s.includes(w.toLowerCase())))map[k]=i;}});return map;}
-function parseDate(v){
-  if(v==null||v==='')return null;
-  if(v instanceof Date&&!isNaN(v))return [v.getFullYear(),v.getMonth()+1,v.getDate()];
-  if(typeof v==='number'&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);return [d.y,d.m,d.d];}
-  const s=String(v);let m=s.match(/(\d{4})\s*[年\-\/.]\s*(\d{1,2})\s*[月\-\/.]\s*(\d{1,2})/);if(m)return [+m[1],+m[2],+m[3]];
-  m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return [+m[3],+m[1],+m[2]];
-  return null;}
-function parseTime(v){if(v==null)return null;if(typeof v==='number'&&v<1){const m=Math.round(v*1440);return [Math.floor(m/60),m%60];}const m=String(v).match(/(\d{1,2}):(\d{2})/);return m?[+m[1],+m[2]]:null;}
-function readWorkbook(wb){
-  const rows=[];
-  for(const sn of wb.SheetNames){
-    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:''});if(!aoa.length)continue;
-    let hi=-1,map=null;for(let i=0;i<Math.min(8,aoa.length);i++){const m=findCols(aoa[i]);if(m.from!=null&&m.to!=null){hi=i;map=m;break;}}
-    if(hi<0)continue;
-    const sheetUp=/待出行|未出行|upcoming/i.test(sn),sheetVoid=/无效|退票|作废|void|refund|cancel/i.test(sn);
-    for(let i=hi+1;i<aoa.length;i++){const r=aoa[i];const g=k=>map[k]!=null?r[map[k]]:'';
-      if(!String(g('from')).trim()&&!String(g('to')).trim())continue;
-      const st=String(g('st'));
-      rows.push({rawDate:g('date'),al:String(g('al')||'').trim(),fn:String(g('fn')||'').trim(),from:String(g('from')).trim(),to:String(g('to')).trim(),dt:g('dt'),at:g('at'),km:g('km'),
-        up:sheetUp||/未使用|待出行|upcoming/i.test(st),vd:sheetVoid||/作废|退票|换开|void|refund|cancel/i.test(st)});}
-  }
-  return rows;}
-
-/* ---------- normalise rows -> flights ---------- */
-let RAW=[],SOURCE='demo',RESET_YEARS=true;
-function buildFlights(){
-  const out=[],unres=new Map(),seen=new Set();let skipped=0;
-  const today=new Date();const tY=today.getFullYear(),tM=today.getMonth()+1,tD=today.getDate();
-  for(const r of RAW){
-    const d=parseDate(r.rawDate);if(!d){skipped++;continue;}
-    const fa=resolveAirport(r.from),ta=resolveAirport(r.to);
-    if(!fa)unres.set(r.from,(unres.get(r.from)||0)+1);if(!ta)unres.set(r.to,(unres.get(r.to)||0)+1);
-    if(!fa||!ta||fa===ta)continue;
-    const A=AP[fa],B=AP[ta];
-    let km=parseFloat(String(r.km).replace(/[^\d.]/g,''));if(!(km>0))km=hav(A,B);
-    const tm=parseTime(r.dt)||[12,0];const est=km/780*60+35;
-    let min=Math.round(est);const at=parseTime(r.at);
-    if(parseTime(r.dt)&&at){const dep=localToUtc(A.tz,d[0],d[1],d[2],tm[0],tm[1]);const arr0=localToUtc(B.tz,d[0],d[1],d[2],at[0],at[1]);
-      const c=[-1,0,1,2].map(k=>Math.round((arr0+k*864e5-dep)/60000)).filter(x=>x>0);if(c.length)min=c.reduce((p,q)=>Math.abs(q-est)<Math.abs(p-est)?q:p);}
-    const future=(d[0]*10000+d[1]*100+d[2])>(tY*10000+tM*100+tD);
-    const f={y:d[0],date:`${d[0]}-${String(d[1]).padStart(2,'0')}-${String(d[2]).padStart(2,'0')}`,t:`${String(tm[0]).padStart(2,'0')}:${String(tm[1]).padStart(2,'0')}`,
-      fn:(r.fn||'').toUpperCase().replace(/\s+/g,'')||'—',al:r.al||'',f:fa,to:ta,fc:A.iso,tc:B.iso,km:Math.round(km),min,vd:r.vd?1:0,up:(!r.vd&&(r.up||future))?1:0};
-    const key=[f.date,f.fn,f.f,f.to,r.vd?Math.random():''].join('|');if(!r.vd&&seen.has(key))continue;seen.add(key);out.push(f);
-  }
-  out.sort((a,b)=>(a.date+a.t).localeCompare(b.date+b.t));
-  return {all:out,unres,skipped};}
-
-/* ---------- demo traveller (fictional) ---------- */
-function demoRows(){
-  const R=[['SHA','CTU'],['CTU','SHA'],['PVG','NRT'],['NRT','PVG'],['SHA','PEK'],['PEK','SHA'],['PVG','BKK'],['BKK','CNX'],['CNX','BKK'],['BKK','PVG'],['SHA','SZX'],['SZX','SHA'],
-    ['PVG','SIN'],['SIN','DPS'],['DPS','SIN'],['SIN','PVG'],['PVG','ICN'],['ICN','PVG'],['SHA','XMN'],['XMN','SHA'],['PVG','LAX'],['LAX','SFO'],['SFO','PVG'],['SHA','KMG'],['KMG','LJG'],['LJG','SHA'],
-    ['PVG','HKG'],['HKG','PVG'],['PVG','CDG'],['CDG','FCO'],['FCO','PVG'],['SHA','CAN'],['CAN','SHA'],['PVG','KIX'],['KIX','PVG'],['PVG','SGN'],['SGN','HAN'],['HAN','PVG'],['SHA','XIY'],['XIY','SHA'],
-    ['PVG','CTS'],['CTS','PVG'],['PVG','SYD'],['SYD','MEL'],['MEL','PVG'],['SHA','TAO'],['TAO','SHA'],['PVG','DXB'],['DXB','PVG'],['SHA','HAK'],['HAK','SHA']];
-  const rows=[];let y=2018,m=3;
-  R.forEach((p,i)=>{m+= (i%2?0:2)+ (i%5===0?1:0);while(m>12){m-=12;y++;}rows.push({rawDate:`${y}-${m}-${5+(i*7)%20}`,al:'',fn:['MU','CA','CZ','FM','HO'][i%5]+(5000+i*37),from:p[0],to:p[1],dt:'',at:'',km:'',up:y>=2027,vd:0});});
-  return rows;}
-
-/* ================= video engine ================= */
-const W=1080,H=1920,FPS=30;
-const BPM=112,BEAT=60/BPM,BAR=4*BEAT,T_OPEN=2*BAR,T_F0=3*BAR;
-const CARD={x:36,y:118,w:1008,h:1700,r:44},MAP={x:66,y:300,w:948,h:610},PAGE2Y=1010;
-const PG={x:CARD.x+4,y:CARD.y+22,w:CARD.w-8,h:CARD.h-44};
-const cv=$('cv');let ctx=cv.getContext('2d');const mainCtx=ctx;
-const posterCv=document.createElement('canvas');posterCv.width=W;posterCv.height=H;const pctx=posterCv.getContext('2d');
-const mapCv=document.createElement('canvas');mapCv.width=MAP.w;mapCv.height=MAP.h;const mg=mapCv.getContext('2d');
-const hatchCv=document.createElement('canvas');hatchCv.width=MAP.w;hatchCv.height=MAP.h;const hg=hatchCv.getContext('2d');
-const stampCv=document.createElement('canvas');stampCv.width=520;stampCv.height=280;
-let bgLayer=null;
-const CJK='"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif';
-const F=(w,s,f='OS')=>`${w} ${s}px ${f==='SM'?'"Space Mono",monospace':'"Open Sans"'}, ${CJK}`;
-let S=null; // scene state
-function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
-function fmt(n){return Math.round(n).toLocaleString('en-US');}
-function hm(m){return Math.floor(m/60)+'h '+(m%60)+'m';}
-
-function profile(){
-  const nat=$('nat').value||'CN';const nm=NAMES[nat]||['China','中国','CHN'];
-  const disp=($('name').value||'').trim()||'TRAVELLER';
-  let lat=($('latin').value||'').trim()||disp;lat=lat.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z ]/g,'').trim();if(!lat)lat='TRAVELLER';
-  return {disp,latin:lat,nat,natEn:nm[0].toUpperCase(),nat3:nm[2]||'XXX',tagEn:($('tagEn').value||'').trim(),tagZh:($('tagZh').value||'').trim(),photo:PHOTO};
-}
-function buildScene(){
-  const res=buildFlights();
-  const useUp=$('optUp').checked,useVoid=$('optVoid').checked;
-  let fl=res.all.filter(f=>(useUp||!f.up)&&(useVoid||!f.vd));
-  const yF=+$('yFrom').value||0,yT=+$('yTo').value||9999;fl=fl.filter(f=>f.y>=yF&&f.y<=yT);
-  const P=profile();
-  const scene={P,res,flights:fl.map(f=>({...f})),ok:fl.length>0};
-  if(!scene.ok){S=scene;return scene;}
-  // projection centred on the traveller's median longitude
-  const lons=[];fl.forEach(f=>{lons.push(AP[f.f].lon,AP[f.to].lon);});lons.sort((a,b)=>a-b);const medLon=lons[lons.length>>1];
-  scene.rot=-(medLon+20);
-  scene.proj=d3.geoEquirectangular().rotate([scene.rot,0]).scale(MAP.w/(2*Math.PI)).translate([MAP.w/2,0]).precision(0.3);
-  // years & schedule on the BPM grid
-  const y0=fl[0].y,y1=fl[fl.length-1].y;const years=[];
-  for(let y=y0;y<=y1;y++){const n=fl.filter(f=>f.y===y).length;let b=n===0?0.25:n<4?0.5:Math.min(3,Math.max(1,Math.round(n*0.2/BAR)));years.push({y,n,bars:b});}
-  let tot=years.reduce((a,b)=>a+b.bars,0);const MAXB=24;
-  if(tot>MAXB){const k=MAXB/tot;years.forEach(o=>{o.bars=Math.max(o.n?0.5:0.25,Math.round(o.bars*k*2)/2);});}
-  const G=BEAT/8;let ys=T_F0;scene.years=[];
-  for(const o of years){const list=scene.flights.filter(f=>f.y===o.y);const dur=o.bars*BAR;scene.years.push({y:o.y,t:ys,end:ys+dur,n:o.n,bars:o.bars,dream:list.length>0&&list.every(f=>f.up)});
-    const slot=dur/Math.max(1,list.length);
-    list.forEach((f,k)=>{f.t0=ys+Math.round(k*slot/G)*G;f.dur=Math.max(0.42,Math.min(1.5,0.3+1.25*Math.pow(f.km/11128,0.55)));if(f.up)f.dur=Math.min(1.1,f.dur+0.3);f.dur=Math.min(f.dur,ys+dur+BAR*0.45-f.t0);f.t1=f.t0+f.dur;});
-    ys+=dur;}
-  scene.flights.sort((a,b)=>a.t0-b.t0);
-  scene.T_FE=ys;scene.T_STAMP=ys+BEAT;scene.T_ZOOM=ys+BAR;scene.T_CARD=ys+3*BAR;scene.T_END=scene.T_CARD+2.5*BAR;
-  scene.frames=Math.ceil(scene.T_END*FPS);
-  for(const f of scene.flights){f.a=scene.proj([AP[f.f].lon,AP[f.f].lat]);f.b=scene.proj([AP[f.to].lon,AP[f.to].lat]);}
-  // countries: home first
-  scene.visit={};scene.visit[P.nat]=T_OPEN;scene.order=[P.nat];
-  for(const f of scene.flights){for(const [c,tt] of [[f.fc,f.t0],[f.tc,f.t1]]){if(!(c in scene.visit)){scene.visit[c]=tt;scene.order.push(c);}}}
-  scene.order.sort((a,b)=>scene.visit[a]-scene.visit[b]);
-  // geometry
-  const g50=TOPO.objects.countries.geometries;
-  scene.land=topojson.merge(TOPO,g50.filter(g=>g.id!=='010'));
-  const allC=topojson.feature(TOPO,TOPO.objects.countries).features;
-  scene.cgeo={};for(const c of scene.order){const n=NUM[c];scene.cgeo[c]=allC.filter(f=>+f.id===n);}
-  scene.final=stats(scene,1e9);
-  // camera
-  buildCam(scene);
-  scene.stampReady=false;
-  S=scene;buildBg();return scene;
-}
-function boxPx(sc,b){const p1=sc.proj(b[0]),p2=sc.proj(b[1]);return [Math.min(p1[0],p2[0]),Math.min(p1[1],p2[1]),Math.max(p1[0],p2[0]),Math.max(p1[1],p2[1])];}
-function fit(bx,pad=40){const w=Math.max(1,bx[2]-bx[0]),h=Math.max(1,bx[3]-bx[1]);const z=Math.min((MAP.w-2*pad)/w,(MAP.h-2*pad)/h);return {cx:(bx[0]+bx[2])/2,cy:(bx[1]+bx[3])/2,z};}
-function buildCam(sc){
-  // base view: 10-90 percentile box of the traveller's airports, at least 55x38 degrees
-  const pts=[];sc.flights.forEach(f=>{pts.push(f.a,f.b);});
-  const xs=pts.map(p=>p[0]).sort((a,b)=>a-b),ys=pts.map(p=>p[1]).sort((a,b)=>a-b);const q=(arr,p)=>arr[Math.min(arr.length-1,Math.floor(p*arr.length))];
-  let bx=[q(xs,.08),q(ys,.08),q(xs,.92),q(ys,.92)];const ppd=MAP.w/360;
-  const cx=(bx[0]+bx[2])/2,cy=(bx[1]+bx[3])/2;const w=Math.max(bx[2]-bx[0]+16*ppd,55*ppd),h=Math.max(bx[3]-bx[1]+12*ppd,38*ppd);
-  const base=[cx-w/2,cy-h/2,cx+w/2,cy+h/2];
-  const p1=sc.proj([-sc.rot-179.5,-56]),p2=sc.proj([-sc.rot+179.5,76]);const wv=fit([0,p2[1],MAP.w,p1[1]]);const hh=(p1[1]-p2[1])*wv.z;wv.cy+=(MAP.h/2-hh/2-40)/wv.z;
-  let cur=fit(base);sc.cam=[];
-  for(let i=0;i<sc.frames;i++){const t=i/FPS;let tgt;
-    if(t>=sc.T_ZOOM)tgt=wv;else{let b=base.slice();for(const f of sc.flights){if(f.t0-1.1<t&&f.t1+0.5>t){b=[Math.min(b[0],f.a[0],f.b[0]),Math.min(b[1],f.a[1],f.b[1]),Math.max(b[2],f.a[0],f.b[0]),Math.max(b[3],f.a[1],f.b[1])];}}tgt=fit(b);}
-    const k=t>=sc.T_ZOOM?0.06:0.075;cur={cx:lerp(cur.cx,tgt.cx,k),cy:lerp(cur.cy,tgt.cy,k),z:Math.exp(lerp(Math.log(cur.z),Math.log(tgt.z),k))};sc.cam.push(cur);}
-}
-function stats(sc,t){let n=0,km=0,min=0;const al=new Set(),ap=new Set(),cc=new Set([sc.P.nat]);
-  for(const f of sc.flights){if(t<f.t0)break;const u=clamp((t-f.t0)/f.dur);km+=f.km*ease(u);min+=f.min*ease(u);ap.add(f.f);if(u>=1){n++;if(f.al&&f.al!=='--')al.add(f.al);else if(f.fn&&f.fn!=='—')al.add(f.fn.slice(0,2));ap.add(f.to);cc.add(f.fc);cc.add(f.tc);}}
-  return {n,km:Math.round(km),min:Math.round(min),al:al.size,ap:ap.size,cc:cc.size};}
-
-/* ---------- static background ---------- */
-function guilloche(g,cx,cy,R,r,d,col,alpha,lw,n){g.save();g.strokeStyle=col;g.globalAlpha=alpha;g.lineWidth=lw;g.beginPath();for(let i=0;i<=n*10;i++){const th=i/n*Math.PI*2;const x=cx+(R-r)*Math.cos(th)+d*Math.cos((R-r)/r*th);const y=cy+(R-r)*Math.sin(th)-d*Math.sin((R-r)/r*th);i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();g.restore();}
-function buildBg(){
-  bgLayer=bgLayer||document.createElement('canvas');bgLayer.width=W;bgLayer.height=H;const g=bgLayer.getContext('2d');
-  const og=g.createLinearGradient(0,0,0,H);og.addColorStop(0,'#ece8ec');og.addColorStop(1,'#e2dde3');g.fillStyle=og;g.fillRect(0,0,W,H);
-  g.save();g.shadowColor='rgba(60,10,20,.35)';g.shadowBlur=40;g.shadowOffsetY=14;rr(g,CARD.x,CARD.y,CARD.w,CARD.h,CARD.r);g.fillStyle='#4b1019';g.fill();g.restore();
-  const P=PG;g.save();rr(g,P.x,P.y,P.w,P.h,36);g.clip();
-  const pg=g.createLinearGradient(P.x,P.y,P.x+P.w,P.y+P.h);pg.addColorStop(0,'#fbf7f6');pg.addColorStop(.5,'#f6f1f6');pg.addColorStop(1,'#f3eef6');g.fillStyle=pg;g.fillRect(P.x,P.y,P.w,P.h);
-  for(let y=P.y;y<P.y+P.h;y+=7){g.beginPath();for(let x=P.x;x<=P.x+P.w;x+=6){const yy=y+3*Math.sin(x/38+y/90)+2*Math.sin(x/11+y/30);x===P.x?g.moveTo(x,yy):g.lineTo(x,yy);}const hue=y<PAGE2Y?300:340;g.strokeStyle=`hsla(${hue+(y%60)},60%,70%,.10)`;g.lineWidth=0.8;g.stroke();}
-  guilloche(g,P.x+P.w*0.80,P.y+170,170,37,60,'#e6a0b8',0.10,0.7,180);guilloche(g,P.x+P.w*0.62,PAGE2Y+330,300,41,110,'#b9a2e6',0.09,0.7,200);guilloche(g,P.x+90,PAGE2Y+600,190,29,80,'#9fd3e0',0.10,0.7,200);
-  const sg=g.createRadialGradient(P.x+P.w-70,P.y+150,0,P.x+P.w-70,P.y+150,120);sg.addColorStop(0,'rgba(255,214,214,.55)');sg.addColorStop(1,'rgba(255,214,214,0)');g.fillStyle=sg;g.fillRect(P.x,P.y,P.w,400);
-  g.setLineDash([6,8]);g.strokeStyle='rgba(120,90,120,.35)';g.lineWidth=1.5;g.beginPath();g.moveTo(P.x+20,PAGE2Y);g.lineTo(P.x+P.w-20,PAGE2Y);g.stroke();g.setLineDash([]);
-  const fold=g.createLinearGradient(0,PAGE2Y-26,0,PAGE2Y+26);fold.addColorStop(0,'rgba(90,40,80,0)');fold.addColorStop(.5,'rgba(90,40,80,.07)');fold.addColorStop(1,'rgba(90,40,80,0)');g.fillStyle=fold;g.fillRect(P.x,PAGE2Y-26,P.w,52);
-  const yrs=S&&S.ok?`${S.years[0].y}-${S.years[S.years.length-1].y}`:'';const nm=S?S.P.latin.replace(/ /g,'·'):'';
-  g.save();g.translate(P.x+P.w-26,PAGE2Y+70);g.rotate(Math.PI/2);g.font=F(400,13,'SM');g.fillStyle='rgba(110,80,110,.35)';g.fillText(`${nm}·FLIGHT·LOG·${yrs}·`.repeat(4),0,0);g.restore();
-  g.font=F(400,20,'SM');g.fillStyle='rgba(120,100,140,.5)';g.textAlign='center';g.fillText(`@ ${S?S.P.latin:''}  ·  SKY  PASSPORT`,W/2,MAP.y+MAP.h+28);g.textAlign='left';
-  g.restore();
-  g.font=F(600,26);g.fillStyle='#3a1f2a';g.textAlign='center';g.fillText('航 迹 护 照   ·   F L I G H T   L O G',W/2,78);g.textAlign='left';
-}
-
-/* ---------- map ---------- */
-function camT(g,c){g.setTransform(c.z,0,0,c.z,MAP.w/2-c.cx*c.z,MAP.h/2-c.cy*c.z);}
-function toScr(p,c){return [MAP.w/2+(p[0]-c.cx)*c.z,MAP.h/2+(p[1]-c.cy)*c.z];}
-function ctrl(a,b){const dx=b[0]-a[0],dy=b[1]-a[1];const L=Math.hypot(dx,dy)||1;let nx=-dy/L,ny=dx/L;if(ny>0){nx=-nx;ny=-ny;}return [(a[0]+b[0])/2+nx*L*.18,(a[1]+b[1])/2+ny*L*.18];}
-function qpt(a,c,b,u){const m=1-u;return [m*m*a[0]+2*m*u*c[0]+u*u*b[0],m*m*a[1]+2*m*u*c[1]+u*u*b[1]];}
-function qtan(a,c,b,u){return [2*(1-u)*(c[0]-a[0])+2*u*(b[0]-c[0]),2*(1-u)*(c[1]-a[1])+2*u*(b[1]-c[1])];}
-function strokeQ(g,a,c,b,u){const n=Math.max(8,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/6));g.beginPath();g.moveTo(a[0],a[1]);for(let i=1;i<=n;i++){const p=qpt(a,c,b,u*i/n);g.lineTo(p[0],p[1]);}g.stroke();}
-function plane(g,x,y,ang,s,col){g.save();g.translate(x,y);g.rotate(ang);g.scale(s,s);g.fillStyle=col;g.beginPath();g.moveTo(11,0);g.lineTo(7,-1.6);g.lineTo(1,-1.6);g.lineTo(-4,-9);g.lineTo(-6.5,-9);g.lineTo(-3,-1.6);g.lineTo(-8,-1.6);g.lineTo(-10.5,-4.5);g.lineTo(-12,-4.5);g.lineTo(-10.5,0);g.lineTo(-12,4.5);g.lineTo(-10.5,4.5);g.lineTo(-8,1.6);g.lineTo(-3,1.6);g.lineTo(-6.5,9);g.lineTo(-4,9);g.lineTo(1,1.6);g.lineTo(7,1.6);g.closePath();g.fill();g.restore();}
-function punchAt(t){let s=0;const ev=[T_OPEN,...S.years.map(y=>y.t),S.T_ZOOM];for(const e of ev){const u=(t-e)/0.667;if(u>=0&&u<1)s=Math.max(s,0.03*(1-easeOut(u)));}return 1+s;}
-function drawMap(t,cam){
-  const sc=S;hg.setTransform(1,0,0,1,0,0);hg.globalCompositeOperation='source-over';hg.clearRect(0,0,MAP.w,MAP.h);
-  const x0=toScr([0,0],cam)[0],x1=toScr([MAP.w,0],cam)[0];const gr=hg.createLinearGradient(x0,0,x1,0);
-  gr.addColorStop(0,'#c58be0');gr.addColorStop(.18,'#b98fe6');gr.addColorStop(.30,'#d685c6');gr.addColorStop(.42,'#ea8fb0');gr.addColorStop(.55,'#e98aa8');gr.addColorStop(.68,'#8fb4ef');gr.addColorStop(.85,'#7fc6e8');gr.addColorStop(1,'#78d8c2');hg.fillStyle=gr;
-  const rev=clamp((t-T_OPEN)/BAR);let ri=0;for(let y=0;y<MAP.h;y+=4.6,ri++){const w=MAP.w*clamp(rev*1.8-hash(ri)*0.8);if(w>0)hg.fillRect(0,y,w,1.25);}
-  hg.globalCompositeOperation='destination-in';camT(hg,cam);hg.beginPath();d3.geoPath(sc.proj,hg)(sc.land);hg.fillStyle='#000';hg.fill();hg.setTransform(1,0,0,1,0,0);hg.globalCompositeOperation='source-over';
-  mg.setTransform(1,0,0,1,0,0);mg.clearRect(0,0,MAP.w,MAP.h);mg.drawImage(hatchCv,0,0);
-  camT(mg,cam);
-  for(const k of sc.order){const a=clamp((t-sc.visit[k])/0.6);if(a<=0||!sc.cgeo[k]||!sc.cgeo[k].length)continue;mg.beginPath();for(const f of sc.cgeo[k])d3.geoPath(sc.proj,mg)(f);mg.fillStyle=`rgba(150,30,70,${0.16*a})`;mg.fill();mg.lineWidth=1.1/cam.z;mg.strokeStyle=`rgba(140,30,70,${0.45*a})`;mg.stroke();}
-  mg.setTransform(1,0,0,1,0,0);drawRoutes(mg,t,cam);
-  const fe=60;mg.globalCompositeOperation='destination-out';
-  for(const [x,y,w,h,gx0,gy0,gx1,gy1] of [[0,0,fe,MAP.h,0,0,fe,0],[MAP.w-fe,0,fe,MAP.h,MAP.w,0,MAP.w-fe,0],[0,0,MAP.w,fe,0,0,0,fe],[0,MAP.h-fe,MAP.w,fe,0,MAP.h,0,MAP.h-fe]]){const g1=mg.createLinearGradient(gx0,gy0,gx1,gy1);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');mg.fillStyle=g1;mg.fillRect(x,y,w,h);}
-  mg.globalCompositeOperation='source-over';
-  const p=punchAt(t);ctx.save();ctx.translate(MAP.x+MAP.w/2,MAP.y+MAP.h/2);ctx.scale(p,p);ctx.drawImage(mapCv,-MAP.w/2,-MAP.h/2);ctx.restore();
-}
-function drawRoutes(g,t,cam){
-  const sc=S,outro=clamp((t-sc.T_ZOOM)/1.5);const seen=new Set();
-  for(const f of sc.flights){if(t<f.t0)break;const a=toScr(f.a,cam),b=toScr(f.b,cam),c=ctrl(a,b);const u=clamp((t-f.t0)/f.dur),ue=ease(u),active=u<1,age=t-f.t1;
-    const col=f.up?'rgba(30,110,200,':f.vd?'rgba(120,100,115,':'rgba(205,30,55,';g.lineCap='round';g.setLineDash(f.up||f.vd?[7,6]:[]);
-    if(active){g.lineWidth=3.2;g.strokeStyle=col+'1)';strokeQ(g,a,c,b,ue);const p=qpt(a,c,b,ue),tg=qtan(a,c,b,ue);plane(g,p[0],p[1],Math.atan2(tg[1],tg[0]),1.25,f.up?'#1e6ec8':f.vd?'#7a6a74':'#c41e37');}
-    else{const fr=clamp(1-age/1.2);g.lineWidth=1.5+1.6*fr;g.strokeStyle=col+(0.42+0.5*fr+0.2*outro)+')';strokeQ(g,a,c,b,1);}
-    g.setLineDash([]);seen.add(f.f);if(!active)seen.add(f.to);}
-  if(t>sc.T_ZOOM){const tz=t-sc.T_ZOOM;let k=0;for(const f of sc.flights){k++;if(f.up)continue;const a=toScr(f.a,cam),b=toScr(f.b,cam),c=ctrl(a,b);const u=(tz*0.55+hash(k))%1;const p=qpt(a,c,b,u);const al=clamp(tz/0.6)*Math.sin(Math.PI*u);g.beginPath();g.arc(p[0],p[1],2.6,0,7);g.fillStyle=`rgba(255,235,240,${0.95*al})`;g.fill();g.beginPath();g.arc(p[0],p[1],5.5,0,7);g.fillStyle=`rgba(230,40,80,${0.25*al})`;g.fill();}}
-  for(const code of seen){const p=toScr(sc.proj([AP[code].lon,AP[code].lat]),cam);g.beginPath();g.arc(p[0],p[1],3.6,0,7);g.fillStyle='#fff';g.fill();g.lineWidth=2;g.strokeStyle='#b0173a';g.stroke();}
-  for(const f of sc.flights){const a=t-f.t1;if(a>0&&a<0.7){const p=toScr(f.b,cam);g.beginPath();g.arc(p[0],p[1],6+26*easeOut(a/0.7),0,7);g.lineWidth=2;g.strokeStyle=`rgba(200,30,60,${0.8*(1-a/0.7)})`;g.stroke();}}
-}
-/* ---------- page UI ---------- */
-function curIdx(t){let k=-1;const fl=S.flights;for(let i=0;i<fl.length;i++){if(fl[i].t0<=t)k=i;else break;}return k;}
-function yearIdx(t){let k=-1;for(let i=0;i<S.years.length;i++)if(S.years[i].t<=t)k=i;return k;}
-function drawFlags(t){
-  const sc=S;const shown=sc.order.filter(c=>sc.visit[c]<=t+1e-4);const N=sc.order.length;
-  const rows=N<=9?1:N<=20?2:3;const per=Math.ceil(N/rows);const step=Math.min(50,860/per),R=Math.min(21,step*0.44),rowH=Math.min(50,96/rows+8);
-  shown.forEach((c,i)=>{const a=easeOut(clamp((t-sc.visit[c])/0.45));const s=0.4+0.6*a+0.25*Math.sin(Math.PI*a);
-    const row=Math.floor(i/per),j=i-row*per,cnt=Math.min(per,N-row*per);const x=W/2+(j-(cnt-1)/2)*step,y=192+row*rowH-(rows-1)*6;
-    ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.shadowColor='rgba(0,0,0,.18)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.beginPath();ctx.arc(0,0,R+3,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.shadowColor='transparent';
-    ctx.beginPath();ctx.arc(0,0,R,0,7);ctx.clip();const im=flagImg(c);if(im)ctx.drawImage(im,-R,-R,2*R,2*R);else{ctx.fillStyle='#c9b7c4';ctx.fillRect(-R,-R,2*R,2*R);ctx.fillStyle='#4b1019';ctx.font=F(700,R*0.8,'SM');ctx.textAlign='center';ctx.fillText(c,0,R*0.3);}ctx.restore();});
-}
-function label(x,y,l,v,vs=27){ctx.font=F(400,19);ctx.fillStyle='#9a2b46';ctx.fillText(l,x,y);ctx.font=F(600,vs);ctx.fillStyle='#1d1420';ctx.fillText(v,x,y+vs+6);}
-function fitText(txt,maxW,size,weight=600,fam='OS'){let s=size;ctx.font=F(weight,s,fam);while(ctx.measureText(txt).width>maxW&&s>12){s-=1;ctx.font=F(weight,s,fam);}return s;}
-function drawPhoto(px,py,pw,ph){
-  ctx.save();rr(ctx,px,py,pw,ph,10);ctx.clip();const P=S.P;
-  if(P.photo){const im=P.photo;const r=pw/ph,ir=im.width/im.height;let sw,sh,sx,sy;if(ir>r){sh=im.height;sw=sh*r;sx=(im.width-sw)/2;sy=0;}else{sw=im.width;sh=sw/r;sx=0;sy=(im.height-sh)*0.35;}ctx.drawImage(im,sx,sy,sw,sh,px,py,pw,ph);}
-  else{const g=ctx.createLinearGradient(px,py,px+pw,py+ph);g.addColorStop(0,'#f1d9e2');g.addColorStop(1,'#d9cdee');ctx.fillStyle=g;ctx.fillRect(px,py,pw,ph);guilloche(ctx,px+pw/2,py+ph/2,120,23,50,'#8e1d38',0.25,1,120);
-    const ini=(P.disp.match(/[A-Za-z]/)?P.disp.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase():P.disp.slice(0,2));ctx.fillStyle='#8e1d38';ctx.textAlign='center';ctx.font=F(700,96);ctx.fillText(ini,px+pw/2,py+ph/2+34);ctx.textAlign='left';}
-  ctx.globalAlpha=0.10;for(let y=py;y<py+ph;y+=6){ctx.fillStyle='#b77ad8';ctx.fillRect(px,y,pw,1);}ctx.globalAlpha=1;ctx.restore();
-}
-function drawInfo(t,st){
-  const sc=S,P=sc.P,top=PAGE2Y+66;const rv=clamp((t-T_OPEN-0.15)/BAR);const grp=i=>{ctx.globalAlpha=easeOut(clamp((rv-i*0.085)/0.3));};
-  grp(0);ctx.font=F(600,28);ctx.fillStyle='#8e1d38';ctx.fillText('FLIGHT  LOG',92,top);ctx.font=F(400,20);ctx.fillText('航迹护照',92,top+30);
-  const nsz=fitText(P.natEn,330,40);ctx.font=F(600,nsz);ctx.textAlign='center';ctx.fillText(P.natEn,600,top+4);ctx.textAlign='left';
-  grp(1);ctx.save();ctx.translate(880,top-30);rr(ctx,0,0,64,40,8);ctx.fillStyle='#2b1b24';ctx.fill();ctx.beginPath();ctx.arc(32,20,11,0,7);ctx.lineWidth=4;ctx.strokeStyle='#f3eef3';ctx.stroke();ctx.fillStyle='#f3eef3';ctx.fillRect(4,18,14,4);ctx.fillRect(46,18,14,4);ctx.restore();
-  grp(2);const px=92,py=top+62,pw=270,ph=330;drawPhoto(px,py,pw,ph);
-  ctx.strokeStyle='#8e1d38';ctx.lineWidth=4;const L=26,e=8;[[px-e,py-e,1,1],[px+pw+e,py-e,-1,1],[px-e,py+ph+e,1,-1],[px+pw+e,py+ph+e,-1,-1]].forEach(([x,y,sx,sy])=>{ctx.beginPath();ctx.moveTo(x+sx*L,y);ctx.lineTo(x,y);ctx.lineTo(x,y+sy*L);ctx.stroke();});
-  const fx=410,fy=top+64;const pno=(P.latin.replace(/ /g,'').slice(0,3)+String(sc.final.n).padStart(3,'0')+String(sc.years[sc.years.length-1].y).slice(2)).toUpperCase();
-  grp(3);label(fx,fy,'Type / 类型','P');label(fx+170,fy,'Code / 国家码',P.nat3);label(fx+350,fy,'Passport No. / 号码',pno);
-  grp(4);ctx.font=F(400,19);ctx.fillStyle='#9a2b46';ctx.fillText('Name / 姓名',fx,fy+92);const ns=fitText(P.disp,300,30);ctx.font=F(600,ns);ctx.fillStyle='#1d1420';ctx.fillText(P.disp,fx,fy+92+36);
-  grp(5);label(fx,fy+184,'Date of issue / 签发',ISSUE);
-  const cx=830,cy=top+262;const pz=1+0.12*Math.max(0,1-Math.abs(t-sc.T_STAMP-0.12)/0.35)*(t>sc.T_STAMP?1:0);ctx.save();ctx.translate(cx,cy-40);ctx.scale(pz,pz);ctx.translate(-cx,-(cy-40));
-  const big=String(st.n);ctx.font=F(600,big.length>3?92:112);ctx.fillStyle='#1d1420';ctx.textAlign='center';ctx.fillText(big,cx,cy);ctx.font=F(400,28);ctx.fillText('flights · 航班',cx,cy+42);ctx.textAlign='left';ctx.restore();
-  grp(6);label(fx+350,fy+276,'Authority / 签发机关','SKY PASSPORT');
-  grp(7);const r1=top+430,r2=top+525,cols=[92,420,740];ctx.strokeStyle='rgba(142,29,56,.18)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(92,r1-34);ctx.lineTo(W-100,r1-34);ctx.stroke();
-  label(cols[0],r1,'Distance / 里程',fmt(st.km)+' km',30);label(cols[1],r1,'Flight time / 飞行时长',hm(st.min),30);label(cols[2],r1,'Around Earth / 绕地球',(st.km/40075).toFixed(2)+' ×',30);
-  label(cols[0],r2,'Countries & regions / 国家地区',String(st.cc),30);label(cols[1],r2,'Airports / 机场',String(st.ap),30);label(cols[2],r2,'Airlines / 航司',String(st.al),30);
-  ctx.globalAlpha=1;ctx.font=F(400,28,'SM');ctx.fillStyle='#2a2230';const nc=Math.floor(clamp((rv-0.35)/0.6)*88);
-  const m1=('P<'+P.nat3+P.latin.replace(/ /g,'<')+'<<FLIGHT<LOG').padEnd(44,'<').slice(0,44);const m2=(pno+'<4'+P.nat3+ISSUE6+'<'+String(st.n).padStart(3,'0')+'<'+ISSUE6).padEnd(44,'<').slice(0,44);
-  ctx.fillText(m1.slice(0,Math.min(44,nc)),86,PG.y+PG.h-96);if(nc>44)ctx.fillText(m2.slice(0,nc-44),86,PG.y+PG.h-52);
-}
-function drawTicker(t){
-  const sc=S;if(t<T_F0-0.3||t>sc.T_ZOOM+0.3)return;const fade=Math.min(clamp((t-T_F0+0.3)/0.3),1-clamp((t-sc.T_ZOOM)/0.3));
-  ctx.save();ctx.globalAlpha=fade;const k=Math.max(0,yearIdx(t));const Y=sc.years[k];const prev=k>0?sc.years[k-1].y:Y.y;const u=easeOut(clamp((t-Y.t)/0.28));
-  const x=MAP.x+18,yb=MAP.y+MAP.h-58,lh=64;ctx.save();ctx.beginPath();ctx.rect(x-4,yb-50,260,58);ctx.clip();ctx.font=F(700,64,'SM');ctx.fillStyle='rgba(120,30,70,.88)';
-  const sN=String(Y.y),sO=String(prev);const cw=ctx.measureText('0').width;for(let d=0;d<4;d++){const cx=x+d*cw;if(sN[d]===sO[d]||k===0)ctx.fillText(sN[d],cx,yb);else{ctx.fillText(sO[d],cx,yb-u*lh);ctx.fillText(sN[d],cx,yb+(1-u)*lh);}}ctx.restore();
-  const i=curIdx(t);
-  if(t<=sc.T_FE+0.2){if(Y.n===0||i<0||sc.flights[i].y!==Y.y){ctx.font=F(400,26,'SM');ctx.fillStyle='rgba(60,30,50,.9)';ctx.fillText('NO FLIGHTS · 无航班',MAP.x+22,MAP.y+MAP.h-18);}
-    else{const f=sc.flights[i];ctx.font=F(700,28,'SM');ctx.fillStyle='rgba(60,30,50,.92)';ctx.fillText(`${f.fn}  ${f.f} → ${f.to}`,MAP.x+22,MAP.y+MAP.h-18);
-      const tag=f.vd?['VOID · 退票/作废','#7a6a74']:f.up?['UPCOMING · 待出行','#1e6ec8']:null;if(tag){ctx.font=F(700,20,'SM');ctx.save();ctx.translate(MAP.x+235,MAP.y+MAP.h-104);ctx.rotate(-0.12);ctx.strokeStyle=tag[1];ctx.lineWidth=3;rr(ctx,-8,-26,250,38,6);ctx.stroke();ctx.fillStyle=tag[1];ctx.fillText(tag[0],4,0);ctx.restore();}}}
-  ctx.restore();
-}
-function drawTimeline(t){
-  const sc=S;ctx.save();ctx.globalAlpha=easeOut(clamp((t-T_OPEN-0.4)/0.6));const x0=MAP.x+40,x1=MAP.x+MAP.w-40,y=MAP.y+MAP.h+70;
-  const yA=sc.years[0].y,yB=sc.years[sc.years.length-1].y+1;const S0=Date.UTC(yA,0,1),E0=Date.UTC(yB,0,1);
-  ctx.strokeStyle='rgba(120,90,120,.3)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
-  const i=curIdx(t);let yp=0;if(i>=0){const d=sc.flights[i].date.split('-');yp=clamp((Date.UTC(+d[0],+d[1]-1,+d[2])-S0)/(E0-S0));}
-  const g=ctx.createLinearGradient(x0,0,x1,0);g.addColorStop(0,'#78d8c2');g.addColorStop(.5,'#b98fe6');g.addColorStop(1,'#c41e37');ctx.strokeStyle=g;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(lerp(x0,x1,yp),y);ctx.stroke();
-  ctx.beginPath();ctx.arc(lerp(x0,x1,yp),y,6,0,7);ctx.fillStyle='#c41e37';ctx.fill();
-  const span=yB-yA,stepY=span>14?Math.ceil(span/12):1;ctx.font=F(400,17,'SM');ctx.textAlign='center';ctx.fillStyle='rgba(80,50,80,.6)';
-  for(let yy=yA;yy<yB;yy+=stepY){const xx=lerp(x0,x1,(Date.UTC(yy,0,1)-S0)/(E0-S0));ctx.fillText("'"+String(yy).slice(2),xx+20,y+28);}
-  ctx.textAlign='left';ctx.restore();
-}
-function drawSheen(t){if(t<T_F0)return;const per=4*BAR,ph=((t-T_F0-2*BEAT)%per+per)%per;const u=ph/1.0;if(u>1)return;
-  ctx.save();rr(ctx,PG.x,PG.y,PG.w,PG.h,36);ctx.clip();ctx.globalCompositeOperation='soft-light';const cx=lerp(-500,W+500,ease(u));const g=ctx.createLinearGradient(cx-260,0,cx+260,260);
-  g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.3,'rgba(120,230,255,.55)');g.addColorStop(.5,'rgba(255,170,240,.75)');g.addColorStop(.7,'rgba(255,240,150,.55)');g.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=g;ctx.setTransform(1,0,-0.6,1,0,0);ctx.fillRect(-1000,0,W+3000,H);ctx.restore();}
-function buildStamp(){const g=stampCv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,520,280);g.translate(260,140);
-  const col='#c0162f';g.strokeStyle=col;g.fillStyle=col;g.lineWidth=6;rr(g,-210,-92,420,184,18);g.stroke();g.lineWidth=2.5;rr(g,-196,-78,392,156,12);g.stroke();g.textAlign='center';
-  const big=S.final.n+' FLIGHTS';let fs=64;g.font=F(700,fs);while(g.measureText(big).width>370&&fs>30){fs-=2;g.font=F(700,fs);}g.fillText(big,0,22);
-  const sub=`${S.P.latin.slice(0,14)} · ${S.years[0].y} — ${S.years[S.years.length-1].y}`;let ss=24;g.font=F(700,ss,'SM');while(g.measureText(sub).width>370&&ss>12){ss--;g.font=F(700,ss,'SM');}g.fillText(sub,0,60);
-  g.font=F(600,20);g.fillText('已 飞 行 · TRAVELLED',0,-44);g.globalCompositeOperation='destination-out';
-  for(let i=0;i<900;i++){const x=(hash(i)-0.5)*440,y=(hash(i+5000)-0.5)*200,r=0.4+Math.pow(hash(i+9000),3)*2.6;g.globalAlpha=0.35+0.65*hash(i+300);g.beginPath();g.arc(x,y,r,0,7);g.fill();}S.stampReady=true;}
-function inkStamp(t){const sc=S;if(t<sc.T_STAMP)return;if(!sc.stampReady)buildStamp();const u=clamp((t-sc.T_STAMP)/0.16);const s=lerp(2.6,1,u*u);
-  ctx.save();ctx.globalAlpha=0.88*clamp(u*1.6);ctx.translate(W/2+215,MAP.y+MAP.h-105);ctx.rotate(-0.14);ctx.scale(s*0.82,s*0.82);ctx.globalCompositeOperation='multiply';ctx.drawImage(stampCv,-260,-140);ctx.restore();}
-function drawPoster(t,T0){
-  const sc=S,P=sc.P,F0=sc.final;ctx.save();const lt=Math.max(0,t-T0);
-  const g=ctx.createRadialGradient(W/2,H*0.42,50,W/2,H*0.5,1100);g.addColorStop(0,'#3a0f1c');g.addColorStop(1,'#0d0508');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  ctx.globalAlpha=0.06;for(let y=0;y<H;y+=3){ctx.fillStyle='#fff';ctx.fillRect(0,y,W,1);}
-  const fr=Math.floor(t*FPS);ctx.fillStyle='#fff';for(let i=0;i<180;i++){ctx.globalAlpha=0.05+0.12*hash(fr*977+i*3);ctx.fillRect(hash(fr*131+i)*W,hash(fr*71+i*7)*H,1.6,1.6);}
-  ctx.globalAlpha=1;const pz=1+0.035*ease(clamp(lt/(2.6*BAR)));ctx.translate(W/2,H*0.42);ctx.scale(pz,pz);ctx.translate(-W/2,-H*0.42);
-  const k=easeOut(clamp((lt-0.3)/1.0));
-  ctx.save();ctx.translate(W/2,560-30*(1-k));rr(ctx,-120,-160,240,320,18);ctx.fillStyle='#5a1422';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='rgba(230,190,140,.6)';ctx.stroke();
-  ctx.strokeStyle='#e8c38c';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(0,-30,62,0,7);ctx.stroke();ctx.beginPath();ctx.ellipse(0,-30,26,62,0,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(-62,-30);ctx.lineTo(62,-30);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(-54,-62);ctx.quadraticCurveTo(0,-50,54,-62);ctx.stroke();ctx.beginPath();ctx.moveTo(-54,2);ctx.quadraticCurveTo(0,-10,54,2);ctx.stroke();plane(ctx,48,-96,-0.6,2.2,'#e8c38c');
-  ctx.fillStyle='#e8c38c';ctx.font=F(600,22);ctx.textAlign='center';ctx.fillText('FLIGHT LOG',0,80);ctx.font=F(400,18);ctx.fillText('航 迹 护 照',0,110);ctx.restore();
-  ctx.textAlign='center';const k2=easeOut(clamp((lt-0.8)/1.0));ctx.globalAlpha=k2;
-  const head=`${P.disp} · ${sc.years[0].y} — ${sc.years[sc.years.length-1].y}`;const hs=fitText(head,960,46);ctx.fillStyle='#f6ede6';ctx.font=F(600,hs);ctx.fillText(head,W/2,850);
-  ctx.font=F(400,30);ctx.fillStyle='#e9d8cf';ctx.fillText(`${F0.n} flights  ·  ${fmt(F0.km)} km  ·  ${Math.round(F0.min/60)} hours in the sky`,W/2,920);
-  ctx.fillText(`${F0.cc} countries & regions  ·  ${F0.ap} airports  ·  ${F0.al} airlines`,W/2,968);
-  ctx.font=F(400,28);ctx.fillStyle='#cdb3aa';ctx.fillText(`${F0.n} 次航班 · ${(F0.km/10000).toFixed(1)} 万公里 · 绕地球 ${(F0.km/40075).toFixed(2)} 圈`,W/2,1030);
-  const k3=easeOut(clamp((lt-1.8)/1.0));ctx.globalAlpha=k3;
-  if(P.tagEn){ctx.font=F(400,30,'SM');ctx.fillStyle='#e8c38c';const s=fitText(P.tagEn,960,30,400,'SM');ctx.font=F(400,s,'SM');ctx.fillText(P.tagEn,W/2,1190);}
-  if(P.tagZh){ctx.font=F(400,26);ctx.fillStyle='#cdb3aa';ctx.fillText(P.tagZh,W/2,1236);}
-  ctx.globalAlpha=k3*0.7;ctx.font=F(400,22,'SM');ctx.fillStyle='#bfa49b';ctx.fillText(('P<'+P.nat3+P.latin.replace(/ /g,'<')+'<<FLIGHT<LOG').padEnd(40,'<').slice(0,40),W/2,1600);
-  ctx.restore();ctx.textAlign='left';
-}
-function drawPassport(t,cam){const sc=S;let sx=0,sy=0;const sh=t-sc.T_STAMP-0.16;if(sh>=0&&sh<0.3){const amp=14*(1-sh/0.3);sx=amp*Math.sin(sh*95);sy=amp*Math.cos(sh*77);}
-  ctx.save();ctx.translate(sx,sy);ctx.drawImage(bgLayer,0,0);drawFlags(t);drawMap(t,cam);drawTicker(t);drawTimeline(t);drawInfo(t,stats(sc,t));drawSheen(t);inkStamp(t);ctx.restore();}
-function cover(t,T0,u){ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawPoster(t,T0);ctx=mainCtx;const th=u*Math.PI/2,c=Math.cos(th),sn=Math.sin(th);if(c<0.01)return;const SW=12;
-  for(let x=0;x<W;x+=SW){const k=x/W;const sy=1-0.16*sn*k;const h=H*sy;ctx.drawImage(posterCv,x,0,SW,H,x*c,(H-h)/2,SW*c+0.6,h);}
-  ctx.save();ctx.globalAlpha=0.5*u;ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W*c,H*0.08*sn);ctx.lineTo(W*c,H-H*0.08*sn);ctx.lineTo(0,H);ctx.fill();ctx.restore();
-  ctx.save();const g=ctx.createLinearGradient(W*c,0,W*c+160,0);g.addColorStop(0,`rgba(20,0,8,${0.45*(1-u)})`);g.addColorStop(1,'rgba(20,0,8,0)');ctx.fillStyle=g;ctx.fillRect(W*c,0,160,H);ctx.restore();}
-function renderFrame(i){
-  const sc=S;ctx=mainCtx;ctx.setTransform(1,0,0,1,0,0);
-  if(!sc||!sc.ok){drawEmpty();return;}
-  const t=i/FPS,cam=sc.cam[Math.min(i,sc.cam.length-1)];const SWG=0.8,o0=T_OPEN-0.3,o1=o0+SWG,c0=sc.T_CARD-0.55,c1=c0+SWG,TC=sc.T_CARD-3;
-  if(t<o0){ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawPoster(t,0);ctx=mainCtx;ctx.drawImage(posterCv,0,0);return;}
-  if(t>=c1){ctx=pctx;pctx.setTransform(1,0,0,1,0,0);drawPoster(t,TC);ctx=mainCtx;ctx.drawImage(posterCv,0,0);return;}
-  drawPassport(t,cam);if(t<o1)cover(t,0,easeInOut(clamp((t-o0)/SWG)));if(t>=c0)cover(t,TC,1-easeInOut(clamp((t-c0)/SWG)));
-}
-function drawEmpty(){ctx.fillStyle='#1a060b';ctx.fillRect(0,0,W,H);ctx.fillStyle='#e3bd84';ctx.textAlign='center';ctx.font=F(600,44);ctx.fillText('还没有可用的航段',W/2,H/2-20);ctx.font=F(400,30);ctx.fillStyle='#c3a99f';ctx.fillText('上传记录，或补全未识别的机场',W/2,H/2+40);ctx.textAlign='left';}
-
-/* ================= music (synthesised to the same grid) ================= */
-function rngF(seed){let a=seed>>>0;return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
-function biquad(x,type,fc,sr,Q=0.7071){const w=2*Math.PI*fc/sr,c=Math.cos(w),al=Math.sin(w)/(2*Q);let b0,b1,b2,a0=1+al,a1=-2*c,a2=1-al;
-  if(type==='lp'){b0=(1-c)/2;b1=1-c;b2=(1-c)/2;}else{b0=(1+c)/2;b1=-(1+c);b2=(1+c)/2;}b0/=a0;b1/=a0;b2/=a0;a1/=a0;a2/=a0;let x1=0,x2=0,y1=0,y2=0;const y=new Float32Array(x.length);
-  for(let i=0;i<x.length;i++){const v=b0*x[i]+b1*x1+b2*x2-a1*y1-a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v;}return y;}
-function synth(sc,SR=48000){
-  const DUR=sc.T_END,N=Math.ceil(SR*DUR)+SR;const L=new Float32Array(N),R=new Float32Array(N);const rnd=rngF(11);const noise=n=>{const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=rnd()*2-1;return a;};
-  const add=(st,x,g=1,pan=.5)=>{const i0=Math.round(st*SR);if(i0<0||i0>=N)return;const n=Math.min(x.length,N-i0);const gl=g*Math.cos(pan*Math.PI/2)*1.41,gr=g*Math.sin(pan*Math.PI/2)*1.41;for(let i=0;i<n;i++){L[i0+i]+=x[i]*gl;R[i0+i]+=x[i]*gr;}};
-  const mtof=m=>440*Math.pow(2,(m-69)/12);
-  const CH=[[53,57,60,64,69],[52,55,59,62,67],[50,53,57,60,65],[48,52,55,59,62]],BASS=[41,40,38,36];
-  const section=t=>{if(t<T_OPEN)return'intro';if(t<T_F0)return'reveal';if(t>=sc.T_FE&&t<sc.T_ZOOM)return'hang';if(t>=sc.T_CARD)return'outro';if(t>=sc.T_ZOOM)return'return';
-    for(let k=0;k<sc.years.length;k++){const y=sc.years[k];if(y.t<=t&&t<y.end){if(k===0)return'light';if(y.bars<=0.5)return'gap';if(y.dream)return'dream';return'full';}}return'full';};
-  const nb=Math.ceil(DUR/BAR);
-  for(let b=0;b<nb;b++){const t0=b*BAR,sec=section(t0+0.01);if(sec==='hang')continue;const ch=CH[b%4];const n=Math.floor(BAR*SR*1.25);let pad=new Float32Array(n);
-    for(const m of ch){const f=mtof(m);for(const d of [-0.0084,0.0084]){const ff=f*(1+d);for(let i=0;i<n;i++){const tt=i/SR;pad[i]+=0.5*(2*((ff*tt)%1)-1)+0.5*Math.sin(2*Math.PI*ff*tt);}}}
-    const fc={gap:650,intro:900,outro:1000,dream:1600}[sec]||1400;pad=biquad(pad,'lp',fc,SR);const stopNext=section(t0+BAR+0.01)==='hang';const gain=sec==='gap'?0.026:0.03;
-    for(let i=0;i<n;i++){const tt=i/SR;let e=Math.min(1,tt/0.35)*Math.min(1,Math.max(0,(n/SR-tt)/0.45));if(stopNext)e*=clamp((BAR+0.15-tt)/0.15);pad[i]*=e*gain;}
-    add(t0,pad,1,.45);add(t0+0.004,pad,1,.55);if(sec==='intro')continue;
-    const f=mtof(BASS[b%4]),bn=Math.floor(BAR*SR),bs=new Float32Array(bn);for(let i=0;i<bn;i++){const tt=i/SR;let v=(Math.sin(2*Math.PI*f*tt)+0.3*Math.sin(4*Math.PI*f*tt))*Math.min(1,tt/0.01)*Math.exp(-tt*0.5);if(stopNext)v*=clamp((BAR-tt)/0.15);bs[i]=v;}
-    add(t0,bs,sec==='gap'?0.06:0.10);}
-  const kick=()=>{const n=Math.floor(0.45*SR),a=new Float32Array(n);let ph=0;for(let i=0;i<n;i++){const tt=i/SR;ph+=2*Math.PI*(48+95*Math.exp(-tt*32))/SR;a[i]=Math.sin(ph)*Math.exp(-tt*7.5);}return a;};
-  const snare=()=>{const n=Math.floor(0.28*SR);const nz=biquad(noise(n),'hp',1400,SR);for(let i=0;i<n;i++){const tt=i/SR;nz[i]=nz[i]*Math.exp(-tt*17)*0.6+Math.sin(2*Math.PI*185*tt)*Math.exp(-tt*24)*0.4;}return nz;};
-  const hat=(open)=>{const n=Math.floor((open?0.3:0.07)*SR);const nz=biquad(noise(n),'hp',7500,SR);for(let i=0;i<n;i++)nz[i]*=Math.exp(-(i/SR)*(open?12:45));return nz;};
-  const crash=()=>{const n=Math.floor(1.6*SR);const nz=biquad(noise(n),'hp',4000,SR);for(let i=0;i<n;i++)nz[i]*=Math.exp(-(i/SR)*2.6);return nz;};
-  const K=kick(),SN=snare(),HC=hat(false),HO=hat(true),CR=crash();
-  const G16=BEAT/4;for(let k=0;k*G16<DUR;k++){const tq=k*G16,sec=section(tq+1e-4),q=k%16;
-    if(sec==='light'||sec==='full'||sec==='return'){if(q===0||q===8||(sec!=='light'&&(q===6||q===10)))add(tq,K,(q===0||q===8)?0.34:0.22);if(sec!=='light'&&(q===4||q===12))add(tq,SN,0.11);
-      if(q%2===0||sec!=='light')add(tq+(q%2?0.012:0),(q===14&&sec!=='light')?HO:HC,(q%2?0.035:0.05)*(sec==='light'?0.8:1),0.62);}
-    else if(sec==='dream'&&q%4===2)add(tq,HC,0.025,0.65);}
-  for(let k=0;k<sc.years.length;k++){const y=sc.years[k];add(y.t,CR,y.bars<=0.5?0.02:0.08,0.38);}
-  add(T_OPEN,CR,0.07);add(T_OPEN,K,0.3);add(sc.T_ZOOM,CR,0.12);add(sc.T_ZOOM,K,0.36);
-  const pluck=(f,dur,br)=>{const n=Math.floor(dur*SR),a=new Float32Array(n);for(let i=0;i<n;i++){const tt=i/SR;a[i]=(Math.sin(2*Math.PI*f*tt)+0.35*br*Math.sin(4*Math.PI*f*tt)*Math.exp(-tt*9)+0.15*br*Math.sin(2*Math.PI*3.01*f*tt)*Math.exp(-tt*14))*Math.exp(-tt*4.2)*Math.min(1,tt/0.003);}return a;};
-  sc.flights.forEach((fl,i)=>{const b=Math.floor(fl.t0/BAR),ch=CH[b%4];let m=ch[i%5]+12;if(fl.km>5000)m=ch[0]+24;if(fl.up)m=ch[(i%3)+2]+24;let x=pluck(mtof(m),(fl.km>5000||fl.up)?1.2:0.8,fl.vd?0.5:1);let g=0.07;
-    if(fl.vd){x=biquad(x,'lp',1500,SR);g=0.05;}if(fl.km>5000){g=0.09;add(fl.t0,pluck(mtof(m-12),1.4,1),0.05,0.4);}add(fl.t0,x,g*(sc.flights.length>300?0.7:1),0.3+0.4*((i*7)%10)/10);});
-  const bell=f=>{const n=Math.floor(1.6*SR),a=new Float32Array(n);for(let i=0;i<n;i++){const tt=i/SR;a[i]=(Math.sin(2*Math.PI*f*tt)+0.4*Math.sin(2*Math.PI*2.76*f*tt)*Math.exp(-tt*5))*Math.exp(-tt*2.4)*Math.min(1,tt/0.004);}return a;};
-  const MOT=[81,79,76];for(const st of [BEAT,sc.T_CARD+BEAT])MOT.forEach((m,j)=>add(st+j*BEAT*0.75,bell(mtof(m)),0.06,0.4+0.1*j));
-  for(const st of [BAR+BEAT,sc.T_CARD+BAR+BEAT])MOT.forEach((m,j)=>add(st+j*BEAT*0.75,bell(mtof(m-2)),0.05,0.6-0.1*j));
-  {const n=Math.floor((sc.T_STAMP-sc.T_FE)*SR),a=new Float32Array(n);let ph=0;for(let i=0;i<n;i++){const u=i/n;ph+=2*Math.PI*(600+900*u*u)/SR;a[i]=Math.sin(ph)*u*u*0.5;}add(sc.T_FE,a,0.025);}
-  {const n=Math.floor(0.6*SR),th=new Float32Array(n);let ph=0;for(let i=0;i<n;i++){const tt=i/SR;ph+=2*Math.PI*(40+110*Math.exp(-tt*25))/SR;th[i]=Math.sin(ph)*Math.exp(-tt*8);}
-    const sl=biquad(noise(n),'hp',900,SR);for(let i=0;i<n;i++)sl[i]*=Math.exp(-(i/SR)*38);const ink=biquad(noise(n),'lp',3000,SR);for(let i=0;i<n;i++)ink[i]*=Math.exp(-(i/SR)*12)*0.3;
-    add(sc.T_STAMP+0.15,th,0.55);add(sc.T_STAMP+0.15,sl,0.22);add(sc.T_STAMP+0.17,ink,0.1);}
-  add(sc.T_CARD,pluck(mtof(29),3.0,0.6),0.25);add(sc.T_CARD,CR,0.03);
-  {const cr=new Float32Array(N);for(let k=0;k<DUR*8;k++){cr[Math.floor(rnd()*N)]=rnd()*2-1;}const c2=biquad(cr,'hp',2000,SR);for(let i=0;i<N;i++){const v=c2[i]*0.12+(rnd()*2-1)*0.002;L[i]+=v;R[i]+=v;}}
-  const Lf=biquad(L,'lp',8000,SR),Rf=biquad(R,'lp',8000,SR);const len=Math.floor(DUR*SR);const outL=new Float32Array(len),outR=new Float32Array(len);let mx=0;
-  for(let i=0;i<len;i++){outL[i]=Math.tanh(Lf[i]*1.5);outR[i]=Math.tanh(Rf[i]*1.5);mx=Math.max(mx,Math.abs(outL[i]),Math.abs(outR[i]));}
-  const fi=Math.floor(0.8*SR),fo=Math.floor(2.5*SR);const k=0.89/(mx||1);
-  for(let i=0;i<len;i++){let g=k;if(i<fi)g*=i/fi;if(i>len-fo)g*=Math.pow((len-i)/fo,1.5);outL[i]*=g;outR[i]*=g;}
-  return {L:outL,R:outR,SR};
-}
-
-/* ================= UI wiring ================= */
-const today=new Date();const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const ISSUE=`${String(today.getDate()).padStart(2,'0')} ${MON[today.getMonth()]} ${today.getFullYear()}`;
-const ISSUE6=`${String(today.getFullYear()).slice(2)}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
-let PHOTO=null,playing=false,playT=0,lastTs=0,audioCtx=null,audioSrc=null,AUDIO=null,AUDIO_KEY='',dirty=true,exporting=false,cancelExport=false;
-function setStatus(m,err){const s=$('status');s.textContent=m;s.classList.toggle('err',!!err);}
-function invalidate(){dirty=true;if(!playing&&S&&S.ok)drawAt(playT);}
-function drawAt(t){if(!S)return;renderFrame(Math.min(S.frames-1,Math.max(0,Math.floor(t*FPS))));const T=S.ok?S.T_END:0;$('time').textContent=`${mmss(t)} / ${mmss(T)}`;$('scrub').value=T?Math.round(t/T*1000):0;}
-const mmss=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-let rebuildTimer=null;
-function rebuild(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(()=>{stopPlay();buildScene();AUDIO=null;renderSummary();$('result').hidden=true;drawAt(S.ok?Math.min(playT,S.T_END):0);if(S.ok&&playT===0)drawAt(S.T_END*0.62);},120);}
-function renderSummary(){
-  const r=S.res,c=$('chips');c.innerHTML='';const add=(txt,cls)=>{const s=document.createElement('span');s.className='chip '+(cls||'');s.textContent=txt;c.appendChild(s);};
-  if(SOURCE==='demo')add('示例数据 · 虚构旅客','demo');
-  const all=r.all;add(`${all.length} 段航班`);if(all.length)add(`${all[0].y} – ${all[all.length-1].y}`);
-  const nu=all.filter(f=>f.up).length,nv=all.filter(f=>f.vd).length;if(nu)add(`待出行 ${nu}`);if(nv)add(`退票/作废 ${nv}`);
-  if(S.ok)add(`动画 ${S.flights.length} 段 · ${mmss(S.T_END)}`,'ok');if(r.unres.size)add(`未识别地名 ${r.unres.size}`,'warn');if(r.skipped)add(`无日期已跳过 ${r.skipped}`,'warn');
-  $('optVoid').parentElement.hidden=!nv;$('optUp').parentElement.hidden=!nu;
-  // years
-  const ys=[...new Set(all.map(f=>f.y))].sort();const keepF=RESET_YEARS?'':$('yFrom').value,keepT=RESET_YEARS?'':$('yTo').value;const wasReset=RESET_YEARS;RESET_YEARS=false;
-  for(const [id,keep,def] of [['yFrom',keepF,ys[0]],['yTo',keepT,ys[ys.length-1]]]){const sel=$(id);sel.innerHTML='';ys.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});sel.value=ys.includes(+keep)?keep:def;}
-  if(wasReset&&S.ok===false&&ys.length){rebuild();}
-  // unresolved list
-  const box=$('unres');box.innerHTML='';$('stepUnres').hidden=!r.unres.size&&!Object.keys(manual).length;
-  [...r.unres.entries()].sort((a,b)=>b[1]-a[1]).forEach(([name,cnt],idx)=>{const row=document.createElement('div');row.className='u';
-    const lab=document.createElement('label');lab.textContent=`${name}（${cnt} 次）`;lab.htmlFor='un'+idx;
-    const inp=document.createElement('input');inp.type='text';inp.className='code';inp.id='un'+idx;inp.maxLength=3;inp.placeholder='IATA';inp.value=manual[name]||'';
-    const st=document.createElement('span');st.className='st';st.textContent='未识别';
-    inp.addEventListener('input',()=>{const v=inp.value.toUpperCase().trim();if(AP[v]){st.textContent=AP[v].city||v;st.classList.add('ok');}else{st.textContent=v.length===3?'没有这个代码':'未识别';st.classList.remove('ok');}});
-    inp.addEventListener('change',()=>{const v=inp.value.toUpperCase().trim();if(AP[v]){manual[name]=v;rebuild();}});
-    row.append(lab,inp,st);box.appendChild(row);});
-}
-// file input
-async function loadFile(file){
-  try{setStatus(`正在读取 ${file.name} …`);const buf=await file.arrayBuffer();let wb;
-    if(/\.csv$|\.txt$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes(String.fromCharCode(0xFFFD)))txt=new TextDecoder('gb18030').decode(buf);wb=XLSX.read(txt,{type:'string',raw:true});}
-    else wb=XLSX.read(buf,{type:'array',cellDates:true});
-    const rows=readWorkbook(wb);if(!rows.length){setStatus('没在文件里找到航班表格。请确认表头含「出发」「到达」「日期」等列，或改用 CSV 模板。',true);return;}
-    RAW=rows;SOURCE='file';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';setStatus(`已读取 ${rows.length} 行记录。`);rebuild();
-  }catch(e){console.error(e);setStatus('文件读取失败：'+(e.message||e)+'。可以另存为 .xlsx 或 CSV 再试。',true);}
-}
-const drop=$('drop');
-drop.addEventListener('click',()=>$('file').click());drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click();}});
-$('file').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(f);e.target.value='';});
-['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
-['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
-drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
-$('btnDemo').addEventListener('click',()=>{RAW=demoRows();SOURCE='demo';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus('已换回示例数据。');rebuild();});
-$('btnTpl').addEventListener('click',async()=>{
-  const csv='﻿日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态\n2024-05-01,MU5101,东方航空,上海虹桥,北京首都,08:00,10:15,,已使用\n2024-05-06,CA1519,中国国航,PEK,SHA,19:00,21:10,,已使用\n2027-02-24,NH924,全日空,广州白云,东京羽田,15:05,20:00,,未使用\n';
-  await saveFile('航迹护照_模板.csv',new Blob([csv],{type:'text/csv'}));});
-['optUp','optVoid','yFrom','yTo','nat'].forEach(id=>$(id).addEventListener('change',rebuild));
-['name','latin','tagEn','tagZh'].forEach(id=>$(id).addEventListener('input',rebuild));
-$('btnPhoto').addEventListener('click',()=>$('photo').click());
-$('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{PHOTO=im;$('thumb').src=url;$('btnPhotoClear').hidden=false;rebuild();};im.src=url;e.target.value='';});
-$('btnPhotoClear').addEventListener('click',()=>{PHOTO=null;$('thumb').removeAttribute('src');$('btnPhotoClear').hidden=true;rebuild();});
-// preview playback
-function ensureAudio(){if(!S||!S.ok)return null;const key=S.T_END+'|'+S.flights.length+'|'+S.years.map(y=>y.bars).join(',');if(!AUDIO||AUDIO_KEY!==key){AUDIO=synth(S,48000);AUDIO_KEY=key;}return AUDIO;}
-function stopPlay(){playing=false;$('btnPlay').textContent='▶ 播放';$('btnPlay').setAttribute('aria-label','播放预览');if(audioSrc){try{audioSrc.stop();}catch(e){}audioSrc=null;}}
-$('btnPlay').addEventListener('click',()=>{if(!S||!S.ok||exporting)return;if(playing){stopPlay();return;}
-  if(playT>=S.T_END-0.05)playT=0;const A=ensureAudio();
-  try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});const buf=audioCtx.createBuffer(2,A.L.length,A.SR);buf.copyToChannel(A.L,0);buf.copyToChannel(A.R,1);
-    audioSrc=audioCtx.createBufferSource();audioSrc.buffer=buf;audioSrc.connect(audioCtx.destination);audioSrc.start(0,playT);audioCtx.resume();}catch(e){console.warn(e);}
-  playing=true;$('btnPlay').textContent='❚❚ 暂停';$('btnPlay').setAttribute('aria-label','暂停预览');const startT=playT,t0=performance.now(),a0=audioCtx?audioCtx.currentTime:0;
-  const loop=()=>{if(!playing)return;playT=audioCtx&&audioSrc?startT+(audioCtx.currentTime-a0):startT+(performance.now()-t0)/1000;if(playT>=S.T_END){playT=S.T_END;drawAt(playT);stopPlay();return;}drawAt(playT);requestAnimationFrame(loop);};requestAnimationFrame(loop);});
-$('scrub').addEventListener('input',e=>{if(!S||!S.ok)return;stopPlay();playT=e.target.value/1000*S.T_END;drawAt(playT);});
-
-/* ================= export ================= */
-let DL=null;let lastBlob=null,lastName='';
-async function saveFile(name,blob){
-  try{if(!DL&&window.claude&&window.claude.use)DL=await window.claude.use('downloads');}catch(e){}
-  if(DL){try{await DL.save({filename:name,data:blob});setStatus('已交给浏览器保存。');return true;}catch(e){if(e&&e.code==='declined'){setStatus('已取消保存。');return false;}setStatus('这里无法保存文件（'+(e&&e.code||'unavailable')+'）。可以在上方视频上长按或右键另存。',true);return false;}}
-  try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();return true;}catch(e){setStatus('无法保存文件，请在视频上右键另存。',true);return false;}
-}
-$('btnSave').addEventListener('click',()=>{if(lastBlob)saveFile(lastName,lastBlob);});
-$('btnCancel').addEventListener('click',()=>{cancelExport=true;});
-$('btnMake').addEventListener('click',async()=>{
-  if(!S||!S.ok||exporting)return;stopPlay();exporting=true;cancelExport=false;$('btnMake').disabled=true;$('btnCancel').hidden=false;$('result').hidden=true;
-  const prog=$('prog');const setP=p=>prog.style.width=(p*100).toFixed(1)+'%';
-  try{
-    setStatus('正在合成配乐…');await new Promise(r=>setTimeout(r,30));const A=ensureAudio();
-    let blob,ext;
-    if('VideoEncoder' in window&&'AudioEncoder' in window&&window.Mp4Muxer){[blob,ext]=await exportWebCodecs(A,setP);}else{[blob,ext]=await exportRealtime(A,setP);}
-    if(!blob)return;lastBlob=blob;lastName=`航迹护照_${(S.P.latin||'flight').replace(/\s+/g,'_')}_${S.years[0].y}-${S.years[S.years.length-1].y}.${ext}`;
-    const v=$('outVideo');v.src=URL.createObjectURL(blob);$('result').hidden=false;setP(1);setStatus(`完成：${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}。点「保存视频」下载。`);
-  }catch(e){console.error(e);setStatus('生成失败：'+(e.message||e)+'。换用最新版 Chrome / Edge 一般能解决。',true);}
-  finally{exporting=false;$('btnMake').disabled=false;$('btnCancel').hidden=true;drawAt(playT);}
-});
-async function exportWebCodecs(A,setP){
-  const vcands=[['avc','avc1.640028'],['avc','avc1.4d0028'],['avc','avc1.42003e'],['vp9','vp09.00.40.08'],['av1','av01.0.08M.08']];let vcfg=null,vmux='avc';
-  for(const [mx,c] of vcands){const cfg={codec:c,width:W,height:H,bitrate:8_000_000,framerate:FPS};if(mx==='avc')cfg.avc={format:'avc'};try{const s=await VideoEncoder.isConfigSupported(cfg);if(s.supported){vcfg=cfg;vmux=mx;break;}}catch(e){}}
-  if(!vcfg)return exportRealtime(A,setP);
-  let acodec=null,acfg=null;for(const [mc,c] of [['aac','mp4a.40.2'],['opus','opus']]){const cfg={codec:c,sampleRate:A.SR,numberOfChannels:2,bitrate:192000};try{const s=await AudioEncoder.isConfigSupported(cfg);if(s.supported){acodec=mc;acfg=cfg;break;}}catch(e){}}
-  const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:vmux,width:W,height:H,frameRate:FPS},audio:acodec?{codec:acodec,sampleRate:A.SR,numberOfChannels:2}:undefined,fastStart:'in-memory',firstTimestampBehavior:'offset'});
-  let err=null;const ve=new VideoEncoder({output:(c,m)=>muxer.addVideoChunk(c,m),error:e=>err=e});ve.configure(vcfg);
-  let ae=null;if(acodec){ae=new AudioEncoder({output:(c,m)=>muxer.addAudioChunk(c,m),error:e=>err=e});ae.configure(acfg);
-    const CH=1024;for(let i=0;i<A.L.length;i+=CH){const n=Math.min(CH,A.L.length-i);const d=new Float32Array(n*2);d.set(A.L.subarray(i,i+n),0);d.set(A.R.subarray(i,i+n),n);
-      const ad=new AudioData({format:'f32-planar',sampleRate:A.SR,numberOfFrames:n,numberOfChannels:2,timestamp:Math.round(i/A.SR*1e6),data:d});ae.encode(ad);ad.close();}}
-  const N=S.frames,t0=performance.now();
-  for(let i=0;i<N;i++){if(cancelExport){setStatus('已取消。');ve.close();ae&&ae.close();return [null];}if(err)throw err;
-    renderFrame(i);const fr=new VideoFrame(cv,{timestamp:Math.round(i*1e6/FPS),duration:Math.round(1e6/FPS)});ve.encode(fr,{keyFrame:i%60===0});fr.close();
-    if(ve.encodeQueueSize>6)await new Promise(r=>{const chk=()=>ve.encodeQueueSize<=2?r():setTimeout(chk,5);chk();});
-    if(i%15===0){setP(i/N);const el=(performance.now()-t0)/1000,eta=el/(i+1)*(N-i-1);setStatus(`正在渲染第 ${i+1} / ${N} 帧 · 预计还要 ${Math.ceil(eta)} 秒`);await new Promise(r=>setTimeout(r,0));}}
-  await ve.flush();if(ae)await ae.flush();if(err)throw err;muxer.finalize();
-  return [new Blob([muxer.target.buffer],{type:'video/mp4'}),'mp4'];
-}
-async function exportRealtime(A,setP){
-  if(!cv.captureStream||!window.MediaRecorder)throw new Error('这个浏览器不支持在网页里生成视频');
-  setStatus('这个浏览器不支持快速编码，改为实时录制，需要和视频一样长的时间…');
-  const ac=new (window.AudioContext||window.webkitAudioContext)({sampleRate:A.SR});const buf=ac.createBuffer(2,A.L.length,A.SR);buf.copyToChannel(A.L,0);buf.copyToChannel(A.R,1);
-  const src=ac.createBufferSource();src.buffer=buf;const dest=ac.createMediaStreamDestination();src.connect(dest);
-  const vs=cv.captureStream(FPS);const stream=new MediaStream([...vs.getVideoTracks(),...dest.stream.getAudioTracks()]);
-  const mime=['video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
-  const rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:8e6}:{});const parts=[];rec.ondataavailable=e=>e.data.size&&parts.push(e.data);
-  const done=new Promise(r=>rec.onstop=r);rec.start(500);await ac.resume();src.start();const t0=ac.currentTime;
-  await new Promise(res=>{const loop=()=>{const t=ac.currentTime-t0;if(cancelExport||t>=S.T_END){res();return;}renderFrame(Math.floor(t*FPS));setP(t/S.T_END);setStatus(`实时录制中 ${mmss(t)} / ${mmss(S.T_END)}`);requestAnimationFrame(loop);};loop();});
-  rec.stop();await done;try{src.stop();}catch(e){}ac.close();if(cancelExport){setStatus('已取消。');return [null];}
-  const isMp4=/mp4/.test(rec.mimeType||mime);return [new Blob(parts,{type:isMp4?'video/mp4':'video/webm'}),isMp4?'mp4':'webm'];
-}
-
-/* ================= boot ================= */
-(async function boot(){
-  ctx.fillStyle='#1a060b';ctx.fillRect(0,0,W,H);ctx.fillStyle='#e3bd84';ctx.font='600 40px sans-serif';ctx.textAlign='center';ctx.fillText('正在加载地图与机场数据…',W/2,H/2);ctx.textAlign='left';
-  try{await loadData();}catch(e){setStatus('数据加载失败，请刷新页面。',true);return;}
-  const sel=$('nat');Object.entries(NAMES).sort((a,b)=>a[1][1].localeCompare(b[1][1],'zh')).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=`${v[1]} · ${v[2]}`;sel.appendChild(o);});sel.value='CN';
-  try{await Promise.all(['600 20px "Open Sans"','400 20px "Open Sans"','700 20px "Space Mono"','400 20px "Space Mono"','400 20px "Noto Sans SC"'].map(f=>document.fonts.load(f,'航A')));}catch(e){}
-  RAW=demoRows();SOURCE='demo';$('name').placeholder='例如 BARRY 或 小白';
-  buildScene();renderSummary();playT=S.T_END*0.62;drawAt(playT);playT=0;
-})();
-</script>
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/mp4-muxer.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script>if(/\.vercel\.app$/.test(location.hostname)){const s=document.createElement('script');s.defer=true;s.src='/_vercel/insights/script.js';document.head.appendChild(s);}</script><!-- Vercel Web Analytics only where it exists -->
+<script src="js/i18n.js"></script>
+<script src="js/core.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/music.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/export.js"></script>
+<script src="js/home.js"></script>

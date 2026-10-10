@@ -1,0 +1,20 @@
+[Unit]
+Description=Sky Passport video renderer (/api/video)
+After=network.target
+
+[Service]
+Environment=NODE_PATH=/srv/sky-passport/rt/node_modules
+Environment=RENDER_PAGE=http://127.0.0.1:8088/index.html?site=https://passport.nybbq.art
+WorkingDirectory=/srv/sky-passport
+ExecStart=/opt/node20/bin/node server/render.js
+Restart=always
+# snap Chromium needs a real user with a home directory
+User=ubuntu
+Nice=5
+# The box also runs other sites and has no swap. If memory still runs out, the kernel kills the renderer
+# (and the Chromium it starts: oom_score_adj is inherited) instead of nginx, sshd or the other apps.
+OOMScoreAdjust=800
+MemoryHigh=2000M
+
+[Install]
+WantedBy=multi-user.target

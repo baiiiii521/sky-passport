@@ -1,0 +1,14 @@
+[Unit]
+Description=Sky Passport API (/api/check)
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/sky-passport.env
+WorkingDirectory=/srv/sky-passport
+ExecStart=/opt/node20/bin/node server/server.js
+Restart=always
+User=nobody
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
