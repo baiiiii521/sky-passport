@@ -28,7 +28,7 @@ $('btnMake').addEventListener('click',async()=>{
 });
 async function exportWebCodecs(A,setP){
   const vcands=[['avc','avc1.640028'],['avc','avc1.4d0028'],['avc','avc1.42003e'],['vp9','vp09.00.40.08'],['av1','av01.0.08M.08']];let vcfg=null,vmux='avc';
-  for(const [mx,c] of vcands){const cfg={codec:c,width:W,height:H,bitrate:8_000_000,framerate:FPS,latencyMode:'quality'}; // 8 Mbps: ~28 MB for 30 s, easier to save and share than 10 Mbpsif(mx==='avc')cfg.avc={format:'avc'};try{const s=await VideoEncoder.isConfigSupported(cfg);if(s.supported){vcfg=cfg;vmux=mx;break;}}catch(e){}}
+  for(const [mx,c] of vcands){const cfg={codec:c,width:W,height:H,bitrate:8_000_000,framerate:FPS,latencyMode:'quality'}; /* 8 Mbps: ~28 MB for 30 s, easier to save and share than 10 Mbps */if(mx==='avc')cfg.avc={format:'avc'};try{const s=await VideoEncoder.isConfigSupported(cfg);if(s.supported){vcfg=cfg;vmux=mx;break;}}catch(e){}}
   if(!vcfg)return exportRealtime(A,setP);
   let acodec=null,acfg=null;for(const [mc,c] of [['aac','mp4a.40.2'],['opus','opus']]){const cfg={codec:c,sampleRate:A.SR,numberOfChannels:2,bitrate:192000};try{const s=await AudioEncoder.isConfigSupported(cfg);if(s.supported){acodec=mc;acfg=cfg;break;}}catch(e){}}
   const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:vmux,width:W,height:H,frameRate:FPS},audio:acodec?{codec:acodec,sampleRate:A.SR,numberOfChannels:2}:undefined,fastStart:'in-memory',firstTimestampBehavior:'offset'});

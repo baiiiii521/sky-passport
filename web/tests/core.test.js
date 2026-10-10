@@ -169,3 +169,9 @@ test('readSheet + buildFlights: miles, cancellations, bare flight numbers, time 
   const lhr = all.find(f => f.f === 'LHR'), jfk = all.find(f => f.f === 'JFK');
   assert.equal(lhr.fn, 'BAW117'); assert.equal(lhr.vd, 1); assert.equal(jfk.vd, 0);
 });
+
+test('every page script parses (a stray // inside a one-line statement once broke the whole page)', () => {
+  for (const f of fs.readdirSync(path.join(PUB, 'js')).filter(f => f.endsWith('.js'))) {
+    assert.doesNotThrow(() => new vm.Script(fs.readFileSync(path.join(PUB, 'js', f), 'utf8'), { filename: f }), f);
+  }
+});
