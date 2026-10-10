@@ -40,6 +40,6 @@ Page({
     try { await SS.loadAirports(); SS.useDemo(); this.setData({ busy: '' }); wx.navigateTo({ url: '/pages/result/result' }); }
     catch (e) { this.setData({ busy: '', err: e.message || String(e) }); }
   },
-  onShareAppMessage() { return { title: '把你的航班记录做成一本飞行护照', path: '/pages/index/index', imageUrl: M + 'cover.jpg' }; },
+  onShareAppMessage() { return { title: '把你的航班记录做成一本飞行护照', path: '/pages/index/index', imageUrl: M + 'share.jpg' }; }, // share card image is 5:4
   onShareTimeline() { return { title: '航迹护照：把航班记录做成一本飞行护照' }; },
 });

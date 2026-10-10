@@ -42,9 +42,9 @@
     <button wx:if="{{video.state!=='done'}}" class="primary" bindtap="makeVideo" disabled="{{video.state==='queued'||video.state==='rendering'||video.state==='sending'}}">
       {{video.state==='sending'?'正在提交…':video.state==='queued'?(video.ahead?'排队中，前面还有 '+video.ahead+' 个':'马上开始…'):video.state==='rendering'?'正在生成 '+video.progress+'%':'生成视频'}}
     </button>
-    <text wx:if="{{!video.state}}" class="small center">在服务器上生成，约 1–3 分钟；会上传航段（日期、航班号、出发/到达地）和名字，24 小时后自动删除</text>
+    <text wx:if="{{!video.state}}" class="small center">在服务器上生成，约 40 秒；会上传航段（日期、航班号、出发/到达地）和名字，24 小时后自动删除</text>
     <view wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="bar"><view class="fill" style="width:{{video.progress}}%"></view></view>
-    <text wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="small center">通常 1–3 分钟，可以先去生成下面的长图</text>
+    <text wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="small center">通常 40 秒左右，可以先去生成下面的长图</text>
     <text wx:if="{{video.state==='error'}}" class="errline">{{video.err}}</text>
 
     <block wx:if="{{video.state==='done'}}">

@@ -6,7 +6,7 @@ const SS = require('../../libs/session.js');
 const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
 const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
-let ALL = [], mapImgPath = '', pollTimer = null;
+let ALL = [], mapImgPath = '', pollTimer = null, specTimer = null;
 function loadMapBase() {
   if (mapImgPath) return Promise.resolve(mapImgPath);
   return new Promise(res => wx.downloadFile({ url: SS.SITE + '/mp-world.png', success: r => { if (r.statusCode === 200) mapImgPath = r.tempFilePath; res(mapImgPath); }, fail: () => res('') }));
@@ -33,16 +33,16 @@ Page({
     if (last && last.sig === dataSig(SS.rowsForServer())) {
       this.setData({ ...last.opts, video: { state: 'queued', progress: 0, ahead: 0, url: '', size: '', err: '' } });
       this.recompute(); this.setData({ 'video.state': 'queued' }); this.poll(last.id, true);
-    }
+    } else setTimeout(() => this.askPrerender(), 1200);
   },
-  onUnload() { clearTimeout(pollTimer); },
+  onUnload() { clearTimeout(pollTimer); clearTimeout(specTimer); },
   recompute() {
     const list = ST.pick(ALL, { up: this.data.up, year: this.data.year }), sum = ST.summarize(list, 'CN');
     const label = !sum.n ? '' : sum.y0 === sum.y1 ? `${sum.y0} 年度` : `${sum.y0} — ${sum.y1}`;
     this.setData({ sum: { ...sum, kmText: ST.fmt(sum.km), hours: Math.round(sum.min / 60) }, badges: ST.badges(list, 'CN'), label, poster: '' });
     this.resetVideo();
   },
-  resetVideo() { if (this.data.video.state && this.data.video.state !== 'done') return; this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); },
+  resetVideo() { if (this.data.video.state && this.data.video.state !== 'done') return; this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); this.prerender(); },
   pickYear(e) { this.setData({ year: +e.currentTarget.dataset.y }); this.recompute(); },
   toggleUp() { this.setData({ up: !this.data.up }); this.recompute(); },
   onName(e) { this.setData({ name: e.detail.value.trim(), poster: '' }); this.resetVideo(); },
@@ -50,6 +50,23 @@ Page({
   pick(e) { const { k, v } = e.currentTarget.dataset; this.setData({ [k]: v }); this.resetVideo(); },
 
   /* ---------- video: rendered on the server with the web engine ---------- */
+  videoBody() { const d = this.data; return { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } }; },
+  // with consent, the server starts the film while the user is still reading the stats; tapping 生成视频 with the
+  // same choices then picks up that render (or the finished file). Pre-renders only run when the server is idle.
+  askPrerender() {
+    if (wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n) return this.prerender();
+    wx.showModal({
+      title: '先帮你把视频做好？',
+      content: '你看统计的时候，视频就在服务器上开始生成。会上传航段的日期、航班号、出发和到达地，以及你填的名字；24 小时后自动删除，不做其他用途。',
+      confirmText: '同意', cancelText: '先不用',
+      success: r => { if (r.confirm) { wx.setStorageSync(CONSENT, 1); this.prerender(); } },
+    });
+  },
+  prerender() {
+    clearTimeout(specTimer);
+    if (!wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n || this.data.video.state) return;
+    specTimer = setTimeout(() => SS.api('/api/video', 'POST', { ...this.videoBody(), spec: true }).catch(() => {}), 3000); // settle typing first
+  },
   makeVideo() {
     if (!this.data.sum || !this.data.sum.n || ['queued', 'rendering', 'sending'].includes(this.data.video.state)) return;
     if (wx.getStorageSync(CONSENT)) return this.submitVideo();
@@ -64,7 +81,7 @@ Page({
   async submitVideo() {
     this.setData({ video: { state: 'sending', progress: 0, ahead: 0, url: '', size: '', err: '' } });
     try {
-      const d = this.data, r = await SS.api('/api/video', 'POST', { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
+      clearTimeout(specTimer); const d = this.data, r = await SS.api('/api/video', 'POST', this.videoBody());
       wx.setStorageSync(LAST, { id: r.id, sig: dataSig(SS.rowsForServer()), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
       this.setData({ 'video.state': 'queued', 'video.ahead': r.ahead || 0 });
       this.poll(r.id);
@@ -139,5 +156,5 @@ Page({
   savePoster() {
     wx.saveImageToPhotosAlbum({ filePath: this.data.poster, success: () => wx.showToast({ title: '已保存到相册', icon: 'success' }), fail: e => this.albumDenied(e) });
   },
-  onShareAppMessage() { return { title: '我的飞行护照：' + (this.data.label || ''), path: '/pages/index/index', imageUrl: SS.SITE + '/mp/cover.jpg' }; },
+  onShareAppMessage() { return { title: '我的飞行护照：' + (this.data.label || ''), path: '/pages/index/index', imageUrl: SS.SITE + '/mp/share.jpg' }; }, // share card image is 5:4
 });

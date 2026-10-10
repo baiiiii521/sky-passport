@@ -1,5 +1,5 @@
 // Renders the mini program's home-page showcase images from the demo traveller, on the server:
-//   public/mp/cover.jpg (closing poster), page.jpg (mid-flight page), world.jpg (zoom-out with stamp), long.jpg (long poster)
+//   public/mp/cover.jpg (closing poster), share.jpg (5:4 share card), page.jpg (mid-flight page), world.jpg (zoom-out with stamp), long.jpg (long poster)
 // Usage: NODE_PATH=/srv/sky-passport/rt/node_modules node server/showcase.js
 'use strict';
 const fs = require('fs');
@@ -17,7 +17,9 @@ fs.mkdirSync(OUT, { recursive: true });
   await p.evaluate(async () => { await Promise.all([ensureFonts(), loadFlags(S.order)]); coverBuilt = false; });
   const shots = await p.evaluate(() => {
     const at = t => { renderFrame(Math.round(t * FPS)); return cv.toDataURL('image/jpeg', 0.82); };
-    return { cover: at(S.T_END - 0.4), page: at(S.T_FE - 3.2), world: at(S.T_CARD - 1.2) };
+    // share.jpg: WeChat share cards are 5:4, so take the top of the closing poster (star, emblem, title, SKY PASSPORT) without the traveller's name
+    const share = () => { renderFrame(Math.round((S.T_END - 0.4) * FPS)); const c = document.createElement('canvas'); c.width = 1000; c.height = 800; c.getContext('2d').drawImage(cv, 0, 300, 1080, 864, 0, 0, 1000, 800); return c.toDataURL('image/jpeg', 0.86); };
+    return { cover: at(S.T_END - 0.4), page: at(S.T_FE - 3.2), world: at(S.T_CARD - 1.2), share: share() };
   });
   for (const [k, d] of Object.entries(shots)) fs.writeFileSync(path.join(OUT, k + '.jpg'), Buffer.from(d.split(',')[1], 'base64'));
   const long = await p.evaluate(async () => (await renderLongPoster()).toDataURL('image/jpeg', 0.8));

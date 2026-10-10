@@ -203,19 +203,28 @@ $('btnPhoto').addEventListener('click',()=>$('photo').click());
 $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{PHOTO=im;$('thumb').src=url;$('btnPhotoClear').hidden=false;rebuild();};im.src=url;e.target.value='';});
 $('btnPhotoClear').addEventListener('click',()=>{PHOTO=null;$('thumb').removeAttribute('src');$('btnPhotoClear').hidden=true;rebuild();});
 // preview playback
-function audioKey(){return [S.T_END,S.P.nat,S.P.mstyle,S.order.join(','),S.years.map(y=>y.bars+(y.dream?'d':'')+(y.gap?'g':'')).join(','),S.flights.map(f=>f.t0.toFixed(3)+':'+f.km+(f.up?'u':'')+(f.vd?'v':'')).join(',')].join('|');}
+function audioKey(){return [SFXB?'sfx':'',S.T_END,S.P.nat,S.P.mstyle,S.order.join(','),S.years.map(y=>y.bars+(y.dream?'d':'')+(y.gap?'g':'')).join(','),S.flights.map(f=>f.t0.toFixed(3)+':'+f.km+(f.up?'u':'')+(f.vd?'v':'')).join(',')].join('|');}
 // the score is synthesised off the main thread (a Worker built from the same functions), so the page never freezes
 let synthW=null,synthSeq=0,AUDIO_PENDING=null;
+// the recorded sound effects (sfx/film.mp3): decoded once at 48 kHz, cut into {name:{d:samples,s:peak offset}}.
+// MP3 decoders add different priming delays, so the sprite carries a one-sample marker at 0.1 s to measure ours.
+let SFXB=null,sfxP=null,SFXF=false; // SFXF: the sprite failed once; keep going without effects
+function loadSfx(){if(SFXB)return Promise.resolve(SFXB);if(sfxP)return sfxP;
+  sfxP=fetch('sfx/film.mp3').then(r=>{if(!r.ok)throw new Error('sfx '+r.status);return r.arrayBuffer();})
+    .then(buf=>new OfflineAudioContext(1,48000,48000).decodeAudioData(buf)).then(ab=>{const x=ab.getChannelData(0);let k=0;for(let i=1;i<9600;i++)if(Math.abs(x[i])>Math.abs(x[k]))k=i;const off=k-4800,B={};
+      for(const [nm,[st,len,sy]] of Object.entries(SFX_MAP))B[nm]={d:x.slice(st+off,st+off+len),s:sy};SFXB=B;return B;})
+    .catch(e=>{console.warn('sound effects unavailable',e);SFXF=true;sfxP=null;return null;});
+  return sfxP;}
 function synthInWorker(sc){
-  if(synthW===null){try{const fns=[rngF,bqC,bq,lufs,glue,limiter,reverbInto,pingInto,synth].map(f=>f.toString()).join('\n');
+  if(synthW===null){try{const fns=[rngF,bqC,bq,lufs,glue,limiter,reverbInto,pingInto,filmCues,synth].map(f=>f.toString()).join('\n');
       const src=`"use strict";const hash=${hash},clamp=${clamp};const BAR=${BAR},BEAT=${BEAT},T_OPEN=${T_OPEN},T_F0=${T_F0},O0=${O0},SWG=${SWG};\n${fns}\nonmessage=e=>{const A=synth(e.data.sc,48000);postMessage({id:e.data.id,A},[A.L.buffer,A.R.buffer]);};`;
       synthW=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));}catch(e){synthW=false;}}
   if(!synthW)return Promise.resolve(synth(sc,48000));
   const id=++synthSeq,lite={T_END:sc.T_END,T_FE:sc.T_FE,T_STAMP:sc.T_STAMP,T_ZOOM:sc.T_ZOOM,T_CARD:sc.T_CARD,years:sc.years.map(y=>({t:y.t,end:y.end,bars:y.bars,dream:y.dream,gap:y.gap})),
-    flights:sc.flights.map(f=>({t0:f.t0,km:f.km,up:f.up,vd:f.vd})),order:sc.order,visit:sc.visit,P:{nat:sc.P.nat},style:sc.P.mstyle};
+    flights:sc.flights.map(f=>({t0:f.t0,dur:f.dur,km:f.km,up:f.up,vd:f.vd})),order:sc.order,visit:sc.visit,P:{nat:sc.P.nat},style:sc.P.mstyle,sfx:sc.sfx,cues:sc.cues};
   return new Promise((res,rej)=>{const on=e=>{if(e.data.id!==id)return;synthW.removeEventListener('message',on);res(e.data.A);};synthW.addEventListener('message',on);
     synthW.addEventListener('error',e=>{synthW.removeEventListener('message',on);synthW=false;rej(e);},{once:true});synthW.postMessage({id,sc:lite});});}
-function ensureAudio(){if(!S||!S.ok)return Promise.resolve(null);const key=audioKey();if(AUDIO&&AUDIO_KEY===key)return Promise.resolve(AUDIO);
+function ensureAudio(){if(!S||!S.ok)return Promise.resolve(null);if(!SFXB&&!SFXF)return loadSfx().then(()=>ensureAudio());S.sfx=SFXB;const key=audioKey();if(AUDIO&&AUDIO_KEY===key)return Promise.resolve(AUDIO);
   if(AUDIO_PENDING&&AUDIO_PENDING.key===key)return AUDIO_PENDING.p;const sc=S;
   const p=synthInWorker(sc).catch(()=>synth(sc,48000)).then(A=>{if(AUDIO_PENDING&&AUDIO_PENDING.key===key)AUDIO_PENDING=null;AUDIO=A;AUDIO_KEY=key;return A;});AUDIO_PENDING={key,p};return p;}
 let audioTimer=null;function scheduleAudio(){clearTimeout(audioTimer);audioTimer=setTimeout(()=>{if(!playing&&!exporting&&S&&S.ok)ensureAudio();},800);}
