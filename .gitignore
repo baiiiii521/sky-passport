@@ -7,3 +7,6 @@ web/public/flags/
 web/public/fonts/
 miniprogram-preview.jpg
 /promo/
+
+# the site's intro films are part of the page (web/public/promo, 720p)
+!web/public/promo/*.mp4
