@@ -397,9 +397,11 @@
     poster(kind, w, h) { return poster(kind, w, h); },
     debug() { const m = mk(1440, 720), mc = m.getContext('2d'), pr = d3.geoEquirectangular().scale(1440 / (2 * Math.PI)).translate([720, 360]); mc.fillStyle = '#fff'; mc.beginPath(); d3.geoPath(pr, mc)(LAND); mc.fill(); const px = mc.getImageData(0, 0, 1440, 720).data; let n = 0; for (let i = 3; i < px.length; i += 4) if (px[i] > 128) n++; return { dots: DOTS ? DOTS.length : -1, flights: FL.length, land: LAND && LAND.type, filled: n }; },
     cues() { return cues().map(c => [c[0], c[1]]); },
-    audio(stems) { const tb = Y[2].t + HERO, A = synth({ ...SC, sfx: BANK, cues: cues(), stops: [[tb - BEAT, tb]], stems }, 48000), n = A.L.length, o = new Int16Array(n * 2);
+    /* vo (optional): { b64: mono float32 narration at 48 kHz, duck: [[t0,t1,depth],…], db: speech level over the mix } */
+    audio(stems, vo) { const tb = Y[2].t + HERO, voice = vo ? new Float32Array(Uint8Array.from(atob(vo.b64), c => c.charCodeAt(0)).buffer) : null,
+      A = synth({ ...SC, sfx: BANK, cues: cues(), stops: [[tb - BEAT, tb]], stems, voice, duck: vo ? vo.duck : null, voiceDb: vo ? vo.db : undefined }, 48000), n = A.L.length, o = new Int16Array(n * 2);
       for (let i = 0; i < n; i++) { o[2 * i] = Math.max(-32767, Math.min(32767, A.L[i] * 32767)); o[2 * i + 1] = Math.max(-32767, Math.min(32767, A.R[i] * 32767)); }
       const b64 = arr => { let s = ''; const u = new Uint8Array(arr.buffer); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s); };
-      if (!stems) return b64(o); const f = new Float32Array(2 * A.stems.sx.length); f.set(A.stems.sx, 0); f.set(A.stems.mu, A.stems.sx.length); return { pcm: b64(o), stems: b64(f) }; },
+      if (!stems) return b64(o); const k = A.stems.sx.length, f = new Float32Array((vo ? 3 : 2) * k); f.set(A.stems.sx, 0); f.set(A.stems.mu, k); if (vo) f.set(A.stems.vo, 2 * k); return { pcm: b64(o), stems: b64(f) }; }, /* stems: effects, music[, voice] */
   };
 })();

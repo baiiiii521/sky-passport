@@ -136,6 +136,10 @@ function synth(sc,SR=48000){
   const SB=sc.sfx||null,rate=(x,r)=>{if(!r||r===1)return x;const n=Math.floor(x.length/r),y=new Float32Array(n);for(let i=0;i<n;i++){const p=i*r,k=Math.floor(p),f=p-k;y[i]=x[k]*(1-f)+(x[k+1]||0)*f;}return y;};
   // sc.stops: [[t0,t1],…] dead stops before a hero hit (music down ~18 dB with 30 ms ramps); the film's own stop is the hang section
   for(const [a,b] of sc.stops||[]){const R=Math.round(0.03*SR);for(let k=Math.max(0,Math.round(a*SR)-R);k<Math.min(N,Math.round(b*SR)+R);k++){const t=k/SR,e=t<a?1-(a-t)/0.03:t>b?1-(t-b)/0.03:1,v=1-0.875*Math.max(0,Math.min(1,e));if(v<MDUCK[k])MDUCK[k]=v;}}
+  /* sc.duck: [[t0,t1,depth,fxDepth],…] under a narration line the music goes down by depth and the effects by fxDepth (80 ms in, 300 ms out).
+     Only the promo passes it; the film itself never ducks its effects. */
+  let FXD=null;for(const [a,b,dep,fxd] of sc.duck||[]){const A=0.08,Rl=0.3;if(fxd&&!FXD)FXD=new Float32Array(N).fill(1);
+    for(let k=Math.max(0,Math.round((a-A)*SR));k<Math.min(N,Math.round((b+Rl)*SR));k++){const t=k/SR,e=Math.max(0,Math.min(1,t<a?1-(a-t)/A:t>b?1-(t-b)/Rl:1)),v=1-dep*e;if(v<MDUCK[k])MDUCK[k]=v;if(fxd){const w=1-fxd*e;if(w<FXD[k])FXD[k]=w;}}}
   // per-event gain in the sound's own band: small effects (cue[6] = band centre, Hz) sit ~4 dB over the music right there, up to 2.5× their base gain
   const bandE=(a,b,i0,n,f)=>{const seg=new Float32Array(n);for(let i=0;i<n;i++){const k=i0+i;seg[i]=k>=0&&k<a.length?(a[k]+(b?b[k]:0)):0;}const y=bq(seg,'bp',f,SR,0.8);let e=0;for(let i=0;i<n;i++)e+=y[i]*y[i];return e/n+1e-12;};
   if(SB)for(const [nm,t,g,pan,rv,r,fb] of (sc.cues||filmCues(sc))){const x=SB[nm];if(!x)continue;const d=M('sfx'+nm+r,()=>rate(x.d,r)),st=t-x.s/(r||1)/SR;let gg=g;
@@ -148,14 +152,16 @@ function synth(sc,SR=48000){
   for(let k=0;k*G16<2*BAR;k++){const tq=sc.T_ZOOM+k*G16;if(tq>=sc.T_CARD)break;const c=CH[chordAt(tq)];dry(tq,voice('celesta',c[[1,2,3,4,3,2][k%6]]+24,G16*0.9),0.022*(1-k/48),0.2+0.6*((k*5)%8)/7,0.3,0.2);} // route light pulses
   dry(sc.T_CARD,pluck(29,3.0,0.6),0.25,0.5,0.15);dry(sc.T_CARD,crash(),0.03,0.5,0.1);
   /* ---- mixdown ---- */
-  let ST=null;if(sc.stems){const n=Math.floor(DUR*SR);ST={sx:new Float32Array(n),mu:new Float32Array(n)};for(let i=0;i<n;i++){ST.sx[i]=(SXL[i]+SXR[i])/2;ST.mu[i]=((DRL[i]+BDL[i]*DUCK[i]+DRR[i]+BDR[i]*DUCK[i])/2)*MDUCK[i];}} // QA stems (effects bus, ducked music); the master gain is applied below
+  let ST=null;if(sc.stems){const n=Math.floor(DUR*SR);ST={sx:new Float32Array(n),mu:new Float32Array(n),vo:new Float32Array(n)};for(let i=0;i<n;i++){ST.sx[i]=(SXL[i]+SXR[i])/2*(FXD?FXD[i]:1);ST.mu[i]=((DRL[i]+BDL[i]*DUCK[i]+DRR[i]+BDR[i]*DUCK[i])/2)*MDUCK[i];}} // QA stems (effects bus, ducked music); the master gain is applied below
   pingInto(DLS,SR,BEAT*0.75,DRL,DRR,0.45);reverbInto(RVS,SR,DRL,DRR,1.1);
-  const len=Math.floor(DUR*SR),L=new Float32Array(len),R=new Float32Array(len);for(let i=0;i<len;i++){const d=DUCK[i],m=MDUCK[i];L[i]=(DRL[i]+BDL[i]*d)*m+SXL[i];R[i]=(DRR[i]+BDR[i]*d)*m+SXR[i];}
-  const G=ST?new Float32Array(len).fill(1):null;for(const X of ST?[L,R,ST.sx,ST.mu]:[L,R]){bq(X,'hp',32,SR,0.7071,0,X);bq(X,'ls',110,SR,0.7071,-3.5,X);bq(X,'hs',3000,SR,0.7071,2,X);bq(X,'lp',16500,SR,0.7071,0,X);}
+  const len=Math.floor(DUR*SR),L=new Float32Array(len),R=new Float32Array(len);for(let i=0;i<len;i++){const d=DUCK[i],m=MDUCK[i],f=FXD?FXD[i]:1;L[i]=(DRL[i]+BDL[i]*d)*m+SXL[i]*f;R[i]=(DRR[i]+BDR[i]*d)*m+SXR[i]*f;}
+  /* sc.voice: mono narration at SR (promo only), placed centre and dry; its speech sits sc.voiceDb (default +3 dB) over the whole mix before mastering */
+  if(sc.voice){const V=sc.voice,n=Math.min(len,V.length),k=Math.pow(10,((lufs(L,R,SR)+(sc.voiceDb??3))-lufs(V,V,SR))/20);for(let i=0;i<n;i++){const v=V[i]*k;L[i]+=v;R[i]+=v;if(ST)ST.vo[i]=v;}}
+  const G=ST?new Float32Array(len).fill(1):null;for(const X of ST?[L,R,ST.sx,ST.mu,ST.vo]:[L,R]){bq(X,'hp',32,SR,0.7071,0,X);bq(X,'ls',110,SR,0.7071,-3.5,X);bq(X,'hs',3000,SR,0.7071,2,X);bq(X,'lp',16500,SR,0.7071,0,X);}
   const gainDb=db=>{const k=Math.pow(10,db/20);for(let i=0;i<len;i++){L[i]*=k;R[i]*=k;}if(G)for(let i=0;i<len;i++)G[i]*=k;};const CEIL=Math.pow(10,-2.6/20),TARGET=-14; // −2.6 dBFS (sample peak) leaves room for inter-sample peaks and AAC overshoot (≤ −1 dBTP after encoding)
   gainDb(-18-lufs(L,R,SR));glue(L,R,SR,-15,2,G);gainDb(TARGET+0.6-lufs(L,R,SR));limiter(L,R,SR,CEIL,G);
   const got=lufs(L,R,SR);if(got<TARGET-0.3){gainDb(Math.min(3,TARGET-got));limiter(L,R,SR,CEIL,G);}
   const fi0=Math.floor(0.3*SR),fo=Math.floor(2.5*SR);for(let i=0;i<fi0;i++){L[i]*=i/fi0;R[i]*=i/fi0;if(G)G[i]*=i/fi0;}for(let i=Math.max(0,len-fo);i<len;i++){const g=Math.pow((len-i)/fo,1.5);L[i]*=g;R[i]*=g;if(G)G[i]*=g;}
-  if(ST)for(let i=0;i<len;i++){ST.sx[i]*=G[i];ST.mu[i]*=G[i];} // QA stems as they sit in the mastered mix
+  if(ST)for(let i=0;i<len;i++){ST.sx[i]*=G[i];ST.mu[i]*=G[i];ST.vo[i]*=G[i];} // QA stems as they sit in the mastered mix
   return ST?{L,R,SR,stems:ST}:{L,R,SR};
 }
