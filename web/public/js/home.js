@@ -41,33 +41,35 @@ const HOME=(()=>{
     G.ports=[...ports.entries()].map(([c,n])=>({p:vec(AP[c].lon,AP[c].lat,1),n,c}));
     /* face the traveller's world: the mean of their airports */
     let sx=0,sy=0,sz=0;for(const p of G.ports){sx+=p.p[0]*p.n;sy+=p.p[1]*p.n;sz+=p.p[2]*p.n;}const m=Math.hypot(sx,sy,sz);
-    if(m>0){const lo=Math.atan2(sx,sz),la=Math.asin(sy/m);G.yaw=-lo;G.tilt=Math.max(-0.7,Math.min(0.7,la));}
+    if(m>0){const lo=Math.atan2(sx,sz),la=Math.asin(sy/m);G.yaw=G.yaw0=-lo;G.tilt=G.tilt0=Math.max(-0.7,Math.min(0.7,la));}
     const r=q('#gRoutes');if(r)r.textContent=String(G.arcs.length);}
   function resize(){const box=G.cv.parentElement,s=Math.round(box.clientWidth);if(!s)return;G.dpr=Math.min(2,window.devicePixelRatio||1);G.size=s;G.cv.width=G.cv.height=Math.round(s*G.dpr);G.cv.style.width=G.cv.style.height=s+'px';draw(performance.now());}
-  function draw(now){const g=G.g,W=G.cv.width;if(!g||!W)return;const cx=W/2,cy=W/2,R=W*0.39;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,W);
-    const cyw=Math.cos(G.yaw),syw=Math.sin(G.yaw),ct=Math.cos(G.tilt),st=Math.sin(G.tilt);
+  function draw(now){const g=G.g,W=G.cv.width;if(!g||!W)return;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,W);paint(g,W/2,W/2,W*0.39,G.dpr,G.yaw,G.tilt,now);
+    if(now-G.hud>120){G.hud=now;const lo=((-G.yaw/R2+540)%360)-180,la=G.tilt/R2,el=q('#gPos');if(el)el.textContent=`${Math.abs(la).toFixed(1)}°${la>=0?'N':'S'}  ${Math.abs(lo).toFixed(1)}°${lo>=0?'E':'W'}`;}}
+  /* the globe itself, on any 2D context: the page canvas, or the long poster */
+  function paint(g,cx,cy,R,dpr,yaw,tilt,now){
+    const cyw=Math.cos(yaw),syw=Math.sin(yaw),ct=Math.cos(tilt),st=Math.sin(tilt);
     const P=(x,y,z)=>{const x1=x*cyw+z*syw,z1=-x*syw+z*cyw,y2=y*ct-z1*st,z2=y*st+z1*ct;return [cx+R*x1,cy-R*y2,z2];};
     /* atmosphere and ocean */
     let gr=g.createRadialGradient(cx,cy,R*0.9,cx,cy,R*1.32);gr.addColorStop(0,'rgba(94,234,255,.22)');gr.addColorStop(0.35,'rgba(94,234,255,.07)');gr.addColorStop(1,'rgba(94,234,255,0)');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,R*1.32,0,7);g.fill();
     gr=g.createRadialGradient(cx-R*0.35,cy-R*0.4,R*0.1,cx,cy,R);gr.addColorStop(0,'#10285a');gr.addColorStop(0.7,'#06132e');gr.addColorStop(1,'#030a1c');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,R,0,7);g.fill();
-    g.strokeStyle='rgba(94,234,255,.35)';g.lineWidth=1.2*G.dpr;g.stroke();
+    g.strokeStyle='rgba(94,234,255,.35)';g.lineWidth=1.2*dpr;g.stroke();
     /* land dots in four brightness bands (one fillStyle each) */
-    if(G.dots){const D=G.dots,bands=[[],[],[],[]],sz=1.7*G.dpr;for(let i=0;i<D.length;i+=3){const p=P(D[i],D[i+1],D[i+2]);if(p[2]<=0.02)continue;bands[Math.min(3,(p[2]*4)|0)].push(p);}
+    if(G.dots){const D=G.dots,bands=[[],[],[],[]],sz=1.7*dpr;for(let i=0;i<D.length;i+=3){const p=P(D[i],D[i+1],D[i+2]);if(p[2]<=0.02)continue;bands[Math.min(3,(p[2]*4)|0)].push(p);}
       const col=['rgba(94,234,255,.16)','rgba(94,234,255,.3)','rgba(120,238,255,.48)','rgba(160,244,255,.7)'];bands.forEach((b,k)=>{g.fillStyle=col[k];for(const p of b)g.fillRect(p[0]-sz/2,p[1]-sz/2,sz,sz);});}
     /* routes: a faint trail, then a comet running along it */
     g.globalCompositeOperation='lighter';const t=now/1000;
-    for(const a of G.arcs){const pp=a.pts.map(v=>P(v[0],v[1],v[2]));g.lineWidth=1.1*G.dpr;g.strokeStyle=a.up?'rgba(255,79,154,.30)':'rgba(233,197,142,.32)';g.beginPath();let on=false;
+    for(const a of G.arcs){const pp=a.pts.map(v=>P(v[0],v[1],v[2]));g.lineWidth=1.1*dpr;g.strokeStyle=a.up?'rgba(255,79,154,.30)':'rgba(233,197,142,.32)';g.beginPath();let on=false;
       for(const p of pp){if(p[2]>-0.05){on?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);on=true;}else on=false;}g.stroke();
       const head=RM?0.999:((t*a.sp+a.ph)%1.6)/1.2;if(head>1)continue;const hi=head*(pp.length-1),L0=Math.max(0,Math.floor(hi)-9);
-      for(let i=L0;i<Math.floor(hi);i++){const p=pp[i],n=pp[i+1];if(p[2]<-0.05||n[2]<-0.05)continue;const al=(i-L0+1)/(hi-L0);g.strokeStyle=a.up?`rgba(255,120,180,${al*0.9})`:`rgba(255,226,170,${al*0.95})`;g.lineWidth=(1+al*1.8)*G.dpr;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(n[0],n[1]);g.stroke();}
-      const hp=pp[Math.min(pp.length-1,Math.round(hi))];if(hp&&hp[2]>-0.05){g.fillStyle='rgba(255,246,220,.95)';g.beginPath();g.arc(hp[0],hp[1],2.2*G.dpr,0,7);g.fill();}}
+      for(let i=L0;i<Math.floor(hi);i++){const p=pp[i],n=pp[i+1];if(p[2]<-0.05||n[2]<-0.05)continue;const al=(i-L0+1)/(hi-L0);g.strokeStyle=a.up?`rgba(255,120,180,${al*0.9})`:`rgba(255,226,170,${al*0.95})`;g.lineWidth=(1+al*1.8)*dpr;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(n[0],n[1]);g.stroke();}
+      const hp=pp[Math.min(pp.length-1,Math.round(hi))];if(hp&&hp[2]>-0.05){g.fillStyle='rgba(255,246,220,.95)';g.beginPath();g.arc(hp[0],hp[1],2.2*dpr,0,7);g.fill();}}
     /* airports: dot + slow pulse */
-    for(const o of G.ports){const p=P(o.p[0],o.p[1],o.p[2]);if(p[2]<=0)continue;const r0=(1.6+Math.min(3,Math.sqrt(o.n)*0.6))*G.dpr;g.fillStyle='rgba(111,247,200,.9)';g.beginPath();g.arc(p[0],p[1],r0,0,7);g.fill();
-      if(!RM){const k=((t*0.6+o.n*0.13)%1);g.strokeStyle=`rgba(111,247,200,${(1-k)*0.6})`;g.lineWidth=1*G.dpr;g.beginPath();g.arc(p[0],p[1],r0+k*14*G.dpr,0,7);g.stroke();}}
+    for(const o of G.ports){const p=P(o.p[0],o.p[1],o.p[2]);if(p[2]<=0)continue;const r0=(1.6+Math.min(3,Math.sqrt(o.n)*0.6))*dpr;g.fillStyle='rgba(111,247,200,.9)';g.beginPath();g.arc(p[0],p[1],r0,0,7);g.fill();
+      if(!RM){const k=((t*0.6+o.n*0.13)%1);g.strokeStyle=`rgba(111,247,200,${(1-k)*0.6})`;g.lineWidth=1*dpr;g.beginPath();g.arc(p[0],p[1],r0+k*14*dpr,0,7);g.stroke();}}
     g.globalCompositeOperation='source-over';
     /* terminator-like sheen on the limb */
-    gr=g.createRadialGradient(cx+R*0.45,cy+R*0.5,R*0.2,cx,cy,R*1.05);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.35)');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,R,0,7);g.fill();
-    if(now-G.hud>120){G.hud=now;const lo=((-G.yaw/R2+540)%360)-180,la=G.tilt/R2,el=q('#gPos');if(el)el.textContent=`${Math.abs(la).toFixed(1)}°${la>=0?'N':'S'}  ${Math.abs(lo).toFixed(1)}°${lo>=0?'E':'W'}`;}}
+    gr=g.createRadialGradient(cx+R*0.45,cy+R*0.5,R*0.2,cx,cy,R*1.05);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.35)');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,R,0,7);g.fill();}
   function loop(now){G.raf=0;if(!G.live)return;const dt=Math.min(0.05,(now-(G.last||now))/1000);G.last=now;
     if(!G.drag){if(now>G.idle)G.vy+=(0.09-G.vy)*0.02;else G.vy*=0.95;G.yaw+=G.vy*dt*(RM?0:1);G.vt*=0.92;G.tilt=Math.max(-1.1,Math.min(1.1,G.tilt+G.vt*dt));}
     draw(now);G.raf=requestAnimationFrame(loop);}
@@ -108,5 +110,7 @@ const HOME=(()=>{
   function relang(){scramble(q('#heroH'));update();}
   function init(){initGlobe();initMotion();scramble(q('#heroH'));update();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-  return {flap,update,relang,scramble};
+  /* a still of the globe facing the traveller's routes, comets frozen mid-flight (fixed clock, so the same input gives the same picture) */
+  function paintGlobe(g,cx,cy,R,scale){update();paint(g,cx,cy,R,scale||1,G.yaw0||0,G.tilt0==null?0.35:G.tilt0,2600);return G.arcs.length;}
+  return {flap,update,relang,scramble,paintGlobe};
 })();
