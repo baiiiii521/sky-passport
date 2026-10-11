@@ -334,7 +334,7 @@
   /* ================= kinetic cut (~24 s): boarding passes at speed, no explaining =================
      Picture time runs through four pieces of the film's own timeline, cut on bar lines so the music and its hits stay on the grid:
      bars 0–3 passes (new) · 6–11 globe + slammed numbers, dead stop, title hit, two bars of montage (new) · 14–15 stamp · 17–end card. */
-  const KSEG = () => KIN === 'B' ? [[0, 3 * BAR], [6 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : KIN === 'C' ? [[0, 3 * BAR], [5 * BAR, 9 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]] : [[0, 3 * BAR], [6 * BAR, 11 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]];
+  const KSEG = () => KIN === 'B' ? [[0, 3 * BAR], [6 * BAR, 9 * BAR], [17 * BAR, SC.T_END]] : KIN === 'C' ? [[0, 3 * BAR], [5 * BAR, 9 * BAR], [17 * BAR, SC.T_END]] : [[0, 3 * BAR], [6 * BAR, 11 * BAR], [14 * BAR, 15 * BAR], [17 * BAR, SC.T_END]];
   const kinLen = () => KSEG().reduce((a, [x, y]) => a + y - x, 0);
   function kinMap(tau) { let acc = 0; for (const [a, b] of KSEG()) { if (tau < acc + b - a) return [a + tau - acc, a]; acc += b - a; } const L = KSEG(); return [L[L.length - 1][1] - 1e-3, L[L.length - 1][0]]; }
   function big(s, x, y, size, { fill, stroke, a = 1, align = 'center', fam = 'SM', w = 700, lw = 3 } = {}) { if (a <= 0) return; g.save(); g.globalAlpha *= a; g.font = font(w, size, fam); g.textAlign = align; if (stroke) { g.lineWidth = lw; g.strokeStyle = stroke; g.strokeText(s, x, y); } if (fill) { g.fillStyle = fill; g.fillText(s, x, y); } g.restore(); }
@@ -371,13 +371,13 @@
     big(num, x + (left ? -1 : 1) * 14 * (1 - k), y, s2, { fill: 'rgba(255,79,154,.5)', a, align: al }); big(num, x, y, s2, { fill: P.ink, a, align: al }); big(lab, x, y + 90, 46, { fill: P.gold, a, align: al, fam: undefined, w: 700 });
     flash(0.22 * Math.exp(-u * BEAT * 20));
   }
-  function kinMont(t) { /* two bars: the film, then the poster — tilted cards at speed, a punch on every beat */
-    backdrop(t); const t0 = 9 * BAR, m = t < t0 + BAR ? 0 : 1, tb = t0 + m * BAR, lt = t - tb, bu = (lt % BEAT) / BEAT, punch = 1 + 0.035 * Math.exp(-bu * BEAT * 9), k = spring(lt, 0.4, 0.22), dir = m ? 1 : -1;
+  function kinMont(t, tbO, mO) { /* two bars: the film, then the poster — tilted cards at speed, a punch on every beat (or one card from tbO) */
+    backdrop(t); const t0 = 9 * BAR, m = tbO != null ? mO : (t < t0 + BAR ? 0 : 1), tb = tbO != null ? tbO : t0 + m * BAR, lt = t - tb, bu = (lt % BEAT) / BEAT, punch = 1 + 0.035 * Math.exp(-bu * BEAT * 9), k = spring(lt, 0.4, 0.22), dir = m ? 1 : -1;
     streaks(t, 22, 0.6); const word = m ? T('长图', 'POSTER') : T('影片', 'FILM'), en = m ? 'LONG POSTER' : 'PASSPORT FILM';
     big(word, PW / 2 - dir * (60 - 180 * lt / BAR), 760, LG === 'en' ? 300 : 520, { stroke: rgba(P.ac, 0.22), lw: 5, fam: undefined, w: 900 });
     g.save(); g.translate(PW / 2 + dir * 700 * (1 - k), 980); g.rotate(-0.07 * dir * (2 - k)); g.scale(punch, punch); const w = 600, h = w * 16 / 9;
     g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 60; g.shadowOffsetY = 30; g.fillStyle = '#04101f'; rr(g, -w / 2 - 14, -h / 2 - 14, w + 28, h + 28, 34); g.fill(); g.shadowColor = 'transparent'; g.strokeStyle = rgba(P.ac, 0.8); g.lineWidth = 2; g.stroke();
-    g.save(); rr(g, -w / 2, -h / 2, w, h, 22); g.clip(); if (m === 0) g.drawImage(shot(T_F0 + 1.5 + lt * 9), -w / 2, -h / 2, w, h); else { const sc = w / LONG.width, trv = LONG.height * sc - h; g.drawImage(LONG, -w / 2, -h / 2 - trv * eio(cl(lt / (BAR * 0.95))), w, LONG.height * sc); } g.restore(); g.restore();
+    g.save(); rr(g, -w / 2, -h / 2, w, h, 22); g.clip(); if (m === 0) g.drawImage(shot(T_F0 + 1.5 + lt * (tbO != null ? 5 : 9)), -w / 2, -h / 2, w, h); else { const sc = w / LONG.width, trv = LONG.height * sc - h; g.drawImage(LONG, -w / 2, -h / 2 - trv * eio(cl(lt / (BAR * 0.95))), w, LONG.height * sc); } g.restore(); g.restore();
     big(`0${m + 1}`, 90, 330, 120, { fill: P.gold, align: 'left' }); big(en, 90, 400, 34, { fill: rgba(P.ac, 0.95), align: 'left' });
     text(m ? T('一张图，晒出这些年', 'One image, all those years') : T('一分钟，生成你的飞行护照', 'Your passport film, in a minute'), PW / 2, 1690, 50, { w: 800, a: cl(lt / 0.2), max: PW - 120 });
     flash(0.3 * Math.exp(-lt * 18)); bloom(0.5); glitch(t, tb, 0.14, 1);
@@ -406,6 +406,13 @@
         if (chr !== ' ') { g.fillStyle = gold ? P.gold : (c >= 7 ? rgba(P.ac, 0.95) : '#fff6e2'); g.fillText(chr, x + cw / 2, y + ch * 0.72); } g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x, y + ch / 2 - 1, cw, 2); } }
     g.restore(); if (t >= T2) flash(0.3 * Math.exp(-(t - T2) * 14) + 0.35 * Math.exp(-Math.abs(t - T2 - 1.25) * 16)); bloom(0.45);
   }
+  /* B: the hit is the stamp — the passport page slams in at the stamp's contact frame, then the line; the name waits for the end card */
+  function kinStampB(t) { const hit = Y[2].t + HERO, h = t - hit, k = eio(cl((h - 1.15) / 0.6)), sl = 1 + 0.1 * Math.exp(-h * 13) * Math.cos(h * 27), sc = (1 - 0.34 * k) * sl, w = 700, hh = w * 16 / 9, sx = 9 * Math.exp(-h * 9) * Math.sin(h * 70);
+    backdrop(t); streaks(t, 14, 0.5 * Math.exp(-h * 3));
+    g.save(); g.translate(PW / 2 + sx, 930 - 250 * k); g.scale(sc, sc); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 60; g.shadowOffsetY = 30; g.fillStyle = '#04101f'; rr(g, -w / 2 - 12, -hh / 2 - 12, w + 24, hh + 24, 30); g.fill(); g.shadowColor = 'transparent'; g.strokeStyle = rgba(P.ac, 0.8); g.lineWidth = 2; g.stroke();
+    g.save(); rr(g, -w / 2, -hh / 2, w, hh, 20); g.clip(); g.drawImage(shot(S.T_STAMP + 0.16 + h * 0.8), -w / 2, -hh / 2, w, hh); g.restore(); g.restore();
+    blurIn(T('每一次起飞', 'Every take-off'), PW / 2, 1500, LG === 'en' ? 76 : 88, hit + 1.25, t, { w: 900 }); blurIn(T('都值得被记住', 'deserves to be remembered'), PW / 2, 1610, LG === 'en' ? 60 : 88, hit + 1.45, t, { w: 900, color: P.gold, max: PW - 100 });
+    flash(0.6 * Math.exp(-h * 10)); bloom(0.5 + 0.4 * Math.exp(-h * 4)); }
   function kinPassC(t, k2 = 0) {
     const t0 = 5 * BAR, lt = t - t0, k = spring(lt - 0.15, 0.55, 0.2), tear = Math.max(0, t - (t0 + 5 * BEAT)), tk = eio(cl(tear / 0.9)), w = 900, h = 430, px = 250;
     if (lt < 0.5) { kinBoard(T_F0 - 0.01, 0); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = `rgba(2,6,16,${cl(lt / 0.3)})`; g.fillRect(0, 0, PW, PH); g.restore(); } else backdrop(t, 0.3);
@@ -422,9 +429,9 @@
   }
   function kinFrame(i) {
     const tau = i / FPS, [t, seg0] = kinMap(tau), hit = Y[2].t + HERO;
-    if (KIN === 'B') { if (t < T_F0) kinB1(t); else if (t < Y[2].t) kinB2(t); else if (t < Y[3].t) { act3a(t); if (t < hit) { const k = eio(cl((t - Y[2].t) / (hit - Y[2].t))); for (let q = 0; q < 18; q++) { const a = q * 0.349 + t * (1.5 + 5 * k), r = 1 - k; pass(FL[q % FL.length], PW / 2 + Math.cos(a) * 520 * r, 900 + Math.sin(a) * 170 * r, 0.2 * (1 - 0.9 * k), a * 0.2, 1 - k * 0.7, q); } } } else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
+    if (KIN === 'B') { if (t < T_F0) kinB1(t); else if (t < Y[2].t) kinB2(t); else if (t < Y[3].t) { if (t >= hit) kinStampB(t); else act3a(t); if (t < hit) { const k = eio(cl((t - Y[2].t) / (hit - Y[2].t))); for (let q = 0; q < 18; q++) { const a = q * 0.349 + t * (1.5 + 5 * k), r = 1 - k; pass(FL[q % FL.length], PW / 2 + Math.cos(a) * 520 * r, 900 + Math.sin(a) * 170 * r, 0.2 * (1 - 0.9 * k), a * 0.2, 1 - k * 0.7, q); } } } else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
     if (KIN === 'C') { if (t < T_F0) kinBoard(t); else if (t < hit) { const k = eio(cl((t - (hit - BEAT)) / BEAT)); kinPassC(t, k); const lp = eo(k); g.save(); g.globalCompositeOperation = 'lighter'; const lg = g.createRadialGradient(PW / 2, 900, 0, PW / 2, 900, 40 + 260 * lp); lg.addColorStop(0, `rgba(255,240,220,${0.9 * lp})`); lg.addColorStop(1, 'rgba(255,240,220,0)'); g.fillStyle = lg; g.fillRect(0, 0, PW, PH); g.restore(); }
-      else if (t < Y[3].t) act3a(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t); if (tau > 0.2 && seg0 > 16) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
+      else if (t < Y[3].t) kinMont(t, hit, 0); else act5(t); if (tau > 0.2 && seg0 > 16) glitch(t, seg0, 0.12, 0.9); g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C; }
     if (t < T_F0) kinA(t); else if (t < Y[2].t) { act2b(t); kinNums(t); } else if (t < Y[3].t) act3a(t); else if (t < 11 * BAR + 1e-6 && t < 14 * BAR - 1e-6 && t < SC.T_FE - 3 * BAR) kinMont(t); else if (t < SC.T_ZOOM) act4a(t); else act5(t);
     if (tau > 0.2) glitch(t, seg0, 0.12, 0.9);
     g.setTransform(1, 0, 0, 1, 0, 0); hud(t); finish(i, tau); return C;

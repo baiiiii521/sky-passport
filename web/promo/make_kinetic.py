@@ -43,7 +43,7 @@ if '--vo' in sys.argv:
           f'acompressor=threshold=-22dB:ratio=2.5:attack=6:release=120:makeup=2,aresample=48000,volume=1.6,adelay={int(float(tau) * 1000)}:all=1,apad')
     os.replace(os.path.join(out, '_a.wav'), os.path.join(out, '_a_bed.wav'))
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_a_bed.wav'), '-i', mp3, '-filter_complex',
-                    f'[1:a]{vf},asplit[v1][v2];[0:a][v1]sidechaincompress=threshold=0.02:ratio=8:attack=40:release=350[bed];[bed][v2]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.84,volume=-1.3dB[a]',
+                    f'[1:a]{vf},asplit[v1][v2];[0:a][v1]sidechaincompress=threshold=0.02:ratio=8:attack=40:release=350[bed];[bed][v2]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.84,volume=-2.5dB[a]',
                     '-map', '[a]', '-ac', '2', os.path.join(out, '_a.wav')], check=True)
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_v.mp4'), '-i', os.path.join(out, '_a.wav'), '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', full], check=True)
 print('wrote', full)
