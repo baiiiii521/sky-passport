@@ -88,7 +88,7 @@ function draw(g, data, mapImg) {
   /* cover */
   const serial = `NO. SP-${S.y1}-${(seed % 65536).toString(16).toUpperCase().padStart(4, '0')}`;
   g.font = F(700, 19, 1); g.fillStyle = NP.ac; trk(g, 'SKY PASSPORT // FLIGHT LOG', 60, 70, 4); g.fillStyle = NP.gold; trk(g, serial, W - 60, 70, 3, 'right');
-  g.font = '900 46px serif'; g.fillStyle = gold(g, 90, 140); trk(g, '航迹手帐', 60, 136, 14); g.font = F(400, 18, 1); g.fillStyle = NP.mut; g.textAlign = 'right'; g.fillText('VALID · 一生有效', W - 60, 132); g.textAlign = 'left';
+  g.font = '900 46px serif'; g.fillStyle = gold(g, 90, 140); trk(g, '航迹护照', 60, 136, 14); g.font = F(400, 18, 1); g.fillStyle = NP.mut; g.textAlign = 'right'; g.fillText('VALID · 一生有效', W - 60, 132); g.textAlign = 'left';
   g.fillStyle = NP.line; g.fillRect(60, 162, W - 120, 1); for (let x = 60; x <= W - 60; x += 24) g.fillRect(x, x % 120 === 60 ? 154 : 158, 1, x % 120 === 60 ? 9 : 5);
   const ex = W / 2, ey = 350, ER = 118; { const halo = g.createRadialGradient(ex, ey, 10, ex, ey, ER * 2.6); halo.addColorStop(0, 'rgba(94,234,255,.16)'); halo.addColorStop(1, 'rgba(94,234,255,0)'); g.fillStyle = halo; g.fillRect(0, 160, W, 420);
     g.strokeStyle = 'rgba(94,234,255,.25)'; g.lineWidth = 1.4; g.setLineDash([5, 7]); g.beginPath(); g.arc(ex, ey, ER * 1.5, 0, 7); g.stroke(); g.setLineDash([]);
