@@ -53,6 +53,10 @@
     <view wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="bar"><view class="fill" style="width:{{video.progress}}%"></view></view>
     <text wx:if="{{video.state==='rendering'||video.state==='queued'}}" class="small center">通常 40 秒左右，可以先去生成下面的长图</text>
     <text wx:if="{{video.state==='error'}}" class="errline">{{video.err}}</text>
+    <view wx:if="{{video.state!=='done'}}" class="webtip" bindtap="copySite">
+      <text class="small">速度慢或生成失败？用手机浏览器打开网页版，在本机直接生成：</text>
+      <text class="weburl">passport.nybbq.art</text><text class="small"> · 点这里复制网址</text>
+    </view>
 
     <block wx:if="{{video.state==='done'}}">
       <video class="player" src="{{video.url}}" controls autoplay object-fit="contain" show-fullscreen-btn></video>

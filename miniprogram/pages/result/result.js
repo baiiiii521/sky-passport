@@ -67,6 +67,7 @@ Page({
     if (!wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n || this.data.video.state) return;
     specTimer = setTimeout(() => SS.api('/api/video', 'POST', { ...this.videoBody(), spec: true }).catch(() => {}), 3000); // settle typing first
   },
+  copySite() { wx.setClipboardData({ data: 'https://passport.nybbq.art', success: () => wx.showToast({ title: '网址已复制，请到浏览器粘贴打开', icon: 'none', duration: 2500 }) }); },
   makeVideo() {
     if (!this.data.sum || !this.data.sum.n || ['queued', 'rendering', 'sending'].includes(this.data.video.state)) return;
     if (wx.getStorageSync(CONSENT)) return this.submitVideo();

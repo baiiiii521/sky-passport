@@ -23,11 +23,8 @@ server {
   location /js/ { add_header Cache-Control "no-cache"; }
   # heavy static files live in the bucket (server/cos_sync.js keeps it in step; deploy/COS.md); remove these two blocks when COS is not used
   location ~ "^/(fonts|vendor|sfx|mp|promo)/" { return 302 https://sky-passport-1252289725.cos.ap-beijing.myqcloud.com/static$request_uri; }
-  # data: browsers go to the bucket; the mini program (wx.request, other referer) keeps getting the local file
-  location ~ "^/(airports|china|world-50m)\.json$" {
-    add_header Cache-Control "public, max-age=604800";
-    if ($http_referer ~ "^https://passport\.nybbq\.art/") { return 302 https://sky-passport-1252289725.cos.ap-beijing.myqcloud.com/static$request_uri; }
-  }
+  # data: bucket too (its domain is in the mini program's request list since 2026-10-11)
+  location ~ "^/(airports|china|world-50m)\.json$" { return 302 https://sky-passport-1252289725.cos.ap-beijing.myqcloud.com/static$request_uri; }
   # data, fonts, flags, vendored libraries: cache for a week
   location ~* \.(json|woff2|svg|js)$ { add_header Cache-Control "public, max-age=604800"; }
 
