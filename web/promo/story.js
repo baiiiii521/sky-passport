@@ -92,7 +92,7 @@
   }
 
   /* ---------- text ---------- */
-  const GLYPH_EN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/#$%&*', GLYPH_ZH = '航迹护照飞行记忆解码数据表格机场国家时间护起降';
+  const GLYPH_EN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/#$%&*', GLYPH_ZH = '航迹手帐飞行记忆解码数据表格机场国家时间护起降';
   // decode effect: each character flickers through glyphs, then settles in order
   function decodeStr(s, t0, t, dur = 0.7) { const ch = [...s], n = ch.length, u = (t - t0) / dur; if (u >= 1.15) return s; if (u <= 0) return '';
     const set = /[㐀-鿿]/.test(s) ? GLYPH_ZH : GLYPH_EN; let out = '';
@@ -241,7 +241,7 @@
     } else { // HIT: the emblem and the title land together
       const h = t - hit, k = 1 + 0.14 * Math.exp(-h * 15) * Math.cos(h * 28);
       g.save(); g.translate(PW / 2, 760); g.scale(k, k); g.strokeStyle = g.fillStyle = goldFill(-260, 260); emblem(g, 0.82, false); g.restore();
-      const title = T('航迹护照', 'SKY PASSPORT'), ty = 1140, tr = LG === 'en' ? 8 : 30; let sz = LG === 'en' ? 128 : 168; g.font = `900 ${sz}px ${SERIF}`; while (g.measureText(title).width + tr * title.length > 860 && sz > 60) { sz -= 4; g.font = `900 ${sz}px ${SERIF}`; } /* fits with the landing bounce */
+      const title = T('航迹手帐', 'SKY PASSPORT'), ty = 1140, tr = LG === 'en' ? 8 : 30; let sz = LG === 'en' ? 128 : 168; g.font = `900 ${sz}px ${SERIF}`; while (g.measureText(title).width + tr * title.length > 860 && sz > 60) { sz -= 4; g.font = `900 ${sz}px ${SERIF}`; } /* fits with the landing bounce */
       for (const [dx, col] of [[-14, 'rgba(255,60,120,.55)'], [14, 'rgba(60,220,255,.55)']]) { const s = Math.exp(-h * 10); if (s < 0.03) continue; g.save(); g.globalAlpha = s; g.globalCompositeOperation = 'screen'; g.fillStyle = col; g.font = `900 ${sz}px ${SERIF}`; g.textAlign = 'center'; spaced(g, title, PW / 2 + dx * s, ty, tr); g.restore(); }
       g.save(); g.translate(PW / 2, ty - 50); g.scale(k, k); g.translate(-PW / 2, -(ty - 50)); g.fillStyle = goldFill(ty - sz, ty + 10); g.font = `900 ${sz}px ${SERIF}`; g.textAlign = 'center'; spaced(g, title, PW / 2, ty, tr); g.restore();
       decodeIn(LG === 'en' ? '航 迹 护 照' : 'S K Y   P A S S P O R T', PW / 2, 1222, 34, hit + 0.25, t, { fam: LG === 'en' ? undefined : 'SM', color: rgba(P.ac, 0.95), w: 700 });
@@ -318,7 +318,7 @@
   function act5(t) {
     backdrop(t); const t0 = SC.T_CARD, dy = NOQR ? 190 : 0; /* NOQR: the end card without the code, set a little lower */
     g.save(); g.translate(PW / 2, 470 + dy); g.strokeStyle = g.fillStyle = goldFill(-200, 200); const len = 2400; g.setLineDash([len * eio((t - t0) / 1.2), len]); emblem(g, 0.6, false); g.setLineDash([]); g.restore();
-    const ta = eo((t - t0 - 0.3) / 0.5); g.save(); g.globalAlpha = ta; g.fillStyle = goldFill(760, 900); g.font = `900 ${LG === 'en' ? 110 : 140}px ${SERIF}`; g.textAlign = 'center'; spaced(g, T('航迹护照', 'SKY PASSPORT'), PW / 2, 880 + dy, LG === 'en' ? 8 : 26); g.restore();
+    const ta = eo((t - t0 - 0.3) / 0.5); g.save(); g.globalAlpha = ta; g.fillStyle = goldFill(760, 900); g.font = `900 ${LG === 'en' ? 110 : 140}px ${SERIF}`; g.textAlign = 'center'; spaced(g, T('航迹手帐', 'SKY PASSPORT'), PW / 2, 880 + dy, LG === 'en' ? 8 : 26); g.restore();
     blurIn(T('把你的天空，装进一本护照', 'Every flight. One passport.'), PW / 2, 980 + dy, 46, t0 + 0.6, t, { w: 600 });
     // QR in a HUD frame with a scan line
     const qa = NOQR ? 0 : eo(cl((t - t0 - 1.0) / 0.4)), qx = PW / 2 - 190, qy = 1080, qs = 380;
@@ -420,7 +420,7 @@
     g.save(); g.translate(PW / 2, 900); g.scale((1.6 - 0.6 * k) * (1 - 0.97 * k2), (1.6 - 0.6 * k) * (1 - 0.97 * k2)); g.rotate(-0.04 - 0.25 * (1 - k)); g.globalAlpha = cl(lt / 0.12) * (1 - 0.4 * k2);
     const body = (x0, x1, draw) => { g.save(); g.beginPath(); g.rect(x0, -h / 2 - 40, x1 - x0, h + 80); g.clip(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 40; g.shadowOffsetY = 18; rr(g, -w / 2, -h / 2, w, h, 26); const pg = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); pg.addColorStop(0, '#fbf6ef'); pg.addColorStop(1, '#e9e1d6'); g.fillStyle = pg; g.fill(); g.shadowColor = 'transparent'; g.fillStyle = '#8e1d38'; g.fillRect(-w / 2, -h / 2, w, 64); draw(); g.restore(); };
     body(-w / 2, px, () => { g.fillStyle = '#f6dca6'; g.font = font(700, 26, 'SM'); g.textAlign = 'left'; g.fillText('SKY PASSPORT · BOARDING PASS', -w / 2 + 34, -h / 2 + 42);
-      g.fillStyle = '#8a7480'; g.font = font(400, 20, 'SM'); g.fillText(T('出发 FROM', 'FROM'), -w / 2 + 36, -78); g.fillText(T('到达 TO', 'TO'), -w / 2 + 330, -78); g.fillStyle = '#1d1420'; g.font = font(800, LG === 'en' ? 46 : 58); g.fillText(T('这些年', 'ALL THOSE YEARS'), -w / 2 + 34, -12); g.fillStyle = '#8e1d38'; g.fillText('→', -w / 2 + 250, -12); g.fillStyle = '#1d1420'; g.fillText(T('航迹护照', 'SKY PASSPORT'), -w / 2 + 330, -12);
+      g.fillStyle = '#8a7480'; g.font = font(400, 20, 'SM'); g.fillText(T('出发 FROM', 'FROM'), -w / 2 + 36, -78); g.fillText(T('到达 TO', 'TO'), -w / 2 + 330, -78); g.fillStyle = '#1d1420'; g.font = font(800, LG === 'en' ? 46 : 58); g.fillText(T('这些年', 'ALL THOSE YEARS'), -w / 2 + 34, -12); g.fillStyle = '#8e1d38'; g.fillText('→', -w / 2 + 250, -12); g.fillStyle = '#1d1420'; g.fillText(T('航迹手帐', 'SKY PASSPORT'), -w / 2 + 330, -12);
       [[T('旅客', 'PASSENGER'), (S.P && S.P.latin) || 'TRAVELLER'], [T('航班', 'FLIGHTS'), String(F0.n)], [T('座位', 'SEAT'), '1A']].forEach(([a, b], i) => { const x = -w / 2 + 36 + [0, 330, 470][i]; g.fillStyle = '#8a7480'; g.font = font(400, 18, 'SM'); g.fillText(a, x, 70); g.fillStyle = '#1d1420'; g.font = font(700, 30, 'SM'); g.fillText(b, x, 110); }); });
     g.save(); g.setLineDash([8, 8]); g.strokeStyle = 'rgba(40,20,30,.4)'; g.lineWidth = 2; g.globalAlpha *= 1 - tk; g.beginPath(); g.moveTo(px, -h / 2 + 70); g.lineTo(px, h / 2 - 10); g.stroke(); g.restore();
     g.save(); g.translate(px + 60 * tk + 700 * tk * tk, 900 * tk * tk); g.rotate(0.9 * tk); g.translate(-px, 0); g.globalAlpha *= 1 - cl((tk - 0.7) / 0.3);
@@ -477,12 +477,12 @@
   async function decodeSprite(b64, map, bank) { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)), x = (await new OfflineAudioContext(1, 48000, 48000).decodeAudioData(bin.buffer)).getChannelData(0);
     let k = 0; for (let i = 1; i < 9600; i++) if (Math.abs(x[i]) > Math.abs(x[k])) k = i; const off = k - 4800; for (const [nm, [st, len, sy]] of Object.entries(map)) bank[nm] = { d: x.slice(st + off, st + off + len), s: sy }; }
   let BANK = null;
-  const ALL_TEXT = () => [T('年，第一次一个人出远门后来，登机牌越攒越多最后都躺进了一张冷冰冰的表格把每一行，解码成一条航线读取表格识别机场时区换算国家地区解码完成次起飞个国家地区绕地球圈航迹护照把你的航班记录，做成一本会动的护照', ''),
+  const ALL_TEXT = () => [T('年，第一次一个人出远门后来，登机牌越攒越多最后都躺进了一张冷冰冰的表格把每一行，解码成一条航线读取表格识别机场时区换算国家地区解码完成次起飞个国家地区绕地球圈航迹手帐把你的航班记录，做成一本会动的护照', ''),
     MODS().flat().join(''), T('每一次起飞都值得被记住这些年，你一共小时在空中把你的天空，装进一本护照免费隐私一分钟出片微信小程序同名仅在本地记忆解码意义开始登机牌', 'MEMORY DECODE PASSPORT MEANING START'), URL_TEXT(), GLYPH_ZH, GLYPH_EN].join('');
 
   /* ---------- posters: drawn on the film canvas, then cut to each size (h = how much of the 1080-wide canvas is used) ---------- */
   function corners(h, m = 40) { g.save(); g.strokeStyle = rgba(P.ac, 0.55); g.lineWidth = 2; const L = 44; for (const [x, y, sx, sy] of [[m, m, 1, 1], [PW - m, m, -1, 1], [m, h - m, 1, -1], [PW - m, h - m, -1, -1]]) { g.beginPath(); g.moveTo(x + sx * L, y); g.lineTo(x, y); g.lineTo(x, y + sy * L); g.stroke(); } g.restore(); }
-  function titleAt(y, size) { g.save(); g.fillStyle = goldFill(y - size, y + 10); g.font = `900 ${size}px ${SERIF}`; g.textAlign = 'center'; spaced(g, T('航迹护照', 'SKY PASSPORT'), PW / 2, y, LG === 'en' ? size * 0.07 : size * 0.18); g.restore(); }
+  function titleAt(y, size) { g.save(); g.fillStyle = goldFill(y - size, y + 10); g.font = `900 ${size}px ${SERIF}`; g.textAlign = 'center'; spaced(g, T('航迹手帐', 'SKY PASSPORT'), PW / 2, y, LG === 'en' ? size * 0.07 : size * 0.18); g.restore(); }
   function qrBlock(x, y, s) { g.save(); g.fillStyle = '#fff'; rr(g, x, y, s, s, s * 0.07); g.fill(); g.imageSmoothingEnabled = false; g.drawImage(QR, x + s * 0.07, y + s * 0.07, s * 0.86, s * 0.86); g.imageSmoothingEnabled = true; g.restore(); }
   const statLine = () => T(`${F0.n} 次起飞 · ${F0.cc} 个国家地区 · 绕地球 ${(F0.km / 40075).toFixed(2)} 圈`, `${F0.n} take-offs · ${F0.cc} countries · ${(F0.km / 40075).toFixed(2)}× around the Earth`);
   const POSTERS = {
@@ -491,7 +491,7 @@
       globe(30, PW / 2, 900, 380, GC.lam + 8, GC.phi, { t0: -99, step: 0, a: 1, pulse: true }); bloom(0.55);
       text(statLine(), PW / 2, 1420, LG === 'en' ? 34 : 38, { w: 700, max: PW - 120 });
       qrBlock(140, 1540, 240); text(URL_TEXT(), 410, 1630, 40, { align: 'left', fam: 'SM', w: 700, color: rgba(P.ac, 0.95), max: 560 });
-      text(T('免费 · 隐私 · 一分钟出片', 'Free · private · made in your browser'), 410, 1690, 30, { align: 'left', w: 400, color: P.sub, max: 560 }); text(T('微信小程序同名「航迹护照」', 'Upload · preview · save the MP4'), 410, 1740, 28, { align: 'left', w: 400, color: P.sub, max: 560 }); }],
+      text(T('免费 · 隐私 · 一分钟出片', 'Free · private · made in your browser'), 410, 1690, 30, { align: 'left', w: 400, color: P.sub, max: 560 }); text(T('微信小程序同名「航迹手帐」', 'Upload · preview · save the MP4'), 410, 1740, 28, { align: 'left', w: 400, color: P.sub, max: 560 }); }],
     story: [1920, () => { backdrop(6, 0.35); corners(1920); globe(30, PW / 2, 620, 330, GC.lam + 8, GC.phi, { t0: -99, step: 0, a: 1, pulse: true });
       [5, 12, 20].forEach((k, j) => pass(FL[k], PW / 2 + (j - 1) * 120, 1440 + j * 40, 0.86, (j - 1) * 0.12, 1, k)); bloom(0.45);
       g.save(); g.fillStyle = 'rgba(2,6,16,.7)'; g.fillRect(0, 1030, PW, 250); g.restore();
@@ -503,7 +503,7 @@
     square: [1080, () => { backdrop(6); corners(1080); globe(30, PW / 2, 470, 300, GC.lam + 8, GC.phi, { t0: -99, step: 0, a: 1, pulse: true }); bloom(0.5);
       titleAt(880, LG === 'en' ? 96 : 116); text(URL_TEXT(), PW / 2, 975, 34, { fam: 'SM', w: 700, color: rgba(P.ac, 0.95) }); }],
     og: [567, () => { backdrop(6); corners(567, 26); globe(30, 800, 300, 230, GC.lam + 8, GC.phi, { t0: -99, step: 0, a: 1, pulse: true }); bloom(0.5);
-      g.save(); g.fillStyle = goldFill(170, 260); g.font = `900 ${LG === 'en' ? 70 : 88}px ${SERIF}`; g.textAlign = 'left'; g.fillText(T('航迹护照', 'Sky Passport'), 70, 250); g.restore();
+      g.save(); g.fillStyle = goldFill(170, 260); g.font = `900 ${LG === 'en' ? 70 : 88}px ${SERIF}`; g.textAlign = 'left'; g.fillText(T('航迹手帐', 'Sky Passport'), 70, 250); g.restore();
       text(T('把航班记录做成一本会动的护照', 'Turn your flights into'), 72, 320, 32, { align: 'left', w: 600, max: 470 }); text(T('免费 · 隐私 · 浏览器里一分钟出片', 'a passport film'), 72, 365, 32, { align: 'left', w: 600, color: LG === 'en' ? P.ink : P.sub, max: 470 });
       text(LG === 'en' ? 'Free · private · in your browser' : '', 72, 420, 24, { align: 'left', w: 400, color: P.sub, max: 470 }); text(URL_TEXT(), 72, 500, 26, { align: 'left', fam: 'SM', w: 700, color: rgba(P.ac, 0.95) }); }],
   };

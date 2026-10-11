@@ -146,7 +146,7 @@
     emblemDraw(PW / 2, 700, 0.9, eio(u / 1.4));
     const h = u - HERO; // the title lands on one frame: the hero hit (see promoCues), after a one-beat dead stop
     if (h >= 0) { const k = 1 + 0.12 * Math.exp(-h * 16) * Math.cos(h * 30); g.save(); g.translate(PW / 2, 1100); g.scale(k, k); g.translate(-PW / 2, -1100);
-      g.fillStyle = goldFill(1000, 1160); g.font = `900 170px ${SERIF}`; g.textAlign = 'center'; spaced(g, '航迹护照', PW / 2, 1150, 34); g.restore();
+      g.fillStyle = goldFill(1000, 1160); g.font = `900 170px ${SERIF}`; g.textAlign = 'center'; spaced(g, '航迹手帐', PW / 2, 1150, 34); g.restore();
       const f = Math.exp(-h * 9); if (f > 0.02) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(255,236,200,${0.28 * f})`; g.fillRect(0, 0, PW, PH); g.restore(); } }
     sweep(140, 990, 800, 200, (u - 1.9) / 1.0);
     blurText('S K Y   P A S S P O R T', PW / 2, 1230, 34, t0 + 1.4, t, { w: 600, color: P.accent });
@@ -200,7 +200,7 @@
   }
   function sCta(t) {
     const t0 = SC.T_CARD; emblemDraw(PW / 2, 520, 0.62, eio((t - t0) / 1.2));
-    g.save(); g.globalAlpha = cl((t - t0 - 0.4) / 0.6); g.fillStyle = goldFill(760, 900); g.font = `900 150px ${SERIF}`; g.textAlign = 'center'; spaced(g, '航迹护照', PW / 2, 900, 30); g.restore();
+    g.save(); g.globalAlpha = cl((t - t0 - 0.4) / 0.6); g.fillStyle = goldFill(760, 900); g.font = `900 150px ${SERIF}`; g.textAlign = 'center'; spaced(g, '航迹手帐', PW / 2, 900, 30); g.restore();
     blurText('把你的天空，装进一本护照', PW / 2, 1000, 48, t0 + 0.7, t, { w: 600 });
     cardIn(t, t0 + 1.1, PW / 2, 1330, 420, 420, (x, y, w, h) => { const q = qrCanvas(); g.fillStyle = '#fff'; rr(g, x + 50, y + 50, w - 100, h - 100, 18); g.fill(); g.imageSmoothingEnabled = false; g.drawImage(q, x + 64, y + 64, w - 128, h - 128); g.imageSmoothingEnabled = true; });
     blurText('passport.nybbq.art', PW / 2, 1620, 40, t0 + 1.6, t, { w: 600, color: P.accent, fam: 'SM' });
@@ -259,17 +259,17 @@
   const page = () => shot(S.T_STAMP + 1.0), PR = 1920 / 1080;
   const POSTERS = {
     main: (w, h) => { resize(w, h); field(7);
-      if (h / w > 1.2 && h / w < 1.5) { title('航迹护照', w / 2, 190, 112, 22); tx('把你的天空，装进一本护照', w / 2, 275, 46, { w: 800 });
+      if (h / w > 1.2 && h / w < 1.5) { title('航迹手帐', w / 2, 190, 112, 22); tx('把你的天空，装进一本护照', w / 2, 275, 46, { w: 800 });
           const ch = h - 400, cw = ch / PR; card(80, 330, cw, ch, (x, y, cw2, ch2) => g.drawImage(page(), x, y, cw2, ch2)); const cx = 80 + cw + (w - 80 - cw) / 2;
           emblemDraw(cx, 520, 0.3, 1); tx('上传航班表格', cx, 760, 32, { color: P.sub, w: 500 }); tx('一分钟生成', cx, 810, 32, { color: P.sub, w: 500 }); tx('飞行护照视频', cx, 860, 32, { color: P.sub, w: 500 });
           qr(cx - 110, 950, 220); tx('passport.nybbq.art', cx, 1225, 28, { color: P.accent, fam: 'SM', max: w - 80 - cw - 40 }); tx('免费 · 小程序同名', cx, 1275, 26, { color: P.sub, w: 400 }); }
-      else if (h / w >= 1.5) { const top = h * 0.07; emblemDraw(w / 2, top + 110, 0.4, 1); title('航迹护照', w / 2, top + 330, 128, 26); tx('S K Y   P A S S P O R T', w / 2, top + 392, 28, { color: P.accent, fam: 'SM' });
+      else if (h / w >= 1.5) { const top = h * 0.07; emblemDraw(w / 2, top + 110, 0.4, 1); title('航迹手帐', w / 2, top + 330, 128, 26); tx('S K Y   P A S S P O R T', w / 2, top + 392, 28, { color: P.accent, fam: 'SM' });
           tx('把你的天空，装进一本护照', w / 2, top + 480, 52, { w: 800 }); tx('上传航班表格，一分钟生成你的飞行护照视频', w / 2, top + 545, 32, { color: P.sub, w: 400 });
           const ch = h - (top + 600) - 300, cw = ch / PR; card((w - cw) / 2, top + 600, cw, ch, (x, y, cw2, ch2) => g.drawImage(page(), x, y, cw2, ch2)); cta(h - 250); }
-      else { emblemDraw(240, 220, 0.3, 1); title('航迹护照', 240, 450, 80, 8); tx('SKY PASSPORT', 240, 505, 24, { color: P.accent, fam: 'SM' }); tx('把你的天空', 240, 600, 42, { w: 800 }); tx('装进一本护照', 240, 660, 42, { w: 800 });
+      else { emblemDraw(240, 220, 0.3, 1); title('航迹手帐', 240, 450, 80, 8); tx('SKY PASSPORT', 240, 505, 24, { color: P.accent, fam: 'SM' }); tx('把你的天空', 240, 600, 42, { w: 800 }); tx('装进一本护照', 240, 660, 42, { w: 800 });
           qr(155, 740, 170); tx('passport.nybbq.art', 240, 970, 28, { color: P.accent, fam: 'SM', max: 400 });
           const ch = h - 120, cw = ch / PR; card(w - cw - 90, 60, cw, ch, (x, y, cw2, ch2) => g.drawImage(page(), x, y, cw2, ch2)); } },
-    features: (w, h) => { resize(w, h); field(15); tx('航迹护照 · 能做什么', w / 2, 170, 32, { color: P.accent, w: 600 }); g.save(); g.font = font(800, 84); g.fillStyle = goldFill(190, 290); g.textAlign = 'center'; g.fillText('一张表格，四样礼物', w / 2, 280); g.restore();
+    features: (w, h) => { resize(w, h); field(15); tx('航迹手帐 · 能做什么', w / 2, 170, 32, { color: P.accent, w: 600 }); g.save(); g.font = font(800, 84); g.fillStyle = goldFill(190, 290); g.textAlign = 'center'; g.fillText('一张表格，四样礼物', w / 2, 280); g.restore();
       const items = [['01', '视频护照', '一分钟竖屏动画 · 原创配乐 · 一键存相册'], ['02', '长图海报', '统计 · 航线地图 · 一张图发朋友圈'], ['03', '飞行成就', '最长单程 · 最常飞航线 · 空中时长'], ['04', '智能识别', '航旅纵横导出 · 中文地名 · 错别字纠正']];
       items.forEach(([n, t2, d], i) => { const y = 350 + i * 300; card(80, y, w - 160, 260, (x, y0, cw, chh) => {
         tx(n, x + 50, y0 + 100, 64, { align: 'left', color: P.accent, fam: 'SM', w: 700 }); tx(t2, x + 50, y0 + 175, 52, { align: 'left', w: 800 }); tx(d, x + 50, y0 + 225, 26, { align: 'left', color: P.sub, w: 400, max: 470 });
@@ -287,7 +287,7 @@
     story: (w, h) => { resize(w, h); field(3); g.save(); g.font = font(800, 70); g.fillStyle = P.ink; g.textAlign = 'center'; g.fillText('这些年飞过的航班', w / 2, 150); g.fillStyle = goldFill(180, 260); g.fillText('不该只躺在表格里', w / 2, 245); g.restore();
       card(70, 340, 440, 760, (x, y, cw, ch) => table(x, y, cw, ch, 22)); tx('→', w / 2 + 22, 740, 80, { color: P.accent, w: 800 });
       const cw = 760 / PR * 1.0; card(w - 70 - 430, 320, 430, 430 * PR, (x, y, cw2, ch2) => g.drawImage(page(), x, y, cw2, ch2));
-      tx('航迹护照 · 一分钟变成会动的飞行护照', w / 2, 1215, 34, { w: 700 }); cta(1240, w / 2 - 290); },
+      tx('航迹手帐 · 一分钟变成会动的飞行护照', w / 2, 1215, 34, { w: 700 }); cta(1240, w / 2 - 290); },
   };
   window.FILM = {
     async init(pal, promoSfx) {

@@ -36,7 +36,7 @@
   function posterMain(shots) {
     const c = mk(1080, 1920), g = c.getContext('2d'); leather(g, 1080, 1920); frameLines(g, 1080, 1920);
     g.save(); g.translate(540, 300); g.strokeStyle = g.fillStyle = goldText(g, 120, 480); emblem(g, 0.62, false); g.restore();
-    goldTitle(g, '航迹护照', 540, 640, 150, 30);
+    goldTitle(g, '航迹手帐', 540, 640, 150, 30);
     txt(g, 'SKY  PASSPORT', 540, 708, 30, '#e3bd84', 600);
     txt(g, '把这些年飞过的航班，做成一本会动的护照', 540, 790, 38, '#f6e7d4', 600);
     phone(g, shots.cover, 300, 1210, 300, -0.10); phone(g, shots.world, 780, 1210, 300, 0.10); phone(g, shots.page, 540, 1170, 340, 0);
@@ -94,7 +94,7 @@
   function posterSquare() { // 朋友圈 / 公众号 1:1
     const c = mk(1080, 1080), g = c.getContext('2d'); leather(g, 1080, 1080); frameLines(g, 1080, 1080);
     g.save(); g.translate(540, 300); g.strokeStyle = g.fillStyle = goldText(g, 120, 480); emblem(g, 0.55, false); g.restore();
-    goldTitle(g, '航迹护照', 540, 640, 130, 26); txt(g, '一本护照，装下我的天空', 540, 720, 38, '#f6e7d4', 600);
+    goldTitle(g, '航迹手帐', 540, 640, 130, 26); txt(g, '一本护照，装下我的天空', 540, 720, 38, '#f6e7d4', 600);
     qrBlock(g, 455, 790, 170, null, null); txt(g, 'passport.nybbq.art', 540, 1010, 28, '#d9c3b6', 400, 'center', 'SM');
     return c;
   }
@@ -109,7 +109,7 @@
   function endCard() {
     const c = mk(1080, 1920), g = c.getContext('2d'); leather(g, 1080, 1920); frameLines(g, 1080, 1920);
     g.save(); g.translate(540, 470); g.strokeStyle = g.fillStyle = goldText(g, 260, 700); emblem(g, 0.8, false); g.restore();
-    goldTitle(g, '航迹护照', 540, 910, 160, 32); txt(g, '把这些年飞过的航班，做成一本会动的护照', 540, 1000, 38, '#f6e7d4', 600);
+    goldTitle(g, '航迹手帐', 540, 910, 160, 32); txt(g, '把这些年飞过的航班，做成一本会动的护照', 540, 1000, 38, '#f6e7d4', 600);
     qrBlock(g, 400, 1150, 280, null, null);
     txt(g, '扫码免费制作', 540, 1530, 48, '#fbe9c2', 700); txt(g, 'passport.nybbq.art', 540, 1590, 34, '#e3bd84', 400, 'center', 'SM');
     txt(g, '手机浏览器 · 电脑 · 微信小程序', 540, 1645, 28, 'rgba(217,195,182,.8)', 400);

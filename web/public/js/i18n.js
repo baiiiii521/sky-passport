@@ -16,7 +16,7 @@ function applyStatic(){
     for(const e of document.querySelectorAll('[data-'+attr.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())+']')){
       const keep='zh'+attr.slice(2);if(!(keep in e.dataset))e.dataset[keep]=prop==='innerHTML'?e.innerHTML:(e.getAttribute(prop)||'');
       const v=en?e.dataset[attr]:e.dataset[keep];if(prop==='innerHTML')e.innerHTML=v;else e.setAttribute(prop,v);}
-  document.title=L('航迹护照 Sky Passport · 把航班记录做成一本会动的护照','Sky Passport · Turn your flights into a passport film');
+  document.title=L('航迹手帐 Sky Passport · 把航班记录做成一本会动的护照','Sky Passport · Turn your flights into a passport film');
   const b=document.getElementById('btnLang');if(b){b.textContent=en?'中文':'EN';b.setAttribute('aria-label',en?'切换到中文':'Switch to English');}}
 function setLang(l){if(l===LANG)return;LANG=l;try{localStorage.setItem(LANG_KEY,l);}catch(e){}applyStatic();
   if(typeof onLangChange==='function')onLangChange();}

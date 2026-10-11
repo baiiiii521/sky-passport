@@ -199,12 +199,12 @@ $('file').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(
 drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
 $('btnDemo').addEventListener('click',()=>{resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';if(!NAT_TOUCHED)$('nat').value='CN';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus(L('已换回示例数据。','Back to the sample data.'));rebuild();});
 $('btnAI').addEventListener('click',runAI);$('btnApplyAll').addEventListener('click',applyAll);
-$('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹护照_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
+$('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹手帐_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
 $('btnToMake').addEventListener('click',()=>HOME.go('studio','s3'));
 $('btnTpl').addEventListener('click',async()=>{
   const csv=EN()?'﻿Date,Flight,Airline,From,To,Departure time,Arrival time,Distance km,Status\n2024-05-01,BA117,British Airways,London Heathrow,JFK,11:30,14:20,,flown\n2024-05-09,DL405,Delta,JFK,LHR,20:30,08:45,,flown\n2027-02-24,NH212,ANA,LHR,Tokyo Haneda,19:15,15:50,,upcoming\n'
     :'﻿日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态\n2024-05-01,MU5101,东方航空,上海虹桥,北京首都,08:00,10:15,,已使用\n2024-05-06,CA1519,中国国航,PEK,SHA,19:00,21:10,,已使用\n2027-02-24,NH924,全日空,广州白云,东京羽田,15:05,20:00,,未使用\n';
-  await saveFile(L('航迹护照_模板.csv','sky-passport-template.csv'),new Blob([csv],{type:'text/csv'}));});
+  await saveFile(L('航迹手帐_模板.csv','sky-passport-template.csv'),new Blob([csv],{type:'text/csv'}));});
 ['optUp','optVoid','yFrom','yTo','nat'].forEach(id=>$(id).addEventListener('change',rebuild));
 ['name','latin','tagEn','tagZh'].forEach(id=>$(id).addEventListener('input',rebuild));
 $('btnPhoto').addEventListener('click',()=>$('photo').click());

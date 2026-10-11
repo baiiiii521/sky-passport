@@ -1,4 +1,4 @@
-# Sky Passport (航迹护照) — project memory for Claude Code
+# Sky Passport (航迹手帐, formerly 航迹护照) — project memory for Claude Code
 
 ## What this is
 A tool that turns a person's flight history into a ~60 s vertical (1080×1920, 30 fps) "flight passport" animation with original synthesized music.
