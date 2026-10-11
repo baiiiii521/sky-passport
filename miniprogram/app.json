@@ -34,5 +34,34 @@
         "text": "成就"
       }
     ]
+  },
+  "subPackages": [
+    {
+      "root": "sub/xlsx",
+      "name": "xlsx",
+      "pages": [
+        "about"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/index/index": {
+      "network": "all",
+      "packages": [
+        "xlsx"
+      ]
+    },
+    "pages/result/result": {
+      "network": "all",
+      "packages": [
+        "xlsx"
+      ]
+    },
+    "pages/badges/badges": {
+      "network": "all",
+      "packages": [
+        "xlsx"
+      ]
+    }
   }
 }

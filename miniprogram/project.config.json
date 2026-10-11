@@ -20,7 +20,7 @@
     "packNpmRelationList": [],
     "babelSetting": {
       "ignore": [
-        "libs/xlsx.full.min.js",
+        "sub/xlsx/xlsx.full.min.js",
         "libs/qrcode.js"
       ],
       "disablePlugins": [],

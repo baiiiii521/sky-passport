@@ -19,6 +19,14 @@ function loadAirports() {
   return apReady;
 }
 
+// the spreadsheet library (880 KB) is a sub package: downloaded in the background after the first screen (app.json preloadRule), evaluated on first use
+let xlsxLib = null, xlsxReady = null;
+function loadXLSX() {
+  if (xlsxReady) return xlsxReady;
+  xlsxReady = require.async('../sub/xlsx/xlsx.full.min.js').then(x => { xlsxLib = x; C.setXLSX(x); return x; }, () => { throw new Error('表格组件下载失败，请检查网络后重试'); });
+  xlsxReady.catch(() => { xlsxReady = null; });
+  return xlsxReady;
+}
 // a new data set: parse once, reset the shared choices, tell the tab pages (ver)
 function loaded(rows, demo) { const g = getApp().globalData; g.rows = rows; g.demo = demo; g.res = C.buildFlights(); g.view = { year: 0, up: true, name: demo ? '林小舟' : '', latin: demo ? 'LIN XIAOZHOU' : '', label: '' }; g.ver++; }
 // after loading: open the 制作 tab (switching to the tab that is already open does not fire its onShow, so call it)
@@ -29,7 +37,7 @@ function chooseFile(page) {
     count: 1, type: 'file', extension: ['xls', 'xlsx', 'csv', 'txt'],
     success: async r => {
       page.setData({ busy: '正在读取表格…', err: '' });
-      try { await loadAirports(); readSpreadsheet(r.tempFiles[0].path); page.setData({ busy: '' }); go(page); }
+      try { await Promise.all([loadAirports(), loadXLSX()]); readSpreadsheet(r.tempFiles[0].path); page.setData({ busy: '' }); go(page); }
       catch (e) { page.setData({ busy: '', err: e.message || String(e) }); }
     },
     fail: e => { if (!/cancel/.test(e.errMsg || '')) page.setData({ err: '没能打开文件：' + e.errMsg }); },
@@ -42,7 +50,7 @@ async function tryDemo(page) {
 }
 // read a chosen file (xls/xlsx/csv) into core's RAW; returns the row count
 function readSpreadsheet(path) {
-  const XLSX = require('./xlsx.full.min.js');
+  const XLSX = xlsxLib;
   const buf = wx.getFileSystemManager().readFileSync(path);
   const rows = C.readWorkbook(XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true }));
   if (!rows.length) throw new Error('没在文件里找到航班表格：请确认表头有「出发」「到达」「日期」，或者到网页版用 AI 识别表格结构。');
