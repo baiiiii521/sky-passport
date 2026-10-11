@@ -16,6 +16,7 @@ const XLSX = require('./xlsx.full.min.js');
 ${core}
 module.exports = {
   ingestAirports, readWorkbook, buildFlights, resolveAirport, parseDate, parseTime, ymd, hav, demoRows, rowStatus, rkey,
+  tzOffsetMin,
   setRaw(rows) { RAW = rows; }, setSource(s) { SOURCE = s; },
   get AP() { return AP; }, get ZH() { return ZH; }, get ZHKEYS() { return ZHKEYS; }, get NAMES() { return NAMES; }, manual,
 };

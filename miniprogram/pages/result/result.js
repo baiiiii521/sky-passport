@@ -3,18 +3,19 @@ const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const PO = require('../../libs/poster.js');
 const SS = require('../../libs/session.js');
-const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
+const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo', PICK = 'skypassport.badgesOn';
+const RAR_T = { legend: '传奇', gold: '金', silver: '银' }, MAX_PICK = 12; // the poster canvas must stay under ~4000 px tall on every phone
 const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
 let ALL = [], mapImgPath = '', pollTimer = null, specTimer = null;
 function loadMapBase() {
   if (mapImgPath) return Promise.resolve(mapImgPath);
-  return new Promise(res => wx.downloadFile({ url: SS.SITE + '/mp-world.png', success: r => { if (r.statusCode === 200) mapImgPath = r.tempFilePath; res(mapImgPath); }, fail: () => res('') }));
+  return new Promise(res => wx.downloadFile({ url: SS.SITE + '/mp-world-night.png', success: r => { if (r.statusCode === 200) mapImgPath = r.tempFilePath; res(mapImgPath); }, fail: () => res('') }));
 }
 
 Page({
   data: {
-    demo: false, name: '', latin: '', years: [], year: 0, up: true, sum: null, badges: [], unres: [], noDate: 0, label: '',
+    demo: false, name: '', latin: '', years: [], year: 0, up: true, sum: null, badges: [], medals: [], cats: [], cat: 'all', got: 0, picked: 0, unres: [], noDate: 0, label: '',
     theme: 'burgundy', mstyle: 'groove', len: '24',
     themes: [{ v: 'burgundy', t: '酒红', c: '#5a1424' }, { v: 'navy', t: '藏青', c: '#1c2c4a' }, { v: 'green', t: '墨绿', c: '#1d4434' }, { v: 'black', t: '黑', c: '#222225' }],
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
@@ -39,8 +40,27 @@ Page({
   recompute() {
     const list = ST.pick(ALL, { up: this.data.up, year: this.data.year }), sum = ST.summarize(list, 'CN');
     const label = !sum.n ? '' : sum.y0 === sum.y1 ? `${sum.y0} 年度` : `${sum.y0} — ${sum.y1}`;
-    this.setData({ sum: { ...sum, kmText: ST.fmt(sum.km), hours: Math.round(sum.min / 60) }, badges: ST.badges(list, 'CN'), label, poster: '' });
+    this.setData({ sum: { ...sum, kmText: ST.fmt(sum.km), hours: Math.round(sum.min / 60) }, label, poster: '' });
+    this.medals(ST.allBadges(list, 'CN'));
     this.resetVideo();
+  },
+  /* medals: every achievement with its rarity; the user's pick (ids) is remembered, the recommended set applies until then */
+  medals(all) {
+    const sel = wx.getStorageSync(PICK), isOn = b => !b.lock && (Array.isArray(sel) ? sel.includes(b.id) : ST.BADGE_DEFAULT.includes(b.id));
+    const medals = (all || this.data.medals).map(b => ({ ...b, on: isOn(b), rarT: RAR_T[b.rar] || '', showProg: typeof b.prog === 'number' && b.prog < 1, progPct: Math.round(Math.max(0.02, Math.min(1, b.prog || 0)) * 100) })).sort((a, b) => (a.lock ? 1 : 0) - (b.lock ? 1 : 0));
+    const cats = ST.BADGE_CATS.map(([c, t]) => { const k = medals.filter(b => c === 'all' || b.cat === c); return { c, t, n: k.length, g: k.filter(b => !b.lock).length }; });
+    this.setData({ medals, cats, got: medals.filter(b => !b.lock).length, picked: medals.filter(b => b.on).length, badges: medals.filter(b => b.on), poster: '' });
+  },
+  pickCat(e) { this.setData({ cat: e.currentTarget.dataset.c }); },
+  toggleMedal(e) {
+    const id = e.currentTarget.dataset.id, m = this.data.medals.find(b => b.id === id); if (!m) return;
+    if (m.lock) return wx.showToast({ title: m.d, icon: 'none', duration: 2500 });
+    const on = new Set(this.data.medals.filter(b => b.on).map(b => b.id)); if (on.has(id)) on.delete(id); else if (on.size >= MAX_PICK) return wx.showToast({ title: `长图最多印 ${MAX_PICK} 枚，先取消一枚`, icon: 'none' }); else on.add(id);
+    wx.setStorageSync(PICK, [...on]); this.medals();
+  },
+  pickSet(e) {
+    const m = e.currentTarget.dataset.m; if (m === 'rec') wx.removeStorageSync(PICK); else wx.setStorageSync(PICK, m === 'all' ? this.data.medals.filter(b => !b.lock).slice(0, MAX_PICK).map(b => b.id) : []);
+    this.medals();
   },
   resetVideo() { if (this.data.video.state && this.data.video.state !== 'done') return; this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); this.prerender(); },
   pickYear(e) { this.setData({ year: +e.currentTarget.dataset.y }); this.recompute(); },
@@ -136,7 +156,7 @@ Page({
     this.setData({ busy: '正在生成长图…', err: '' });
     try {
       const list = ST.pick(ALL, { up: this.data.up, year: this.data.year });
-      const data = { name: this.data.name, label: this.data.label, sum: this.data.sum, badges: this.data.badges.slice(0, 8), flights: list, site: SS.SITE };
+      const data = { name: this.data.name, latin: this.data.latin, label: this.data.label, sum: this.data.sum, badges: this.data.badges, flights: list, site: SS.SITE };
       const H = PO.height(data); this.setData({ posterH: H });
       const canvas = await new Promise((res, rej) => wx.createSelectorQuery().select('#poster').fields({ node: true }).exec(r => (r && r[0] && r[0].node ? res(r[0].node) : rej(new Error('画布不可用')))));
       canvas.width = PO.W; canvas.height = H;

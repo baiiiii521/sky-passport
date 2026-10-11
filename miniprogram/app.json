@@ -5,9 +5,9 @@
   ],
   "window": {
     "navigationBarTitleText": "航迹护照",
-    "navigationBarBackgroundColor": "#2a0b12",
+    "navigationBarBackgroundColor": "#02040b",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#2a0b12",
+    "backgroundColor": "#02040b",
     "backgroundTextStyle": "light"
   },
   "style": "v2",

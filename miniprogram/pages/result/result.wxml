@@ -5,7 +5,7 @@
       <view class="chip {{year===0?'on':''}}" data-y="0" bindtap="pickYear">全部年份</view>
       <view wx:for="{{years}}" wx:key="*this" class="chip {{year===item?'on':''}}" data-y="{{item}}" bindtap="pickYear">{{item}} 年度</view>
     </view>
-    <view class="row"><switch checked="{{up}}" bindchange="toggleUp" color="#b98a50"/><text class="small">计入待出行航班</text></view>
+    <view class="row"><switch checked="{{up}}" bindchange="toggleUp" color="#5eeaff"/><text class="small">计入待出行航班</text></view>
     <view wx:if="{{unres.length||noDate}}" class="warn">
       <text wx:if="{{unres.length}}">有 {{unres.length}} 个地名没认出来（{{unres[0]}}{{unres.length>1?' 等':''}}），这些航段没有算进去。</text>
       <text wx:if="{{noDate}}">{{noDate}} 行没有日期，已跳过。</text>
@@ -60,13 +60,27 @@
 
   <view class="card" wx:if="{{sum && sum.n}}">
     <view class="h2"><text class="no">03</text>飞行成就</view>
-    <view class="badges">
-      <view wx:for="{{badges}}" wx:key="k" class="badge"><text class="k">{{item.i}} {{item.k}}</text><text class="v">{{item.v}}</text><text class="d">{{item.d}}</text></view>
+    <text class="small">勋章由你的航班自动算出。点一下选中，选中的会印在长图上；灰色的还没解锁，卡片上写着怎么拿到。</text>
+    <view class="meter"><text class="msum">已解锁 {{got}} / {{medals.length}} · 已选 {{picked}} 项印在长图上</text><view class="mtrack"><view class="mfill" style="width:{{medals.length?got*100/medals.length:0}}%"></view></view></view>
+    <view class="chips tools">
+      <view class="chip" data-m="rec" bindtap="pickSet">推荐组合</view><view class="chip" data-m="all" bindtap="pickSet">选满 12 枚</view><view class="chip" data-m="none" bindtap="pickSet">清空</view>
+    </view>
+    <view class="chips">
+      <view wx:for="{{cats}}" wx:key="c" class="chip {{cat===item.c?'on':''}}" data-c="{{item.c}}" bindtap="pickCat">{{item.t}} <text class="cn">{{item.g}}/{{item.n}}</text></view>
+    </view>
+    <view class="medals">
+      <view wx:for="{{medals}}" wx:key="id" wx:if="{{cat==='all'||item.cat===cat}}" class="medal r-{{item.rar}} {{item.lock?'locked':''}} {{item.on?'on':''}}" data-id="{{item.id}}" bindtap="toggleMedal">
+        <view class="emb"><text>{{item.lock?'🔒':item.i}}</text></view>
+        <text class="mk">{{item.lock?item.i+' ':''}}{{item.k}}</text><text class="mv">{{item.v}}</text><text class="md">{{item.d}}</text>
+        <view wx:if="{{item.showProg}}" class="mp"><view class="mpf" style="width:{{item.progPct}}%"></view></view>
+        <text wx:if="{{item.rarT&&!item.lock}}" class="rar">{{item.rarT}}</text><view wx:if="{{!item.lock}}" class="tick">✓</view>
+      </view>
     </view>
   </view>
 
   <view class="card" wx:if="{{sum && sum.n}}">
-    <view class="h2"><text class="no">04</text>长图海报</view>
+    <view class="h2"><text class="no">04</text>长图海报<text class="tag">夜航</text></view>
+    <text class="small">会印上你在上面选中的 {{picked}} 枚勋章。</text>
     <button class="primary" bindtap="makePoster" disabled="{{!!busy}}">生成长图海报</button>
     <block wx:if="{{poster}}">
       <image class="poster" src="{{poster}}" mode="widthFix" bindtap="previewPoster"/>
