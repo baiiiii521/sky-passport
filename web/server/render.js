@@ -40,6 +40,12 @@ function cosPut(file, key) {
 }
 
 const jobs = new Map(), byKey = new Map(), queue = [], hits = new Map();
+// Finished films are remembered across restarts (id, input key, size, where the file is), so the same sheet + options
+// within 24 h is answered at once instead of rendered again. Only what the status call needs is kept: no rows, no names.
+const INDEX = process.env.JOB_INDEX || path.join(VIDEO_DIR, '..', 'jobs.json');
+function saveIndex() { const done = [...jobs.values()].filter(j => j.state === 'done').map(j => ({ id: j.id, key: j.key, created: j.created, size: j.size, seconds: j.seconds, cos: !!j.cos }));
+  fs.writeFile(INDEX + '.tmp', JSON.stringify(done), e => { if (!e) fs.rename(INDEX + '.tmp', INDEX, () => {}); }); }
+try { for (const j of JSON.parse(fs.readFileSync(INDEX, 'utf8'))) { if (Date.now() - j.created > TTL || !(j.cos || fs.existsSync(path.join(VIDEO_DIR, j.id + '.mp4')))) continue; jobs.set(j.id, { ...j, state: 'done', progress: 1 }); byKey.set(j.key, j.id); } console.log('restored', jobs.size, 'finished films'); } catch (e) { /* first run */ }
 let browser = null, busy = null, warming = Promise.resolve(); // busy = the job being rendered
 
 const s = (v, n = 40) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').slice(0, n);
@@ -184,7 +190,7 @@ async function pump() {
   await warming; if (busy) return; // never race the pre-warm for CPU
   const k = queue.findIndex(j => !j.spec), job = queue.splice(k >= 0 ? k : 0, 1)[0]; // real requests first
   busy = job; job.state = 'rendering'; job.started = Date.now();
-  try { await render(job); console.log('done', job.id, job.spec ? 'spec' : 'real', job.seconds && job.seconds.toFixed(1) + 's video', ((Date.now() - job.started) / 1000).toFixed(0) + 's', 'phases', job.phases, 'minMemMB', Math.round(memLow)); }
+  try { await render(job); saveIndex(); console.log('done', job.id, job.spec ? 'spec' : 'real', job.seconds && job.seconds.toFixed(1) + 's video', ((Date.now() - job.started) / 1000).toFixed(0) + 's', 'phases', job.phases, 'minMemMB', Math.round(memLow)); }
   catch (e) {
     if (job.cancel) { job.state = 'cancelled'; console.log('cancelled', job.id); }
     else {
@@ -202,6 +208,7 @@ setInterval(() => {
   for (const f of fs.readdirSync(VIDEO_DIR)) { const p = path.join(VIDEO_DIR, f); if (now - fs.statSync(p).mtimeMs > TTL) fs.rm(p, { force: true }, () => {}); }
   for (const [id, j] of jobs) if (now - j.created > TTL) { jobs.delete(id); if (byKey.get(j.key) === id) byKey.delete(j.key); }
   for (const [ip, w] of hits) if (now - w.t > 3600e3) hits.delete(ip);
+  saveIndex();
 }, 3600e3).unref();
 
 function send(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }

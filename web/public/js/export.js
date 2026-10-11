@@ -25,6 +25,7 @@ $('btnMake').addEventListener('click',async()=>{
   try{
     setStatus(L('正在合成配乐…','Composing the score…'));await Promise.all([ensureFonts(),loadFlags(S.order)]);coverBuilt=false;const A=await ensureAudio();
     let blob,ext;
+    if('VideoEncoder' in window&&'AudioEncoder' in window){try{await loadLib('muxer','Mp4Muxer');}catch(e){}} /* the muxer is only downloaded for an export */
     if('VideoEncoder' in window&&'AudioEncoder' in window&&window.Mp4Muxer){[blob,ext]=await exportWebCodecs(A,setP,AC);}else{[blob,ext]=await exportRealtime(A,setP,AC);}
     if(!blob)return;
     /* prove the sound is in the file; if not, record it again in real time (Safari's encoder has shipped broken AAC before) */

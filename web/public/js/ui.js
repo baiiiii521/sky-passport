@@ -15,7 +15,9 @@ function rebuild(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(()=>{stopP
 let CJK_ALL=null; // collected once from our own scripts (fetch hits the HTTP cache)
 async function cjkGlyphs(){if(CJK_ALL!==null)return CJK_ALL;let t='';try{t=(await Promise.all([...document.querySelectorAll('script[src^="js/"]')].map(e=>fetch(e.src).then(r=>r.text())))).join('');}catch(e){}
   return CJK_ALL=[...new Set(t.match(/[\u2E80-\u9FFF\uFF00-\uFFEF]/g)||[])].join('');}
-async function ensureFonts(){const P=S&&S.P;const txt=(await cjkGlyphs())+(P?[P.disp,P.tagZh,P.tagEn,P.latin].join(''):'');
+/* the font stylesheet loads without blocking the page: wait until its rules exist before asking for glyphs */
+const FONT_CSS=new Promise(res=>{const l=document.getElementById('fontcss'),t0=Date.now(),chk=()=>{let ok=!l;try{ok=ok||!!(l.rel==='stylesheet'&&l.sheet);}catch(e){ok=true;}if(ok||Date.now()-t0>12000)res();else setTimeout(chk,30);};chk();});
+async function ensureFonts(){await FONT_CSS;const P=S&&S.P;const txt=(await cjkGlyphs())+(P?[P.disp,P.tagZh,P.tagEn,P.latin].join(''):'');
   try{await Promise.all(['400 30px "Open Sans"','600 30px "Open Sans"','700 30px "Open Sans"','400 30px "Space Mono"','700 30px "Space Mono"','400 30px "Noto Sans SC"','700 30px "Noto Sans SC"','900 30px "Noto Serif SC"'].map(f=>document.fonts.load(f,txt)));}catch(e){}}
 document.fonts&&document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{coverBuilt=false;photoBuilt=false;if(S&&S.ok){S.stampReady=false;buildBg();}if(!playing&&!exporting)invalidate();});
 function renderSummary(){
@@ -181,7 +183,7 @@ function renderCheck(){
 }
 // file input
 async function loadFile(file){
-  try{setStatus(L(`正在读取 ${file.name} …`,`Reading ${file.name} …`));const buf=await file.arrayBuffer();let wb;
+  try{setStatus(L(`正在读取 ${file.name} …`,`Reading ${file.name} …`));const buf=await file.arrayBuffer();await loadLib('xlsx','XLSX');let wb;
     if(/\.csv$|\.txt$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes(String.fromCharCode(0xFFFD)))txt=new TextDecoder('gb18030').decode(buf);wb=XLSX.read(txt,{type:'string',raw:true});}
     else wb=XLSX.read(buf,{type:'array',cellDates:true});
     const rows=readWorkbook(wb);if(!rows.length&&!SHEETS.length){setStatus(L('文件里没有内容。','The file is empty.'),true);return;}
@@ -216,7 +218,7 @@ let synthW=null,synthSeq=0,AUDIO_PENDING=null;
 // MP3 decoders add different priming delays, so the sprite carries a one-sample marker at 0.1 s to measure ours.
 let SFXB=null,sfxP=null,SFXF=false; // SFXF: the sprite failed once; keep going without effects
 function loadSfx(){if(SFXB)return Promise.resolve(SFXB);if(sfxP)return sfxP;
-  sfxP=fetch('sfx/film.mp3').then(r=>{if(!r.ok)throw new Error('sfx '+r.status);return r.arrayBuffer();})
+  sfxP=fetch('sfx/film.mp3'+VQ).then(r=>{if(!r.ok)throw new Error('sfx '+r.status);return r.arrayBuffer();})
     .then(buf=>new OfflineAudioContext(1,48000,48000).decodeAudioData(buf)).then(ab=>{const x=ab.getChannelData(0);let k=0;for(let i=1;i<9600;i++)if(Math.abs(x[i])>Math.abs(x[k]))k=i;const off=k-4800,B={};
       for(const [nm,[st,len,sy]] of Object.entries(SFX_MAP))B[nm]={d:x.slice(st+off,st+off+len),s:sy};SFXB=B;return B;})
     .catch(e=>{console.warn('sound effects unavailable',e);SFXF=true;sfxP=null;return null;});
