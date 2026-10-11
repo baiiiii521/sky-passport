@@ -33,3 +33,13 @@ location @cos { return 302 https://<桶名>-<APPID>.cos.<地域>.myqcloud.com$re
 
 ## 3. 以后想再加 CDN
 给桶绑一个已备案的子域名（如 `v.nybbq.art`）并开 CDN 加速，把上面 302 的域名和小程序 downloadFile 域名换成它即可。
+
+## 静态文件也走存储桶（2026-10-11）
+
+字体、第三方库、音效、小程序图片、介绍视频和三份数据 JSON 放在桶的 `static/` 目录，服务器只负责把请求 302 过去，不再占 3 Mbps 带宽。
+
+- 子用户策略要允许 `static/*` 的 PutObject；桶的跨域规则：Origin `https://passport.nybbq.art`，GET/HEAD（字体、JSON、音效是跨域读取）。
+- 同步：`server/cos_sync.js`（在服务器上运行，自己读 `cos.env`；文本文件 gzip 后上传；只传有变化的文件，清单 `cos_sync.json`）。`deploy.sh` 每次部署后自动运行；服务器上单独重建了字体或数据（`fetch_assets.sh`）之后要手动运行一次。`--check` 逐个核对桶里是否齐全。
+- nginx（443 站点）：`^/(fonts|vendor|sfx|mp|promo)/` 一律 302；`airports|china|world-50m.json` 只有来自本站页面（Referer）才 302，小程序的 `wx.request` 仍拿本机文件（存储桶域名不在它的 request 合法域名里）。带 `?v=` 的地址原样带过去，所以换版本不会读到旧缓存。
+- 127.0.0.1:8088（渲染器用的站点副本）不跳转，继续读本机文件：`public/` 里的这些文件不能删。
+- 回退：把 nginx 里那两段 location 删掉重载即可（备份在 `/home/ubuntu/sky-passport.nginx.bak.*`）。

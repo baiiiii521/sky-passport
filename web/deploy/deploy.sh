@@ -14,4 +14,6 @@ npm test --silent
 rsync -az --delete -e "${SSH[*]}" --exclude fonts/ --exclude flags/ --exclude vendor/ --exclude mp/ --exclude "*.json" public/ "$DEPLOY_HOST:$APP/public/"
 rsync -az --delete -e "${SSH[*]}" api server scripts deploy package.json "$DEPLOY_HOST:$APP/"
 "${SSH[@]}" "$DEPLOY_HOST" "sudo systemctl restart sky-passport && sleep 1 && curl -fsS http://127.0.0.1:3100/api/health && sudo nginx -t -q && sudo systemctl reload nginx"
+# fonts, vendor, sfx, mp, promo and the data JSON are served from the bucket (deploy/COS.md): upload whatever changed
+"${SSH[@]}" "$DEPLOY_HOST" "cd $APP && [ -f cos.env ] && (set -a; . ./cos.env; set +a; /opt/node20/bin/node server/cos_sync.js) || echo 'COS sync skipped or failed: run server/cos_sync.js on the server'"
 echo "deployed to $DEPLOY_HOST"
