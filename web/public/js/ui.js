@@ -313,8 +313,10 @@ function heroStats(){const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.
   const step=now=>{if(id!==HERO_ANIM)return;const k=reduce?1:Math.min(1,(now-t0)/900),e=1-Math.pow(1-k,3);for(const [key,v] of Object.entries(to))box.querySelector(`[data-k="${key}"]`).textContent=fmt(v*e);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
 $('btnStart').addEventListener('click',()=>HOME.go('studio','s1'));
 document.querySelectorAll('.introBtn').forEach(b=>b.addEventListener('click',()=>$('btnIntro').click()));
-// the promo film (720p, loaded only when opened), in the page's language
-$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV'),src=`promo/sky-passport-${EN()?'en':'zh'}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
+// the intro film (720p, loaded only when opened)
+/* three short kinetic cuts (A rapid fire, B one pass, C departures board): a different one each time */
+let INTRO_LAST=-1;
+$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV');let k=Math.floor(Math.random()*3);if(k===INTRO_LAST)k=(k+1)%3;INTRO_LAST=k;const src=`promo/intro-${'abc'[k]}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
 const closeIntro=()=>{$('introV').pause();$('intro').close?$('intro').close():$('intro').removeAttribute('open');};$('btnIntroX').addEventListener('click',closeIntro);$('intro').addEventListener('close',()=>$('introV').pause());
 $('btnMakeM').addEventListener('click',()=>{$('h3').scrollIntoView({behavior:'smooth',block:'start'});if(S&&S.ok&&!exporting)$('btnMake').click();});
 initSegs();initGuide();

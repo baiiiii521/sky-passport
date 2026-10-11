@@ -8,8 +8,10 @@
     <button class="cta" bindtap="chooseFile">开始制作 · 从聊天中选择表格</button>
     <view class="cta2">
       <button class="ghost" bindtap="tryDemo">先用示例体验</button>
-      <button class="ghost" bindtap="playDemo">▶ 看示例视频</button>
+      <button class="ghost" bindtap="playIntro">▶ 20 秒看懂</button>
     </view>
+    <video wx:if="{{introSrc}}" class="demo" src="{{introSrc}}" autoplay controls object-fit="contain" show-fullscreen-btn bindended="introEnded"></video>
+    <view class="more2" bindtap="playDemo">{{showDemo?'收起成片示例 ▴':'看一段生成的成片示例 ▾'}}</view>
     <video wx:if="{{showDemo}}" class="demo" src="{{demoVideo}}" poster="{{demoPoster}}" autoplay controls object-fit="contain" show-fullscreen-btn></video>
   </view>
 
