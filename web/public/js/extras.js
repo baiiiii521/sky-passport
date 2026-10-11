@@ -166,7 +166,7 @@ async function renderLongPosterClassic(){
     const hd=g.createRadialGradient(W/2,180,40,W/2,300,900);hd.addColorStop(0,TH.c[0]);hd.addColorStop(.6,TH.c[1]);hd.addColorStop(1,TH.c[2]);g.fillStyle=hd;g.fillRect(0,0,W,Hd);
     g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=0.45;g.drawImage(GRAIN[0],0,0,W,Hd);g.restore();
     const gold=goldText(g,60,520);g.save();g.translate(W/2,215);g.strokeStyle=g.fillStyle=gold;emblem(g,0.6,false);g.restore();
-    g.textAlign='center';g.fillStyle=gold;if(EN()){g.font=`900 84px ${SERIF}`;spaced(g,'SKY PASSPORT',W/2,452,6);g.font=F(600,26);spaced(g,'航迹手帐',W/2,500,12);}else{g.font=`900 96px ${SERIF}`;spaced(g,'航迹手帐',W/2,452,18);g.font='600 26px "Open Sans",sans-serif';spaced(g,'SKY PASSPORT',W/2,500,12);}
+    g.textAlign='center';g.fillStyle=gold;if(EN()){g.font=`900 84px ${SERIF}`;spaced(g,'SKY PASSPORT',W/2,452,6);g.font=F(600,26);spaced(g,'航迹护照',W/2,500,12);}else{g.font=`900 96px ${SERIF}`;spaced(g,'航迹护照',W/2,452,18);g.font='600 26px "Open Sans",sans-serif';spaced(g,'SKY PASSPORT',W/2,500,12);}
     g.strokeStyle='rgba(227,189,132,.6)';g.lineWidth=2;rr(g,24,24,W-48,512,26);g.stroke();
     let y=Hd;
     // who and when
@@ -193,7 +193,7 @@ async function renderLongPosterClassic(){
     if(parts.qr){drawQrCard(g,W-238,fy+44,170,1,null);g.fillStyle=goldText(g,fy+60,fy+200);g.font=F(700,40);g.fillText(L('扫码生成你的飞行护照','Scan to make your own'),70,fy+105);
       g.font=F(400,26,'SM');g.fillStyle='#e9d8cf';g.fillText(SITE_HOST,70,fy+152);g.font=F(400,20,'SM');g.fillStyle='rgba(233,216,207,.6)';
       if(parts.name)g.fillText(('P<'+P.nat3+P.latin.replace(/ /g,'<')+'<<FLIGHT<LOG').padEnd(40,'<').slice(0,40),70,fy+204);}
-    else{g.textAlign='center';g.fillStyle=goldText(g,fy+30,fy+80);g.font=F(600,30);g.fillText('航迹手帐 · SKY PASSPORT',W/2,fy+66);}
+    else{g.textAlign='center';g.fillStyle=goldText(g,fy+30,fy+80);g.font=F(600,30);g.fillText('航迹护照 · SKY PASSPORT',W/2,fy+66);}
   }finally{ctx=keep;}
   return c;}
 
@@ -247,7 +247,7 @@ async function renderLongPosterNight(){
     /* ===== cover ===== */
     g.textAlign='left';g.font=F(700,19,'SM');g.fillStyle=NP.ac;trk(g,'SKY PASSPORT // FLIGHT LOG',60,70,4);
     const serial=`NO. SP-${String(sc.years[sc.years.length-1].y)}-${(seed%65536).toString(16).toUpperCase().padStart(4,'0')}`;g.font=F(700,19,'SM');g.fillStyle=NP.gold;trk(g,serial,W-60,70,3,'right');
-    g.font=`900 46px ${SERIF}`;g.fillStyle=goldText(g,90,140);if(EN())trk(g,'SKY PASSPORT',60,136,6);else trk(g,'航迹手帐',60,136,14);
+    g.font=`900 46px ${SERIF}`;g.fillStyle=goldText(g,90,140);if(EN())trk(g,'SKY PASSPORT',60,136,6);else trk(g,'航迹护照',60,136,14);
     g.font=F(400,18,'SM');g.fillStyle=NP.mut;g.textAlign='right';g.fillText(L('VALID · 一生有效','VALID · FOR LIFE'),W-60,132);g.textAlign='left';
     g.fillStyle=NP.line;g.fillRect(60,162,W-120,1);for(let x=60;x<=W-60;x+=24)g.fillRect(x,x%120===60?154:158,1,x%120===60?9:5);
     /* globe with HUD rings */
@@ -350,7 +350,7 @@ async function renderLongPosterNight(){
       g.font=F(800,40);g.fillStyle=goldText(g,fy+70,fy+120);g.fillText(L('扫码生成你的飞行护照','Scan to make your own'),60,fy+112);g.font=F(700,26,'SM');g.fillStyle=NP.ink;g.fillText(SITE_HOST,60,fy+160);
       g.font=F(400,19);g.fillStyle=NP.mut;g.fillText(L('免费 · 在浏览器里完成 · 表格不上传','Free · made in your browser · nothing uploaded'),60,fy+198);
       g.font=F(400,17,'SM');g.fillStyle='rgba(94,234,255,.45)';g.fillText(mrz1,60,fy+266);g.fillText(mrz2,60,fy+294);}
-    else{g.textAlign='center';g.font=F(700,24,'SM');g.fillStyle=goldText(g,fy+50,fy+90);trk(g,'SKY PASSPORT · 航迹手帐',W/2,fy+78,4,'center');g.font=F(400,16,'SM');g.fillStyle='rgba(94,234,255,.45)';g.fillText(mrz1,W/2,fy+124);g.textAlign='left';}
+    else{g.textAlign='center';g.font=F(700,24,'SM');g.fillStyle=goldText(g,fy+50,fy+90);trk(g,'SKY PASSPORT · 航迹护照',W/2,fy+78,4,'center');g.font=F(400,16,'SM');g.fillStyle='rgba(94,234,255,.45)';g.fillText(mrz1,W/2,fy+124);g.textAlign='left';}
   }finally{ctx=keep;}
   return c;}
 async function renderLongPoster(){return posterStyle()==='classic'?renderLongPosterClassic():renderLongPosterNight();}
