@@ -23,7 +23,7 @@ systemd：`sky-passport-render.service` 的 `[Service]` 里加 `EnvironmentFile=
 
 nginx（`/etc/nginx/sites-available/sky-passport`，把原来的 `location /v/ {…}` 换成）：
 ```nginx
-location ~ ^/v/([a-f0-9]{24}\.mp4)$ {
+location ~ "^/v/([a-f0-9]{24}\.mp4)$" {   # quoted: a regex with braces must be
   root /srv/sky-passport; types { video/mp4 mp4; } add_header Cache-Control "public, max-age=86400";
   try_files /videos/$1 @cos;          # still on the box (upload failed or COS off) → serve it; otherwise → the bucket
 }
