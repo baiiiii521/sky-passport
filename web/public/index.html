@@ -4,15 +4,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#02040b">
 <script>(function(){var d=document.documentElement,m=/^#\/(home|studio|badges)(?:\/(s[123]))?/.exec(location.hash)||[];d.classList.add('js');d.dataset.view=m[1]||'home';d.dataset.step=m[2]||'s1';})()</script><!-- the view is set before first paint -->
-<title>航迹护照 Sky Passport</title>
+<title>航迹手帐 Sky Passport</title>
 <meta name="description" content="Upload your flight history and get a 1-minute vertical flight-passport film with an original score — free, in your browser. 上传航班记录，一键生成带原创配乐的飞行护照视频。">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Sky Passport 航迹护照">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Sky Passport 航迹手帐">
 <meta property="og:title" content="Sky Passport · Turn your flights into a passport film">
 <meta property="og:description" content="Every flight you've taken, stamped into a passport that comes alive. Free, private, made in your browser.">
 <meta property="og:image" content="https://sky-passport.vercel.app/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://sky-passport.vercel.app/og.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%235a1424%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2218%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%223%22/%3E%3Cpath d=%22M14 32h36M32 14c-8 10-8 26 0 36M32 14c8 10 8 26 0 36%22 fill=%22none%22 stroke=%22%23e3bd84%22 stroke-width=%222.5%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="fonts/fonts.css"><!-- self-hosted (npm run build:fonts): Google Fonts is blocked in mainland China -->
+<!-- fonts: self-hosted (npm run build:fonts; Google Fonts is blocked in mainland China). 500+ @font-face rules: loaded without blocking the first paint; ensureFonts() waits for it -->
+<link id="fontcss" rel="preload" as="style" href="fonts/fonts.css?v=cacc6024" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="fonts/fonts.css?v=cacc6024"></noscript>
 <style>
 /* Sky Passport · v3.1 interface — "night flight control".
    A deep-space field with stars, a living globe, cyan HUD lines and gold only for the brand and the main actions.
@@ -72,13 +73,16 @@ header.top{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;
 .hero h2.big{margin:0;font-family:var(--f-body);font-weight:800;font-size:clamp(38px,6vw,76px);line-height:1.06;letter-spacing:-.01em;text-wrap:balance}
 .hero h2.big .g{background:linear-gradient(100deg,#f6d9a6,#e1b06b 30%,#fff3d6 45%,#d8a865 60%,#ffd9a0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .hero h2.big .c{color:var(--ac);text-shadow:0 0 24px rgba(94,234,255,.35)}
-.lede{color:var(--muted);font-size:16.5px;max-width:52ch;margin:22px 0 28px}
+.verse{position:relative;margin:26px 0 0;padding-left:18px;font-family:var(--f-display);font-size:clamp(19px,2vw,24px);line-height:1.7;letter-spacing:.08em;color:#cfdcec}
+.verse::before{content:"";position:absolute;left:0;top:.45em;bottom:.45em;width:2px;background:linear-gradient(180deg,var(--gold),rgba(233,197,142,0))}
+.verse em{font-style:normal;color:var(--gold)}
+.lede{color:var(--muted);font-size:15px;max-width:52ch;margin:14px 0 28px;padding-left:18px;letter-spacing:.04em}
 .cta{display:flex;gap:12px;flex-wrap:wrap}.cta button{font-size:15.5px;padding:15px 22px;border-radius:12px}
 .trust{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font-size:12.5px;color:var(--muted);font-family:var(--f-mono);letter-spacing:.04em}
 .trust span::before{content:"◆";color:var(--ac);margin-right:7px;font-size:9px;vertical-align:2px}
 /* globe stage */
 .stage{position:relative;min-width:0}
-.globe-box{position:relative;width:min(100%,600px);aspect-ratio:1;margin-inline:auto;overflow:hidden}
+.globe-box{position:relative;width:min(100%,540px);aspect-ratio:1;margin-inline:auto;overflow:hidden}
 .globe-box canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:pan-y}.globe-box canvas.grab{cursor:grabbing}
 .globe-box .ring{position:absolute;inset:4%;border-radius:50%;border:1px dashed rgba(94,234,255,.22);pointer-events:none;animation:spin 60s linear infinite}
 .globe-box .ring::before{content:"";position:absolute;inset:-4%;border-radius:50%;border:1px solid transparent;border-top-color:rgba(94,234,255,.55);border-right-color:rgba(94,234,255,.15);animation:spin 9s linear infinite reverse}
@@ -89,11 +93,14 @@ header.top{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;
 .ghud .live::before{content:"●";color:var(--ac2);margin-right:6px;animation:blink 1.2s steps(2) infinite}
 @keyframes blink{50%{opacity:.2}}
 /* split-flap board */
-.board{position:relative;margin:-56px auto 0;width:min(100%,560px);border-radius:18px;padding:16px 16px 14px;background:linear-gradient(180deg,rgba(10,24,56,.86),rgba(4,10,26,.92));border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden}
+.board{position:relative;margin:6px auto 0;width:min(100%,560px);border-radius:18px;padding:16px 16px 14px;background:linear-gradient(180deg,rgba(10,24,56,.86),rgba(4,10,26,.92));border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden}
 .board::before{content:"";position:absolute;inset:0;background:radial-gradient(400px circle at var(--mx,50%) var(--my,0%),rgba(94,234,255,.10),transparent 45%);pointer-events:none}
-@media (max-width:900px){.board{margin-top:-34px}}
 .board .who{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;color:var(--ac);text-transform:uppercase;margin-bottom:12px;display:flex;justify-content:space-between;gap:10px}
-.board .who::after{content:"DEP · ARR";color:var(--muted);flex:none}
+.board .who b{font-weight:700;color:var(--ink)}.board .who .tag{flex:none;font-size:10.5px;letter-spacing:.1em;padding:2px 8px;border-radius:999px;border:1px solid currentColor;color:var(--ac2)}
+.board.mine{border-color:rgba(111,247,200,.45)}.board.mine .who .tag{color:var(--ok)}
+.board .note{margin-top:8px;font-size:12.5px;color:var(--muted)}.board .note a{color:var(--ac)}
+.toast{position:fixed;left:50%;top:calc(72px + env(safe-area-inset-top,0px));transform:translate(-50%,-20px);z-index:35;display:flex;gap:12px;align-items:center;max-width:calc(100vw - 32px);padding:11px 14px;border-radius:12px;background:#0b1a3a;border:1px solid var(--ok);color:var(--ink);font-size:13.5px;box-shadow:0 14px 40px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s var(--ease)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}.toast a{color:var(--ac);white-space:nowrap;font-weight:700}
 .stats{display:grid;grid-template-columns:repeat(4,auto);justify-content:space-between;gap:12px 14px}
 @media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));justify-content:stretch}}
 .stat{min-width:0}
@@ -324,12 +331,12 @@ section[id],.ach[id]{scroll-margin-top:90px}
 <div class="fx" aria-hidden="true"><div class="aurora"></div><div class="stars"></div><div class="floor"></div><div class="jet"></div></div>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#/home" data-go="home" aria-label="航迹护照" data-en-aria="Sky Passport">
+    <a class="brand" href="#/home" data-go="home" aria-label="航迹手帐" data-en-aria="Sky Passport">
       <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="20" fill="none" stroke="#e9c58e" stroke-width="2.6"/><ellipse cx="32" cy="32" rx="8" ry="20" fill="none" stroke="#e9c58e" stroke-width="2"/><path d="M12 32h40M15 22h34M15 42h34" stroke="#e9c58e" stroke-width="1.6"/><g class="orbit"><ellipse cx="32" cy="32" rx="29" ry="8" fill="none" stroke="#5eeaff" stroke-width="2" transform="rotate(-20 32 32)"/><circle cx="59" cy="22" r="2.6" fill="#5eeaff"/></g></svg>
-      <div><span class="eyebrow">Sky Passport // Flight Log</span><h1 data-en="SKY PASSPORT">航迹护照</h1></div>
+      <div><span class="eyebrow">Sky Passport // Flight Log</span><h1 data-en="SKY PASSPORT">航迹手帐</h1></div>
     </a>
     <nav class="topnav" aria-label="页面" data-en-aria="Pages"><a href="#/home" data-go="home" data-en="Home">首页</a><a href="#/studio" data-go="studio" data-en="Make">制作</a><a href="#/badges" data-go="badges" data-en="Achievements">成就</a></nav>
-    <div class="topbtns"><button type="button" class="pill" id="btnIntro" data-en="▶ <span class=wide>40-second </span>intro">▶ 40 秒看懂</button><button type="button" class="pill" id="btnLang" aria-label="Switch to English">EN</button></div>
+    <div class="topbtns"><button type="button" class="pill" id="btnIntro" data-en="▶ <span class=wide>20-second </span>intro">▶ 20 秒看懂</button><button type="button" class="pill" id="btnLang" aria-label="Switch to English">EN</button></div>
   </header>
   <div class="wxtip" id="wxTip" hidden data-en="You're inside WeChat, which can't save files. Tap ··· (top right) → Open in browser, then make and save the film.">你正在微信里打开：微信不允许保存文件。请点右上角「···」→「在浏览器打开」，再生成视频并保存。</div>
 
@@ -338,8 +345,9 @@ section[id],.ach[id]{scroll-margin-top:90px}
     <div class="hero-copy">
       <p class="kicker" data-en="Flight log online · decode your sky">FLIGHT LOG ONLINE · 解码你的天空</p>
       <h2 class="big" id="heroH" data-en="Every take-off&lt;br&gt;&lt;span class=&quot;g&quot;&gt;deserves to be&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;remembered&lt;/span&gt;">每一次起飞<br><span class="g">都值得被</span><span class="c">记住</span></h2>
-      <p class="lede" data-en="Boarding passes expire. Flight records scatter across apps and spreadsheets. Hand them to Sky Passport and they are decoded, in seconds, into a passport that comes alive — routes on the map, a stamp, an original score.">登机牌会过期，航班记录散落在 App 和表格里。把它们交给航迹护照：几秒钟，解码成一本会动的护照——航线、盖章、原创配乐。</p>
-      <div class="cta"><button type="button" class="primary" id="btnStart" data-en="Start with my flights ↓">开始，导入我的航班 ↓</button><button type="button" class="introBtn ghost" data-en="▶ Watch the 40-second intro">▶ 看 40 秒介绍</button></div>
+      <p class="verse" data-en="Boarding passes fade.&lt;br&gt;&lt;em&gt;The sky you crossed doesn't.&lt;/em&gt;">登机牌会褪色，<br><em>飞过的天空不会。</em></p>
+      <p class="lede" data-en="One minute turns your flight log into a passport that moves.">一分钟，把航班记录变成一本会动的护照。</p>
+      <div class="cta"><button type="button" class="primary" id="btnStart" data-en="Start with my flights ↓">开始，导入我的航班 ↓</button><button type="button" class="introBtn ghost" data-en="▶ Watch the 20-second intro">▶ 看 20 秒介绍</button></div>
       <div class="trust"><span data-en="Your sheet never leaves the browser">表格只在你的浏览器里处理</span><span data-en="Free · no sign-up">免费 · 无需注册</span><span data-en="1080×1920 MP4 + original score">1080×1920 MP4 + 原创配乐</span></div>
     </div>
     <div class="stage">
@@ -358,6 +366,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
           <div class="stat"><b data-k="h">0</b><span data-en="hours aloft">小时在空中</span></div>
         </div>
         <div class="line" id="heroLine"></div>
+        <div class="note" id="heroNote"></div>
       </div>
     </div>
   </section>
@@ -526,19 +535,19 @@ section[id],.ach[id]{scroll-margin-top:90px}
   </footer>
 </div>
 <dialog class="intro" id="intro" aria-label="宣传片" data-en-aria="Intro film"><button type="button" class="x sm" id="btnIntroX" aria-label="关闭" data-en-aria="Close">✕</button><video id="introV" controls playsinline preload="none"></video></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <nav class="tabbar" id="mcta" aria-label="页面" data-en-aria="Pages"><a href="#/home" data-go="home"><i aria-hidden="true">◎</i><span data-en="Home">首页</span></a><a href="#/studio" data-go="studio"><i aria-hidden="true">✈</i><span data-en="Make">制作</span></a><a href="#/badges" data-go="badges"><i aria-hidden="true">★</i><span data-en="Achievements">成就</span></a><button type="button" id="btnMakeM" hidden></button></nav>
 
-<script src="vendor/d3.min.js"></script>
-<script src="vendor/topojson.min.js"></script>
-<script src="vendor/xlsx.full.min.js"></script>
-<script src="vendor/mp4-muxer.js"></script>
-<script src="vendor/qrcode.min.js"></script>
+<script src="vendor/d3.min.js?v=69faba9d"></script>
+<script src="vendor/topojson.min.js?v=4f7a05d7"></script>
+<script>/*stamp*/var ASSET_V="d325c059",LIBS={xlsx:"vendor/xlsx.full.min.js?v=31e9848e",muxer:"vendor/mp4-muxer.js?v=44b953a1"};</script><!-- data version + the two libraries that load only when needed (reading a file, exporting) -->
+<script src="vendor/qrcode.min.js?v=e259e455"></script>
 <script>if(/\.vercel\.app$/.test(location.hostname)){const s=document.createElement('script');s.defer=true;s.src='/_vercel/insights/script.js';document.head.appendChild(s);}</script><!-- Vercel Web Analytics only where it exists -->
-<script src="js/i18n.js"></script>
-<script src="js/core.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/music.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/extras.js"></script>
-<script src="js/export.js"></script>
-<script src="js/home.js"></script>
+<script src="js/i18n.js?v=b5ddf5f7"></script>
+<script src="js/core.js?v=0f1ee5af"></script>
+<script src="js/engine.js?v=242d2894"></script>
+<script src="js/music.js?v=f93c8b12"></script>
+<script src="js/ui.js?v=7bc08bd5"></script>
+<script src="js/extras.js?v=50dfc656"></script>
+<script src="js/export.js?v=7d78a824"></script>
+<script src="js/home.js?v=7071ffb5"></script>

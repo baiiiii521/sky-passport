@@ -10,7 +10,7 @@ const IS_WX=/MicroMessenger/i.test(navigator.userAgent);$('wxTip').hidden=!IS_WX
 // phones: the system share sheet offers 「存储视频」 (saves to the photo album); desktop: a normal download
 async function saveVideo(){if(!lastBlob)return;if(IS_WX){setStatus(L('微信里不能保存文件：请点右上角「···」→「在浏览器打开」，再生成一次并保存。','WeChat cannot save files: tap ··· (top right) → Open in browser, then make and save the film again.'),true);return;}
   const file=new File([lastBlob],lastName,{type:lastBlob.type||'video/mp4'});
-  if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:L('航迹护照','Sky Passport')});setStatus(L('在弹出的面板里选「存储视频」即可存到相册。','Choose “Save Video” in the share sheet to put it in your photos.'));return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:L('航迹手帐','Sky Passport')});setStatus(L('在弹出的面板里选「存储视频」即可存到相册。','Choose “Save Video” in the share sheet to put it in your photos.'));return;}catch(e){if(e&&e.name==='AbortError')return;}}
   saveFile(lastName,lastBlob);}
 $('btnSave').addEventListener('click',saveVideo);$('btnSave2').addEventListener('click',saveVideo);
 $('btnCancel').addEventListener('click',()=>{cancelExport=true;});
@@ -25,13 +25,14 @@ $('btnMake').addEventListener('click',async()=>{
   try{
     setStatus(L('正在合成配乐…','Composing the score…'));await Promise.all([ensureFonts(),loadFlags(S.order)]);coverBuilt=false;const A=await ensureAudio();
     let blob,ext;
+    if('VideoEncoder' in window&&'AudioEncoder' in window){try{await loadLib('muxer','Mp4Muxer');}catch(e){}} /* the muxer is only downloaded for an export */
     if('VideoEncoder' in window&&'AudioEncoder' in window&&window.Mp4Muxer){[blob,ext]=await exportWebCodecs(A,setP,AC);}else{[blob,ext]=await exportRealtime(A,setP,AC);}
     if(!blob)return;
     /* prove the sound is in the file; if not, record it again in real time (Safari's encoder has shipped broken AAC before) */
     setStatus(L('正在检查视频里的声音…','Checking the sound in the video…'));XD.check=await soundCheck(blob);
     if(!XD.check.ok&&XD.path==='webcodecs'&&!cancelExport){const r=await exportRealtime(A,setP,AC);if(!r[0])return;XD.check2=await soundCheck(r[0]);if(XD.check2.ok){[blob,ext]=r;}}
     const soundOk=(XD.check2||XD.check).ok;showDiag(!soundOk);
-    lastBlob=blob;lastName=`${L('航迹护照','sky-passport')}_${(S.P.latin||'flight').replace(/\s+/g,'_')}_${S.years[0].y}-${S.years[S.years.length-1].y}.${ext}`;
+    lastBlob=blob;lastName=`${L('航迹手帐','sky-passport')}_${(S.P.latin||'flight').replace(/\s+/g,'_')}_${S.years[0].y}-${S.years[S.years.length-1].y}.${ext}`;
     const v=$('outVideo');v.src=URL.createObjectURL(blob);$('result').hidden=false;$('saveBar').hidden=false;$('saveInfo').textContent=`${(blob.size/1048576).toFixed(1)} MB · ${ext.toUpperCase()}`;setP(1);setStatus(L(`完成：${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}。点「保存视频」下载。`,`Done: ${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}. Tap “Save video” to download it.`)+(soundOk?L(' 声音已检查 ✓',' Sound checked ✓'):''));
     if(!soundOk)setStatus(L('视频已生成，但这台设备上检查不到声音。请把下面的诊断信息截图发给我们；用电脑上的 Chrome 生成一般有声音。','The film is ready, but no sound could be found in it on this device. Please send us a screenshot of the details below; Chrome on a computer usually works.'),true);
   }catch(e){console.error(e);setStatus(L('生成失败：','Could not make the film: ')+(e.message||e)+L('。换用最新版 Chrome / Edge 一般能解决。','. The latest Chrome or Edge usually works.'),true);}

@@ -1,45 +1,45 @@
 <view class="page">
-  <!-- hero: the finished film, frame by frame -->
   <view class="hero">
-    <text class="eyebrow">SKY PASSPORT · FLIGHT LOG</text>
-    <text class="title">航迹护照</text>
-    <text class="sub">把这些年飞过的航班，做成一本会动的护照</text>
-    <swiper class="shots" autoplay interval="3200" circular previous-margin="120rpx" next-margin="120rpx" indicator-dots indicator-color="rgba(227,189,132,.3)" indicator-active-color="#e3bd84">
-      <swiper-item wx:for="{{shots}}" wx:key="src">
-        <view class="shot" data-src="{{item.src}}" bindtap="previewShot">
-          <image src="{{item.src}}" mode="aspectFill" lazy-load/>
-          <text class="cap">{{item.cap}}</text>
-        </view>
-      </swiper-item>
-    </swiper>
+    <view class="kicker"><view class="live"></view>FLIGHT LOG ONLINE · 解码你的天空</view>
+    <view class="big">每一次起飞</view>
+    <view class="big"><text class="g">都值得被</text><text class="c">记住</text></view>
+    <view class="verse"><view>登机牌会褪色，</view><view class="vg">飞过的天空不会。</view></view>
+    <text class="lede">一分钟，把航班记录变成一本会动的护照。</text>
     <button class="cta" bindtap="chooseFile">开始制作 · 从聊天中选择表格</button>
+    <button class="ghost wide" bindtap="manual">没有表格？手动输入航班</button>
     <view class="cta2">
-      <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
-      <button class="ghost" bindtap="playDemo">▶ 看示例视频</button>
+      <button class="ghost" bindtap="tryDemo">先用示例体验</button>
+      <button class="ghost" bindtap="playIntro">▶ 20 秒看懂</button>
     </view>
+    <video wx:if="{{introSrc}}" class="demo" src="{{introSrc}}" autoplay controls object-fit="contain" show-fullscreen-btn bindended="introEnded"></video>
+    <view class="more2" bindtap="playDemo">{{showDemo?'收起成片示例 ▴':'看一段生成的成片示例 ▾'}}</view>
     <video wx:if="{{showDemo}}" class="demo" src="{{demoVideo}}" poster="{{demoPoster}}" autoplay controls object-fit="contain" show-fullscreen-btn></video>
   </view>
 
-  <view class="sec">
-    <view class="sec-h">你会得到</view>
-    <view class="grid">
-      <view wx:for="{{features}}" wx:key="t" class="feat"><text class="fi">{{item.i}}</text><text class="ft">{{item.t}}</text><text class="fd">{{item.d}}</text></view>
+  <view class="stage">
+    <view class="globe">
+      <view class="ring"></view><view class="ring r2"></view>
+      <image class="gimg" src="{{globeImg}}" mode="aspectFit"/>
+      <view class="ghud tl"><view><text class="dot">●</text> 实时航迹</view><view><text class="b">33</text> 条航线</view></view>
+      <view class="ghud tr"><view>ORBIT · 01</view><view class="b">29.2°N 110.1°E</view></view>
+    </view>
+    <view class="board">
+      <view class="who"><text>示例旅客 · <text class="b">林小舟</text></text><text class="tag">虚构示例</text></view>
+      <view class="bstats">
+        <view wx:for="{{sample}}" wx:key="l" class="bs"><view class="flaps"><text wx:for="{{item.c}}" wx:for-item="ch" wx:key="index" class="{{ch===','?'sep':'fl'}}">{{ch}}</text></view><text class="bl">{{item.l}}</text></view>
+      </view>
+      <text class="bnote">这是示例。选择你的表格后，「制作」和「成就」里都会换成你的数据。</text>
     </view>
   </view>
 
   <view class="sec">
-    <view class="sec-h">三步做好</view>
-    <view wx:for="{{guide}}" wx:key="index" class="step"><text class="n">{{index+1}}</text><view class="st"><view>{{item[0]}}</view><view wx:if="{{guideOpen}}" class="small">{{item[1]}}</view></view></view>
-    <view class="more" bindtap="toggleGuide">{{guideOpen?'收起说明 ▴':'看详细说明 ▾'}}</view>
+    <view class="sec-h" bindtap="toggleGuide"><text class="code">GUIDE</text>怎么拿到航班表格<text class="arrow">{{guideOpen?'▴':'▾'}}</text></view>
+    <block wx:if="{{guideOpen}}">
+      <view wx:for="{{guide}}" wx:key="index" class="step"><text class="sn">{{index+1}}</text><view class="st"><view>{{item[0]}}</view><view class="small">{{item[1]}}</view></view></view>
+    </block>
   </view>
 
-  <view class="sec">
-    <view class="sec-h">长图海报样例</view>
-    <image class="long" src="{{longImg}}" mode="widthFix" lazy-load data-src="{{longImg}}" bindtap="previewShot"/>
-    <button class="cta" bindtap="chooseFile">做一张我自己的</button>
-  </view>
-
-  <text class="foot">表格只在你的手机上解析；生成视频时才把航段发到我们的服务器渲染，24 小时后自动删除。\n地图数据 Natural Earth、DataV.GeoAtlas · 机场数据 OpenFlights（ODbL）</text>
+  <text class="foot">表格只在你的手机上解析；生成视频时才把航段发到我们的服务器渲染，24 小时后自动删除。</text>
   <view wx:if="{{busy}}" class="busy">{{busy}}</view>
   <view wx:if="{{err}}" class="err">{{err}}</view>
 </view>

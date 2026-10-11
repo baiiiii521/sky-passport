@@ -21,8 +21,12 @@ function ingestAirports(a){
   for(const c in AP){for(const t of [AP[c].name,AP[c].name+' '+AP[c].city]){const n=apNorm(t);if(n&&!(n in APNAME))APNAME[n]=c;}} // "London Heathrow Airport" → LHR
   for(const k in NAME_FIX){if(NAMES[k]){NAMES[k][0]=NAME_FIX[k][0];NAMES[k][1]=NAME_FIX[k][1];}}
 }
+/* ?v= for data files (index.html is stamped by scripts/stamp.js), and libraries fetched on first use */
+const VQ=typeof ASSET_V==='string'?'?v='+ASSET_V:'';
+const LIBP={};
+function loadLib(k,g){if(typeof globalThis[g]!=='undefined')return Promise.resolve();if(!LIBP[k])LIBP[k]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=(typeof LIBS==='object'&&LIBS[k])||{xlsx:'vendor/xlsx.full.min.js',muxer:'vendor/mp4-muxer.js'}[k];s.onload=()=>res();s.onerror=()=>{delete LIBP[k];rej(new Error('could not load '+k));};document.head.appendChild(s);});return LIBP[k];}
 async function loadData(){
-  const [a,w,cn]=await Promise.all([fetch('airports.json').then(r=>r.json()),fetch('world-50m.json').then(r=>r.json()),fetch('china.json').then(r=>r.json())]);
+  const [a,w,cn]=await Promise.all([fetch('airports.json'+VQ).then(r=>r.json()),fetch('world-50m.json'+VQ).then(r=>r.json()),fetch('china.json'+VQ).then(r=>r.json())]);
   CHINA={cn:rewind(cn.cn),jd:rewind(cn.jd)};
   ingestAirports(a);
   TOPO=w;

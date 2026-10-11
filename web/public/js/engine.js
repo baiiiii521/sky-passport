@@ -260,7 +260,7 @@ function drawPhoto(px,py,pw,ph,t){
 }
 function drawInfo(t,st){
   const sc=S,P=sc.P,top=PAGE2Y+66;const rv=clamp((t-T_OPEN-0.15)/BAR);const grp=i=>{ctx.globalAlpha=easeOut(clamp((rv-i*0.085)/0.3));};
-  grp(0);ctx.font=F(600,28);ctx.fillStyle='#8e1d38';ctx.fillText('FLIGHT  LOG',92,top);ctx.font=F(400,20);ctx.fillText('航迹护照',92,top+30);
+  grp(0);ctx.font=F(600,28);ctx.fillStyle='#8e1d38';ctx.fillText('FLIGHT  LOG',92,top);ctx.font=F(400,20);ctx.fillText('航迹手帐',92,top+30);
   const nsz=fitText(P.natEn,330,40);ctx.font=F(600,nsz);ctx.textAlign='center';ctx.fillText(P.natEn,600,top+4);ctx.textAlign='left';
   grp(1);ctx.save();ctx.translate(880,top-30);rr(ctx,0,0,64,40,8);ctx.fillStyle='#2b1b24';ctx.fill();ctx.beginPath();ctx.arc(32,20,11,0,7);ctx.lineWidth=4;ctx.strokeStyle='#f3eef3';ctx.stroke();ctx.fillStyle='#f3eef3';ctx.fillRect(4,18,14,4);ctx.fillRect(46,18,14,4);ctx.restore();
   grp(2);const px=92,py=top+62,pw=270,ph=330;drawPhoto(px,py,pw,ph,t);
@@ -338,7 +338,7 @@ function buildCover(){coverTheme=(S&&S.P&&S.P.theme)||'burgundy';const TH=theme(
   for(const [x,y] of [[96,96],[W-96,96],[96,H-96],[W-96,H-96]])guilloche(m,x,y,28,7,12,'#fff',1,1.2,60);
   m.save();m.translate(W/2,600);emblem(m,1,false,false);m.restore();
   m.font='600 26px "Open Sans",sans-serif';spaced(m,'FLIGHT  LOG',W/2,262,10);
-  m.font=`900 132px ${SERIF}`;spaced(m,'航迹护照',W/2,1012,26);
+  m.font=`900 132px ${SERIF}`;spaced(m,'航迹手帐',W/2,1012,26);
   m.font='600 34px "Open Sans",sans-serif';spaced(m,'SKY PASSPORT',W/2,1080,15);
   m.lineWidth=2;m.beginPath();m.moveTo(W/2-200,1134);m.lineTo(W/2-26,1134);m.moveTo(W/2+26,1134);m.lineTo(W/2+200,1134);m.stroke();m.save();m.translate(W/2,1134);m.rotate(Math.PI/4);m.fillRect(-8,-8,16,16);m.restore();
   m.save();m.translate(W/2,1668);m.lineWidth=4.5;rr(m,-56,-34,112,68,12);m.stroke();m.beginPath();m.arc(0,0,17,0,7);m.stroke();m.fillRect(-48,-2.5,24,5);m.fillRect(24,-2.5,24,5);m.restore(); // chip mark

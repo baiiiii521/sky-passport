@@ -1,4 +1,4 @@
-# 航迹护照 Sky Passport
+# 航迹手帐 Sky Passport
 
 把航班记录变成一支约 60 秒的竖屏「飞行护照」动画（1080×1920，带原创配乐）。
 Turn a flight history into a ~60 s vertical "flight passport" animation with an original score.

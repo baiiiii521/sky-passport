@@ -8,6 +8,7 @@
 // request goes first and cancels a running speculative render; a real request with the same input adopts it.
 'use strict';
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -21,8 +22,30 @@ const CHROME = process.env.CHROME_PATH || '/snap/bin/chromium';
 const VIDEO_DIR = process.env.VIDEO_DIR || '/srv/sky-passport/videos';
 const TTL = 24 * 3600e3, MAX_QUEUE = 12, PER_IP_HOUR = 5, SPEC_PER_IP_HOUR = 8, MAX_ROWS = 1500;
 fs.mkdirSync(VIDEO_DIR, { recursive: true });
+// Optional: finished films go to Tencent COS (the box only has 3 Mbps up). Set all four in /srv/sky-passport/cos.env:
+//   COS_BUCKET=<name>-<appid>  COS_REGION=ap-guangzhou  COS_SECRET_ID=…  COS_SECRET_KEY=…   (a sub-account key that may only PutObject on this bucket)
+// The bucket is public-read with a 1-day lifecycle rule; ids are 96 random bits. After a successful upload the local file is
+// removed and nginx (location /v/ … try_files … @cos) answers /v/<id>.mp4 with a 302 to the bucket, so clients keep the same URL.
+const COS = process.env.COS_BUCKET && process.env.COS_REGION && process.env.COS_SECRET_ID && process.env.COS_SECRET_KEY
+  ? { host: `${process.env.COS_BUCKET}.cos.${process.env.COS_REGION}.myqcloud.com`, id: process.env.COS_SECRET_ID, key: process.env.COS_SECRET_KEY } : null;
+function cosPut(file, key) {
+  return new Promise((resolve, reject) => {
+    const now = Math.floor(Date.now() / 1000), kt = `${now - 60};${now + 900}`, hm = (k, v) => crypto.createHmac('sha1', k).update(v).digest('hex');
+    const sts = `sha1\n${kt}\n${crypto.createHash('sha1').update(`put\n/${key}\n\n\n`).digest('hex')}\n`, sig = hm(hm(COS.key, kt), sts);
+    const rq = https.request({ host: COS.host, path: '/' + key, method: 'PUT', timeout: 90000, headers: { 'Content-Type': 'video/mp4', 'Content-Length': fs.statSync(file).size,
+      Authorization: `q-sign-algorithm=sha1&q-ak=${COS.id}&q-sign-time=${kt}&q-key-time=${kt}&q-header-list=&q-url-param-list=&q-signature=${sig}` } },
+      r => { let b = ''; r.on('data', d => { b += d; }); r.on('end', () => (r.statusCode === 200 ? resolve() : reject(new Error('COS ' + r.statusCode + ' ' + b.slice(0, 160))))); });
+    rq.on('timeout', () => rq.destroy(new Error('COS timeout'))); rq.on('error', reject); fs.createReadStream(file).on('error', reject).pipe(rq);
+  });
+}
 
 const jobs = new Map(), byKey = new Map(), queue = [], hits = new Map();
+// Finished films are remembered across restarts (id, input key, size, where the file is), so the same sheet + options
+// within 24 h is answered at once instead of rendered again. Only what the status call needs is kept: no rows, no names.
+const INDEX = process.env.JOB_INDEX || path.join(VIDEO_DIR, '..', 'jobs.json');
+function saveIndex() { const done = [...jobs.values()].filter(j => j.state === 'done').map(j => ({ id: j.id, key: j.key, created: j.created, size: j.size, seconds: j.seconds, cos: !!j.cos }));
+  fs.writeFile(INDEX + '.tmp', JSON.stringify(done), e => { if (!e) fs.rename(INDEX + '.tmp', INDEX, () => {}); }); }
+try { for (const j of JSON.parse(fs.readFileSync(INDEX, 'utf8'))) { if (Date.now() - j.created > TTL || !(j.cos || fs.existsSync(path.join(VIDEO_DIR, j.id + '.mp4')))) continue; jobs.set(j.id, { ...j, state: 'done', progress: 1 }); byKey.set(j.key, j.id); } console.log('restored', jobs.size, 'finished films'); } catch (e) { /* first run */ }
 let browser = null, busy = null, warming = Promise.resolve(); // busy = the job being rendered
 
 const s = (v, n = 40) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').slice(0, n);
@@ -150,7 +173,9 @@ async function render(job) {
       let err = ''; ff.stderr.on('data', d => { err += d; }); ff.on('close', c => (c === 0 ? res() : rej(new Error('ffmpeg ' + c + ' ' + err.slice(-300)))));
     });
     T.push(Date.now()); job.phases = T.slice(1).map((t, i) => ((t - T[i]) / 1000).toFixed(1)).join('/'); // scenes / frames+encode / mux
-    fs.renameSync(tmp, out); job.size = fs.statSync(out).size; job.state = 'done'; job.progress = 1;
+    fs.renameSync(tmp, out); job.size = fs.statSync(out).size;
+    if (COS) { try { const t = Date.now(); await cosPut(out, 'v/' + job.id + '.mp4'); job.cos = true; fs.rm(out, { force: true }, () => {}); console.log('cos', job.id, ((Date.now() - t) / 1000).toFixed(1) + 's'); } catch (e) { console.error('cos upload failed, serving locally', job.id, String(e.message || e)); } }
+    job.state = 'done'; job.progress = 1;
   } finally {
     encs.forEach(e => e.kill());
     // pages still held here: after a cancel they are healthy (openScene resets them), after an error their state is unknown
@@ -165,7 +190,7 @@ async function pump() {
   await warming; if (busy) return; // never race the pre-warm for CPU
   const k = queue.findIndex(j => !j.spec), job = queue.splice(k >= 0 ? k : 0, 1)[0]; // real requests first
   busy = job; job.state = 'rendering'; job.started = Date.now();
-  try { await render(job); console.log('done', job.id, job.spec ? 'spec' : 'real', job.seconds && job.seconds.toFixed(1) + 's video', ((Date.now() - job.started) / 1000).toFixed(0) + 's', 'phases', job.phases, 'minMemMB', Math.round(memLow)); }
+  try { await render(job); saveIndex(); console.log('done', job.id, job.spec ? 'spec' : 'real', job.seconds && job.seconds.toFixed(1) + 's video', ((Date.now() - job.started) / 1000).toFixed(0) + 's', 'phases', job.phases, 'minMemMB', Math.round(memLow)); }
   catch (e) {
     if (job.cancel) { job.state = 'cancelled'; console.log('cancelled', job.id); }
     else {
@@ -180,10 +205,15 @@ async function pump() {
 // hourly cleanup of old videos and job records
 setInterval(() => {
   const now = Date.now();
-  for (const f of fs.readdirSync(VIDEO_DIR)) { const p = path.join(VIDEO_DIR, f); if (now - fs.statSync(p).mtimeMs > TTL) fs.rm(p, { force: true }, () => {}); }
+  try { for (const f of fs.readdirSync(VIDEO_DIR)) { const p = path.join(VIDEO_DIR, f); try { if (now - fs.statSync(p).mtimeMs > TTL) fs.rm(p, { force: true }, () => {}); } catch (e) { /* removed meanwhile (uploaded to COS) */ } } } catch (e) { console.error('cleanup', e.message); }
   for (const [id, j] of jobs) if (now - j.created > TTL) { jobs.delete(id); if (byKey.get(j.key) === id) byKey.delete(j.key); }
   for (const [ip, w] of hits) if (now - w.t > 3600e3) hits.delete(ip);
+  saveIndex();
 }, 3600e3).unref();
+
+// a stray rejection or error must not take the queue (and the job being rendered) down with it
+process.on('unhandledRejection', e => console.error('unhandledRejection', e && e.stack || e));
+process.on('uncaughtException', e => console.error('uncaughtException', e && e.stack || e));
 
 function send(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
 http.createServer((req, res) => {
@@ -205,7 +235,7 @@ http.createServer((req, res) => {
     // same rows + same options → the same film: hand back the existing job (done, queued or rendering)
     const key = crypto.createHash('sha1').update(JSON.stringify(input)).digest('hex'); let prev = jobs.get(byKey.get(key));
     if (!spec && prev && prev.state === 'cancelled' && prev.rows) { prev.state = 'queued'; prev.cancel = false; prev.progress = 0; queue.push(prev); } // bring a cancelled pre-render back
-    if (prev && !['error', 'cancelled'].includes(prev.state) && (prev.state !== 'done' || fs.existsSync(path.join(VIDEO_DIR, prev.id + '.mp4')))) {
+    if (prev && !['error', 'cancelled'].includes(prev.state) && (prev.state !== 'done' || prev.cos || fs.existsSync(path.join(VIDEO_DIR, prev.id + '.mp4')))) {
       if (!spec && prev.spec) { prev.spec = false; if (busy && busy.spec && busy !== prev) busy.cancel = true; } // the user asked for it: no longer speculative
       setImmediate(pump);
       return send(res, 200, { id: prev.id, ahead: prev.state === 'queued' ? Math.max(0, position(prev)) : 0, reused: true });

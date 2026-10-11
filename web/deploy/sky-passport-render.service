@@ -5,6 +5,8 @@ After=network.target
 [Service]
 Environment=NODE_PATH=/srv/sky-passport/rt/node_modules
 Environment=RENDER_PAGE=http://127.0.0.1:8088/index.html?site=https://passport.nybbq.art
+# optional: COS_BUCKET / COS_REGION / COS_SECRET_ID / COS_SECRET_KEY (see deploy/COS.md); the file may be absent
+EnvironmentFile=-/srv/sky-passport/cos.env
 WorkingDirectory=/srv/sky-passport
 ExecStart=/opt/node20/bin/node server/render.js
 Restart=always

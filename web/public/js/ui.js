@@ -15,7 +15,9 @@ function rebuild(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(()=>{stopP
 let CJK_ALL=null; // collected once from our own scripts (fetch hits the HTTP cache)
 async function cjkGlyphs(){if(CJK_ALL!==null)return CJK_ALL;let t='';try{t=(await Promise.all([...document.querySelectorAll('script[src^="js/"]')].map(e=>fetch(e.src).then(r=>r.text())))).join('');}catch(e){}
   return CJK_ALL=[...new Set(t.match(/[\u2E80-\u9FFF\uFF00-\uFFEF]/g)||[])].join('');}
-async function ensureFonts(){const P=S&&S.P;const txt=(await cjkGlyphs())+(P?[P.disp,P.tagZh,P.tagEn,P.latin].join(''):'');
+/* the font stylesheet loads without blocking the page: wait until its rules exist before asking for glyphs */
+const FONT_CSS=new Promise(res=>{const l=document.getElementById('fontcss'),t0=Date.now(),chk=()=>{let ok=!l;try{ok=ok||!!(l.rel==='stylesheet'&&l.sheet);}catch(e){ok=true;}if(ok||Date.now()-t0>12000)res();else setTimeout(chk,30);};chk();});
+async function ensureFonts(){await FONT_CSS;const P=S&&S.P;const txt=(await cjkGlyphs())+(P?[P.disp,P.tagZh,P.tagEn,P.latin].join(''):'');
   try{await Promise.all(['400 30px "Open Sans"','600 30px "Open Sans"','700 30px "Open Sans"','400 30px "Space Mono"','700 30px "Space Mono"','400 30px "Noto Sans SC"','700 30px "Noto Sans SC"','900 30px "Noto Serif SC"'].map(f=>document.fonts.load(f,txt)));}catch(e){}}
 document.fonts&&document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{coverBuilt=false;photoBuilt=false;if(S&&S.ok){S.stampReady=false;buildBg();}if(!playing&&!exporting)invalidate();});
 function renderSummary(){
@@ -181,7 +183,7 @@ function renderCheck(){
 }
 // file input
 async function loadFile(file){
-  try{setStatus(L(`正在读取 ${file.name} …`,`Reading ${file.name} …`));const buf=await file.arrayBuffer();let wb;
+  try{setStatus(L(`正在读取 ${file.name} …`,`Reading ${file.name} …`));const buf=await file.arrayBuffer();await loadLib('xlsx','XLSX');let wb;
     if(/\.csv$|\.txt$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes(String.fromCharCode(0xFFFD)))txt=new TextDecoder('gb18030').decode(buf);wb=XLSX.read(txt,{type:'string',raw:true});}
     else wb=XLSX.read(buf,{type:'array',cellDates:true});
     const rows=readWorkbook(wb);if(!rows.length&&!SHEETS.length){setStatus(L('文件里没有内容。','The file is empty.'),true);return;}
@@ -197,12 +199,12 @@ $('file').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(
 drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
 $('btnDemo').addEventListener('click',()=>{resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';if(!NAT_TOUCHED)$('nat').value='CN';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus(L('已换回示例数据。','Back to the sample data.'));rebuild();});
 $('btnAI').addEventListener('click',runAI);$('btnApplyAll').addEventListener('click',applyAll);
-$('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹护照_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
+$('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹手帐_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
 $('btnToMake').addEventListener('click',()=>HOME.go('studio','s3'));
 $('btnTpl').addEventListener('click',async()=>{
   const csv=EN()?'﻿Date,Flight,Airline,From,To,Departure time,Arrival time,Distance km,Status\n2024-05-01,BA117,British Airways,London Heathrow,JFK,11:30,14:20,,flown\n2024-05-09,DL405,Delta,JFK,LHR,20:30,08:45,,flown\n2027-02-24,NH212,ANA,LHR,Tokyo Haneda,19:15,15:50,,upcoming\n'
     :'﻿日期,航班号,航空公司,出发,到达,出发时间,到达时间,里程数,状态\n2024-05-01,MU5101,东方航空,上海虹桥,北京首都,08:00,10:15,,已使用\n2024-05-06,CA1519,中国国航,PEK,SHA,19:00,21:10,,已使用\n2027-02-24,NH924,全日空,广州白云,东京羽田,15:05,20:00,,未使用\n';
-  await saveFile(L('航迹护照_模板.csv','sky-passport-template.csv'),new Blob([csv],{type:'text/csv'}));});
+  await saveFile(L('航迹手帐_模板.csv','sky-passport-template.csv'),new Blob([csv],{type:'text/csv'}));});
 ['optUp','optVoid','yFrom','yTo','nat'].forEach(id=>$(id).addEventListener('change',rebuild));
 ['name','latin','tagEn','tagZh'].forEach(id=>$(id).addEventListener('input',rebuild));
 $('btnPhoto').addEventListener('click',()=>$('photo').click());
@@ -216,7 +218,7 @@ let synthW=null,synthSeq=0,AUDIO_PENDING=null;
 // MP3 decoders add different priming delays, so the sprite carries a one-sample marker at 0.1 s to measure ours.
 let SFXB=null,sfxP=null,SFXF=false; // SFXF: the sprite failed once; keep going without effects
 function loadSfx(){if(SFXB)return Promise.resolve(SFXB);if(sfxP)return sfxP;
-  sfxP=fetch('sfx/film.mp3').then(r=>{if(!r.ok)throw new Error('sfx '+r.status);return r.arrayBuffer();})
+  sfxP=fetch('sfx/film.mp3'+VQ).then(r=>{if(!r.ok)throw new Error('sfx '+r.status);return r.arrayBuffer();})
     .then(buf=>new OfflineAudioContext(1,48000,48000).decodeAudioData(buf)).then(ab=>{const x=ab.getChannelData(0);let k=0;for(let i=1;i<9600;i++)if(Math.abs(x[i])>Math.abs(x[k]))k=i;const off=k-4800,B={};
       for(const [nm,[st,len,sy]] of Object.entries(SFX_MAP))B[nm]={d:x.slice(st+off,st+off+len),s:sy};SFXB=B;return B;})
     .catch(e=>{console.warn('sound effects unavailable',e);SFXF=true;sfxP=null;return null;});
@@ -299,16 +301,24 @@ $('nat').addEventListener('change',()=>{NAT_TOUCHED=true;});
 function onLangChange(){if(typeof HOME!=='undefined')HOME.relang();initGuide();if(Object.keys(NAMES).length)natOptions();if(!playing)stopPlay();qaUpdate();if(S)rebuild();}
 $('btnLang').addEventListener('click',()=>setLang(EN()?'zh':'en'));
 /* ---------- hero: the traveller's numbers, counted up like a flight-log readout ---------- */
-let HERO_ANIM=0;
+let HERO_ANIM=0,HERO_MINE=false;
 function heroStats(){const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.final:{n:0,km:0,cc:0,min:0},to={n:F.n,km:F.km,cc:F.cc,h:Math.round(F.min/60)},id=++HERO_ANIM,t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  $('heroWho').textContent=SOURCE==='demo'?L('示例旅客 · 林小舟 · 虚构','Sample traveller · Lin Xiaozhou · fictional'):L('你的航迹','Your flight log');
+  /* the board says whose numbers these are: the fictional sample until the visitor's own flights are in, then theirs (with a notice) */
+  const mine=SOURCE!=='demo',who=$('heroWho'),nm=mine?(($('name').value||'').trim()||L('你','You')):L('林小舟','Lin Xiaozhou');who.textContent='';
+  who.append(el('span',{},mine?L('你的航迹 · ','Your flight log · '):L('示例旅客 · ','Sample traveller · '),el('b',{},nm)),el('span',{cls:'tag'},mine?L('已换成你的数据','YOUR DATA'):L('虚构示例','FICTIONAL')));
+  who.parentElement.classList.toggle('mine',mine);const note=$('heroNote');note.textContent='';
+  if(mine)note.append(L('地球、数字和成就都已换成你的航班。','The globe, the numbers and the medals now show your flights.'));else note.append(L('这是示例。','This is a sample. '),el('a',{href:'#/studio/s1','data-go':'studio:s1'},L('导入你的航班','Import your flights')),L('后，这里会换成你的名字和数字。',' and this becomes your name and numbers.'));
+  if(mine&&!HERO_MINE&&S.ok){const t=$('toast');t.textContent='';t.append(L('首页的地球和数字已换成你的航迹','The home page now shows your flights'),el('a',{href:'#/home','data-go':'home',on:{click:()=>t.classList.remove('on')}},L('去看看 →','See it →')));t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),7000);}
+  HERO_MINE=mine&&S.ok;
   $('heroLine').textContent=S.ok?L(`绕地球 ${(F.km/40075).toFixed(2)} 圈 · ${yearsLabel(S,' — ')}`,`${(F.km/40075).toFixed(2)}× around the Earth · ${yearsLabel(S,' — ')}`):L('导入航班后，这里会显示你的数字','Your numbers appear here once your flights are in');
   if(typeof HOME!=='undefined'){for(const [key,v] of Object.entries(to))HOME.flap(box.querySelector(`[data-k="${key}"]`),fmt(v));HOME.update();return;} /* split-flap board (home.js) */
   const step=now=>{if(id!==HERO_ANIM)return;const k=reduce?1:Math.min(1,(now-t0)/900),e=1-Math.pow(1-k,3);for(const [key,v] of Object.entries(to))box.querySelector(`[data-k="${key}"]`).textContent=fmt(v*e);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
 $('btnStart').addEventListener('click',()=>HOME.go('studio','s1'));
 document.querySelectorAll('.introBtn').forEach(b=>b.addEventListener('click',()=>$('btnIntro').click()));
-// the promo film (720p, loaded only when opened), in the page's language
-$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV'),src=`promo/sky-passport-${EN()?'en':'zh'}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
+// the intro film (720p, loaded only when opened)
+/* three short kinetic cuts (A rapid fire, B one pass, C departures board): a different one each time */
+let INTRO_LAST=-1;
+$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV');let k=Math.floor(Math.random()*3);if(k===INTRO_LAST)k=(k+1)%3;INTRO_LAST=k;const src=`promo/intro-${'abc'[k]}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
 const closeIntro=()=>{$('introV').pause();$('intro').close?$('intro').close():$('intro').removeAttribute('open');};$('btnIntroX').addEventListener('click',closeIntro);$('intro').addEventListener('close',()=>$('introV').pause());
 $('btnMakeM').addEventListener('click',()=>{$('h3').scrollIntoView({behavior:'smooth',block:'start'});if(S&&S.ok&&!exporting)$('btnMake').click();});
 initSegs();initGuide();

@@ -4,11 +4,20 @@
 <script src="vendor/d3.min.js"></script><script src="vendor/topojson.min.js"></script>
 <script>
 const W=1200,LAT0=78,LAT1=-56,PX=W/360,H=Math.round((LAT0-LAT1)*PX),LON0=105;
-window.render=async()=>{const [w,cn]=await Promise.all([fetch('world-50m.json').then(r=>r.json()),fetch('china.json').then(r=>r.json())]);
+window.render=async(night)=>{const [w,cn]=await Promise.all([fetch('world-50m.json').then(r=>r.json()),fetch('china.json').then(r=>r.json())]);
   const rw=g=>{for(const p of g.type==='Polygon'?[g.coordinates]:g.coordinates)if(d3.geoArea({type:'Polygon',coordinates:p})>2*Math.PI)p.forEach(r=>r.reverse());return g;};
   const c=document.getElementById('c');c.width=W;c.height=H;const g=c.getContext('2d');
   const proj=d3.geoEquirectangular().rotate([-LON0,0]).scale(W/(2*Math.PI)).translate([W/2,LAT0*PX]).precision(0.2);const path=d3.geoPath(proj,g);
   const land=topojson.merge(w,w.objects.countries.geometries.filter(x=>x.id!=='010')),china={type:'Feature',geometry:rw(cn.cn)},jd={type:'Feature',geometry:rw(cn.jd)};
+  if(night){ /* mp-world-night.png: the dark base of the 「夜航」 poster — same projection and the same China rules */
+    g.fillStyle='#040b1e';g.fillRect(0,0,W,H);g.strokeStyle='rgba(94,234,255,.07)';g.lineWidth=1;g.beginPath();path(d3.geoGraticule().extent([[-180,LAT1],[180,LAT0]]).step([15,15])());g.stroke();
+    g.beginPath();path(land);path(china);g.fillStyle='#0b1a3a';g.fill();
+    const dp=document.createElement('canvas');dp.width=dp.height=7;const dg=dp.getContext('2d');dg.fillStyle='rgba(94,234,255,.28)';dg.fillRect(2.5,2.5,1.7,1.7);
+    g.save();g.beginPath();path(land);path(china);g.clip();g.fillStyle=g.createPattern(dp,'repeat');g.fillRect(0,0,W,H);g.restore();
+    g.beginPath();path(land);g.lineWidth=1;g.strokeStyle='rgba(94,234,255,.16)';g.stroke();
+    g.beginPath();path(china);g.fillStyle='rgba(94,234,255,.10)';g.fill();g.lineWidth=1.3;g.strokeStyle='rgba(94,234,255,.55)';g.stroke();
+    g.beginPath();path(jd);g.fillStyle='rgba(94,234,255,.7)';g.fill();g.lineWidth=0.8;g.strokeStyle='rgba(94,234,255,.7)';g.stroke();
+    return c.toDataURL('image/png');}
   // land as horizontal print rows in the passport gradient
   const m=document.createElement('canvas');m.width=W;m.height=H;const mg=m.getContext('2d');const gr=mg.createLinearGradient(0,0,W,0);
   [[0,'#c58be0'],[.18,'#b98fe6'],[.3,'#d685c6'],[.42,'#ea8fb0'],[.55,'#e98aa8'],[.68,'#8fb4ef'],[.85,'#7fc6e8'],[1,'#78d8c2']].forEach(([o,cl])=>gr.addColorStop(o,cl));

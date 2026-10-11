@@ -1,4 +1,4 @@
-# 航迹护照 · 视频音效来源 / Sound effect credits
+# 航迹手帐 · 视频音效来源 / Sound effect credits
 
 所有音效都是真实录音，公有领域（CC0），不需要署名；这里列出来源以便核对。音乐（旋律、和弦、鼓）为项目原创合成。
 All effects are real recordings in the public domain (CC0); no attribution is required, sources are listed for reference. The music is the project's own synthesized score.

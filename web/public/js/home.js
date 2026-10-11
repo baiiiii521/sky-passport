@@ -8,7 +8,7 @@ const HOME=(()=>{
   const q=s=>document.querySelector(s);
 
   /* ---------- split-flap numbers ---------- */
-  function flap(node,txt){if(!node||node.dataset.v===txt)return;node.dataset.v=txt;node.setAttribute('aria-label',txt);node.innerHTML='';
+  function flap(node,txt){if(RENDER||!node||node.dataset.v===txt)return;node.dataset.v=txt;node.setAttribute('aria-label',txt);node.innerHTML='';
     const cells=[...txt].map(c=>{const s=document.createElement('span');s.className=/\d/.test(c)?'fl':'fl sep';s.textContent=c;s.setAttribute('aria-hidden','true');node.append(s);return s;});
     if(RM)return;const t0=performance.now(),stops=cells.map((_,i)=>t0+260+i*85);
     const tick=()=>{if(node.dataset.v!==txt)return;const now=performance.now();let busy=false;
@@ -104,16 +104,18 @@ const HOME=(()=>{
   function show(view,step,keep){const d=document.documentElement,was=d.dataset.view+d.dataset.step;d.dataset.view=view;if(step)d.dataset.step=step;const st=d.dataset.step;
     document.querySelectorAll('[data-go]').forEach(a=>{const [v,s2]=a.dataset.go.split(':');if(a.closest('.stepper')){a.classList.toggle('on',s2===st);a.classList.toggle('done',STEPS.indexOf(s2)<STEPS.indexOf(st));}else if(a.closest('.topnav,.tabbar'))a.classList.toggle('on',v===view);});
     STEPS.forEach(id=>{const n=document.getElementById(id);if(n)n.classList.toggle('cur',view==='studio'&&id===st);});
-    if(!keep&&was!==view+st)scrollTo(0,0);if(view==='home')update();}
+    if(!keep&&was!==view+st)scrollTo(0,0);if(view==='home'){update();const t=q('#toast');if(t)t.classList.remove('on');}}
   function go(view,step){const h='#/'+view+(view==='studio'?'/'+(step||document.documentElement.dataset.step||'s1'):'');if(location.hash!==h)location.hash=h;else route();}
   function route(keep){const m=/^#\/(home|studio|badges)(?:\/(s[123]))?/.exec(location.hash)||[];show(m[1]||'home',m[2],keep===true);}
   function initViews(){document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-go]');if(!a)return;e.preventDefault();const [v,s2]=a.dataset.go.split(':');go(v,s2);});
     addEventListener('hashchange',route);route(true);}
 
   /* ---------- public ---------- */
-  function update(){buildDots();buildArcs();ticker();if(G.g&&!G.live)draw(performance.now());}
+  function update(){if(RENDER)return;buildDots();buildArcs();ticker();if(G.g&&!G.live)draw(performance.now());}
   function relang(){scramble(q('#heroH'));update();}
-  function init(){initViews();initGlobe();initMotion();scramble(q('#heroH'));update();}
+  /* server render pages (?render=) only need the film engine: no globe, no motion, no ticker */
+  const RENDER=/[?&]render=/.test(location.search);
+  function init(){if(RENDER)return;initViews();initGlobe();initMotion();scramble(q('#heroH'));update();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
   /* a still of the globe facing the traveller's routes, comets frozen mid-flight (fixed clock, so the same input gives the same picture) */
   function paintGlobe(g,cx,cy,R,scale){update();paint(g,cx,cy,R,scale||1,G.yaw0||0,G.tilt0==null?0.35:G.tilt0,2600);return G.arcs.length;}

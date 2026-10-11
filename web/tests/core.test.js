@@ -175,3 +175,8 @@ test('every page script parses (a stray // inside a one-line statement once brok
     assert.doesNotThrow(() => new vm.Script(fs.readFileSync(path.join(PUB, 'js', f), 'utf8'), { filename: f }), f);
   }
 });
+
+test('index.html stamps are current (run: npm run stamp)', () => {
+  const { stamp } = require('../scripts/stamp.js'); const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+  assert.equal(stamp(html), html);
+});

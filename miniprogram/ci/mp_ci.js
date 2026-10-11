@@ -5,7 +5,7 @@
 // Needs: the code-upload key at /home/ubuntu/.wx/private.key and this server's IP in the 小程序代码上传 IP whitelist.
 'use strict';
 const ci = require('miniprogram-ci');
-const [mode = 'preview', version = '1.0.0', desc = '航迹护照'] = process.argv.slice(2);
+const [mode = 'preview', version = '1.0.0', desc = '航迹手帐'] = process.argv.slice(2);
 const project = new ci.Project({
   appid: 'wx49f39c4e21487f55',
   type: 'miniProgram',
