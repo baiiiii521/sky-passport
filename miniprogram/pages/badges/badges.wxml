@@ -3,6 +3,7 @@
     <view class="h2"><text class="no">LOG</text>飞行成就 · 长图海报</view>
     <text class="small">导入航班后，这里会算出你的 33 枚飞行勋章，选几枚印成一张长图。下面是示例旅客的样子。</text>
     <button class="primary" bindtap="chooseFile">从聊天中选择表格</button>
+    <button class="ghost" bindtap="manual">没有表格？手动输入航班</button>
     <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
     <image class="sample" src="{{sampleImg}}" mode="widthFix" lazy-load bindtap="previewSample"/>
   </view>

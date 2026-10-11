@@ -28,7 +28,23 @@ function loadXLSX() {
   return xlsxReady;
 }
 // a new data set: parse once, reset the shared choices, tell the tab pages (ver)
-function loaded(rows, demo) { const g = getApp().globalData; g.rows = rows; g.demo = demo; g.res = C.buildFlights(); g.view = { year: 0, up: true, name: demo ? '林小舟' : '', latin: demo ? 'LIN XIAOZHOU' : '', label: '' }; g.ver++; }
+function loaded(rows, demo, keep) { const g = getApp().globalData, was = g.view || {}, own = keep && !g.demo; g.rows = rows; g.demo = demo; g.res = C.buildFlights();
+  g.view = { year: 0, up: true, name: demo ? '林小舟' : own ? was.name || '' : '', latin: demo ? 'LIN XIAOZHOU' : own ? was.latin || '' : '', label: '' }; g.ver++; }
+
+/* ---------- flights typed by hand (same idea as the web's 手动添加): kept on the phone, added to whatever spreadsheet is loaded ---------- */
+const MANUAL = 'skypassport.manual';
+const manualRow = (m, i) => ({ rawDate: m.d, al: '', fn: m.fn || '', from: m.from, to: m.to, dt: '', at: '', km: '', st: '', sheetUp: false, sheetVoid: false, src: { sheet: '手动添加', row: i + 1, cols: {}, manual: true } });
+function savedManual() { try { const v = wx.getStorageSync(MANUAL); return Array.isArray(v) ? v.filter(m => m && m.d && m.from && m.to) : []; } catch (e) { return []; } }
+function manualLegs() { const g = getApp().globalData; return g.demo ? [] : (g.rows || []).filter(r => r.src && r.src.manual).map(r => ({ d: r.rawDate, from: r.from, to: r.to, fn: r.fn })); }
+// replace the hand-typed legs: the sample makes way for the user's own flights, a loaded spreadsheet keeps its rows
+function setManual(legs) {
+  const g = getApp().globalData, file = g.demo ? [] : (g.rows || []).filter(r => !(r.src && r.src.manual)), rows = file.concat(legs.map(manualRow));
+  try { wx.setStorageSync(MANUAL, legs); } catch (e) { /* storage full: the legs still work for this session */ }
+  if (!rows.length) { g.rows = null; g.res = null; g.demo = false; g.ver++; return 0; }
+  C.setRaw(rows); C.setSource('file'); loaded(rows, false, true);
+  return rows.length;
+}
+
 // after loading: open the 制作 tab (switching to the tab that is already open does not fire its onShow, so call it)
 function go(page) { if (page.route === 'pages/result/result') { if (page.onShow) page.onShow(); wx.pageScrollTo({ scrollTop: 0, duration: 0 }); } else wx.switchTab({ url: '/pages/result/result' }); }
 // the two ways in, shared by every tab: `page` shows busy/err through its own data
@@ -82,4 +98,4 @@ function api(path, method, data) {
   }));
 }
 
-module.exports = { SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo };
+module.exports = { SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo, savedManual, manualLegs, setManual };

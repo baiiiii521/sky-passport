@@ -21,6 +21,7 @@ Page({
     this.setData({ has: !!sum.n, demo: g.demo, name: v.name, latin: v.latin, label, sum, poster: '' }); this.medals(ST.allBadges(list, 'CN')); loadMapBase();
   },
   chooseFile() { SS.chooseFile(this); }, tryDemo() { SS.tryDemo(this); },
+  manual() { getApp().globalData.openManual = true; wx.switchTab({ url: '/pages/result/result' }); },
   previewSample() { wx.previewImage({ urls: [this.data.sampleImg] }); },
   /* medals: every achievement with its rarity; the user's pick (ids) is remembered, the recommended set applies until then */
   medals(all) {

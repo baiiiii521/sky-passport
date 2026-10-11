@@ -3,7 +3,25 @@
     <view class="h2"><text class="no">01</text>导入你的航班</view>
     <text class="small">从微信聊天里选中航旅纵横导出的表格（.xls / .xlsx / .csv），在手机上解析，不上传。</text>
     <button class="primary" bindtap="chooseFile">从聊天中选择表格</button>
+    <button wx:if="{{!manualOpen}}" class="ghost" bindtap="openManual">{{saved?'继续手动输入（已有 '+saved+' 段）':'没有表格？手动输入航班'}}</button>
     <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
+  </view>
+
+  <view class="card" wx:if="{{manualOpen}}">
+    <view class="h2"><text class="no">+</text>手动输入航班<text class="tag" bindtap="closeManual">完成 ✓</text></view>
+    <picker mode="date" value="{{mDate}}" start="1950-01-01" end="2099-12-31" bindchange="onMDate"><view class="input pick {{mDate?'':'ph'}}">{{mDate||'日期（点这里选择）'}}</view></picker>
+    <view class="mrow">
+      <input class="input" placeholder="出发 如 PVG / 上海浦东" value="{{mFrom}}" bindinput="onMFrom" maxlength="30"/>
+      <input class="input" placeholder="到达 如 NRT / 东京成田" value="{{mTo}}" bindinput="onMTo" maxlength="30"/>
+    </view>
+    <input class="input" placeholder="航班号（可不填）如 MU523" value="{{mFn}}" bindinput="onMFn" maxlength="10"/>
+    <text wx:if="{{mHint}}" class="mhint {{mCls}}">{{mHint}}</text>
+    <button class="primary" bindtap="addLeg">添加这一段</button>
+    <view wx:if="{{legs.length}}" class="legs">
+      <view class="legh"><text>已输入 {{legs.length}} 段 · 保存在这台手机上</text><text class="legclr" bindtap="clearLegs">清空</text></view>
+      <view wx:for="{{legs}}" wx:key="i" class="leg"><text class="ld">{{item.d}}</text><text class="lt">{{item.t}}{{item.fn?' · '+item.fn:''}}</text><text class="lx" data-i="{{item.i}}" bindtap="delLeg">✕</text></view>
+    </view>
+    <text wx:else class="small center">机场可以写三字码、中文名或英文名；输完一段，出发地会自动接上一段的到达地。</text>
   </view>
   <view class="card" wx:if="{{has}}">
     <view class="h2"><text class="no">01</text>{{demo?'示例数据 · 虚构旅客':'你的航班记录'}}</view>
@@ -11,7 +29,7 @@
       <view class="chip {{year===0?'on':''}}" data-y="0" bindtap="pickYear">全部年份</view>
       <view wx:for="{{years}}" wx:key="*this" class="chip {{year===item?'on':''}}" data-y="{{item}}" bindtap="pickYear">{{item}} 年度</view>
     </view>
-    <view class="chips"><view class="chip" bindtap="chooseFile">换一份表格</view></view>
+    <view class="chips"><view class="chip" bindtap="chooseFile">换一份表格</view><view wx:if="{{!manualOpen}}" class="chip" bindtap="openManual">＋ 手动添加航班</view></view>
     <view class="row"><switch checked="{{up}}" bindchange="toggleUp" color="#5eeaff"/><text class="small">计入待出行航班</text></view>
     <view wx:if="{{unres.length||noDate}}" class="warn">
       <text wx:if="{{unres.length}}">有 {{unres.length}} 个地名没认出来（{{unres[0]}}{{unres.length>1?' 等':''}}），这些航段没有算进去。</text>

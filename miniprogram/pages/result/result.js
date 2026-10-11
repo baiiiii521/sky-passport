@@ -2,8 +2,7 @@
 const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const SS = require('../../libs/session.js');
-const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo', PICK = 'skypassport.badgesOn';
-const RAR_T = { legend: '传奇', gold: '金', silver: '银' }, MAX_PICK = 12; // the poster canvas must stay under ~4000 px tall on every phone
+const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
 const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
 let ALL = [], pollTimer = null, specTimer = null;
@@ -16,21 +15,62 @@ Page({
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
     video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' }, saving: '',
     busy: '', err: '',
+    manualOpen: false, legs: [], saved: 0, mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
-  onShow() { const g = getApp().globalData; if (!g.rows) return this.setData({ has: false }); if (this._ver !== g.ver) { this._ver = g.ver; this.load(); } },
+  onShow() {
+    const g = getApp().globalData, want = g.openManual; g.openManual = false;
+    if (!g.rows) this.setData({ has: false, saved: SS.savedManual().length }); else if (this._ver !== g.ver) { this._ver = g.ver; this.load(); }
+    if (want) this.openManual();
+  },
+
+  /* ---------- flights typed by hand ---------- */
+  async openManual() {
+    if (this.data.manualOpen) return;
+    this.setData({ busy: '正在准备机场数据…', err: '' });
+    try { await SS.loadAirports(); } catch (e) { return this.setData({ busy: '', err: e.message || String(e) }); }
+    const g = getApp().globalData, saved = SS.savedManual();
+    this.setData({ busy: '', manualOpen: true, mHint: '', mCls: '' });
+    if (saved.length && (g.demo || !SS.manualLegs().length)) { SS.setManual(saved); this.refresh(); wx.showToast({ title: `已恢复上次输入的 ${saved.length} 段`, icon: 'none' }); } /* pick up where the user left off */
+    else this.showLegs();
+    clearTimeout(specTimer);
+  },
+  closeManual() { this.setData({ manualOpen: false }); if (this.data.has) setTimeout(() => this.askPrerender(), 600); },
+  refresh() { const g = getApp().globalData; this._ver = g.ver; if (g.rows) this.load(); else this.setData({ has: false, saved: 0 }); this.showLegs(); },
+  showLegs() { this.setData({ legs: SS.manualLegs().map((m, i) => ({ i, d: m.d, t: `${m.from} ${ST.placeName(m.from)} → ${m.to} ${ST.placeName(m.to)}`, fn: m.fn })) }); },
+  onMDate(e) { this.setData({ mDate: e.detail.value }); },
+  onMFn(e) { this.setData({ mFn: e.detail.value }); },
+  onMFrom(e) { this.setData({ mFrom: e.detail.value }); this.mCheck(); },
+  onMTo(e) { this.setData({ mTo: e.detail.value }); this.mCheck(); },
+  mCheck() {
+    const fv = this.data.mFrom.trim(), tv = this.data.mTo.trim(), fa = fv && C.resolveAirport(fv), ta = tv && C.resolveAirport(tv), nm = c => `${c} ${ST.placeName(c)}`;
+    this.setData({ mHint: fv || tv ? [fv ? (fa ? nm(fa) : `「${fv}」没认出`) : '…', tv ? (ta ? nm(ta) : `「${tv}」没认出`) : '…'].join(' → ') : '', mCls: fa && ta ? 'ok' : (fv && !fa) || (tv && !ta) ? 'bad' : '' });
+  },
+  addLeg() {
+    const d = this.data, fa = C.resolveAirport(d.mFrom.trim()), ta = C.resolveAirport(d.mTo.trim()), bad = m => this.setData({ mHint: m, mCls: 'bad' });
+    if (!d.mDate) return bad('先选日期');
+    if (!fa || !ta) return bad('出发和到达都要能认出（三字码最稳，如 PVG、NRT）');
+    if (fa === ta) return bad('出发和到达是同一个机场');
+    if (d.legs.length >= 300) return bad('手动输入最多 300 段，更多请用表格导入');
+    const legs = SS.manualLegs().concat([{ d: d.mDate, from: fa, to: ta, fn: d.mFn.toUpperCase().replace(/\s+/g, '').slice(0, 8) }]);
+    SS.setManual(legs); this.refresh();
+    this.setData({ mFrom: ta, mTo: '', mFn: '', mHint: `已添加 ${fa} → ${ta}，共 ${legs.length} 段`, mCls: 'ok' }); /* the next leg usually starts where this one ended */
+  },
+  delLeg(e) { const legs = SS.manualLegs(); legs.splice(+e.currentTarget.dataset.i, 1); SS.setManual(legs); this.refresh(); this.setData({ mHint: '', mCls: '' }); },
+  clearLegs() { wx.showModal({ title: '清空手动输入的航班？', content: '只清空你手动输入的航段，不影响已选择的表格。', confirmText: '清空', success: r => { if (r.confirm) { SS.setManual([]); this.refresh(); this.setData({ mHint: '', mCls: '' }); } } }); },
+
   chooseFile() { SS.chooseFile(this); }, tryDemo() { SS.tryDemo(this); }, toBadges() { wx.switchTab({ url: '/pages/badges/badges' }); },
   load() {
     const g = getApp().globalData, res = g.res || C.buildFlights(); ALL = res.all; clearTimeout(pollTimer); clearTimeout(specTimer);
     this.setData({ has: true, year: 0, up: true, video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } });
     const years = [...new Set(ALL.filter(f => !f.vd).map(f => f.y))].sort((a, b) => a - b);
-    this.setData({ demo: g.demo, name: g.demo ? '林小舟' : '', latin: g.demo ? 'LIN XIAOZHOU' : '', years, unres: [...res.diag.refs.keys()].slice(0, 8), noDate: res.diag.noDate.length });
+    this.setData({ demo: g.demo, name: g.view.name || '', latin: g.view.latin || '', years, unres: [...res.diag.refs.keys()].slice(0, 8), noDate: res.diag.noDate.length });
     this.recompute();
     // resume a video that was still rendering (or already done) for this same spreadsheet
     const last = wx.getStorageSync(LAST);
     if (last && last.sig === dataSig(SS.rowsForServer())) {
       this.setData({ ...last.opts, video: { state: 'queued', progress: 0, ahead: 0, url: '', size: '', err: '' } });
       this.recompute(); this.setData({ 'video.state': 'queued' }); this.poll(last.id, true);
-    } else setTimeout(() => this.askPrerender(), 1200);
+    } else if (!this.data.manualOpen) setTimeout(() => this.askPrerender(), 1200); /* while typing flights by hand, do not start renders for every leg */
   },
   onUnload() { clearTimeout(pollTimer); clearTimeout(specTimer); },
   recompute() {
@@ -54,6 +94,7 @@ Page({
   // with consent, the server starts the film while the user is still reading the stats; tapping 生成视频 with the
   // same choices then picks up that render (or the finished file). Pre-renders only run when the server is idle.
   askPrerender() {
+    if (this.data.manualOpen) return;
     if (wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n) return this.prerender();
     wx.showModal({
       title: '先帮你把视频做好？',
@@ -64,7 +105,7 @@ Page({
   },
   prerender() {
     clearTimeout(specTimer);
-    if (!wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n || this.data.video.state) return;
+    if (this.data.manualOpen || !wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n || this.data.video.state) return;
     specTimer = setTimeout(() => SS.api('/api/video', 'POST', { ...this.videoBody(), spec: true }).catch(() => {}), 3000); // settle typing first
   },
   copySite() { wx.setClipboardData({ data: 'https://passport.nybbq.art', success: () => wx.showToast({ title: '网址已复制，请到浏览器粘贴打开', icon: 'none', duration: 2500 }) }); },
@@ -97,9 +138,15 @@ Page({
       try {
         const s = await SS.api('/api/video/' + id, 'GET');
         if (s.state === 'done') return this.setData({ video: { state: 'done', progress: 1, ahead: 0, url: SS.SITE + s.url, size: (s.size / 1048576).toFixed(1) + ' MB', err: '' } });
-        if (s.state === 'error') return this.setData({ 'video.state': 'error', 'video.err': s.error || '生成失败' });
-        this.setData({ 'video.state': s.state, 'video.progress': Math.round(s.progress * 100), 'video.ahead': s.ahead || 0 });
-      } catch (e) { if (resume && e.code === 404) { wx.removeStorageSync(LAST); return this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); } /* otherwise transient: keep polling */ }
+        if (s.state === 'error') return this.setData({ 'video.state': 'error', 'video.err': '生成失败了，请再点一次「生成视频」；还不行可以用下面的网页版' });
+        if (s.state === 'cancelled') { wx.removeStorageSync(LAST); return this.setData({ 'video.state': 'error', 'video.err': '这次生成被取消了，请再点一次「生成视频」' }); }
+        this._pollFail = 0;
+        this.setData({ 'video.state': s.state === 'rendering' ? 'rendering' : 'queued', 'video.progress': Math.round((s.progress || 0) * 100), 'video.ahead': s.ahead || 0 });
+      } catch (e) {
+        if (e.code === 404) { wx.removeStorageSync(LAST); return this.setData({ video: resume ? { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } : { state: 'error', progress: 0, ahead: 0, url: '', size: '', err: '这次生成中断了（服务器刚重启），请再点一次「生成视频」' } }); }
+        this._pollFail = (this._pollFail || 0) + 1; /* transient: keep polling, but not for ever (about a minute without any answer) */
+        if (this._pollFail >= 20) { this._pollFail = 0; return this.setData({ 'video.state': 'error', 'video.err': '连不上服务器，请检查网络后再点「生成视频」（已经开始的视频不会丢）' }); }
+      }
       this.poll(id, resume);
     }, resume ? 300 : 2000);
   },

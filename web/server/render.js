@@ -205,11 +205,15 @@ async function pump() {
 // hourly cleanup of old videos and job records
 setInterval(() => {
   const now = Date.now();
-  for (const f of fs.readdirSync(VIDEO_DIR)) { const p = path.join(VIDEO_DIR, f); if (now - fs.statSync(p).mtimeMs > TTL) fs.rm(p, { force: true }, () => {}); }
+  try { for (const f of fs.readdirSync(VIDEO_DIR)) { const p = path.join(VIDEO_DIR, f); try { if (now - fs.statSync(p).mtimeMs > TTL) fs.rm(p, { force: true }, () => {}); } catch (e) { /* removed meanwhile (uploaded to COS) */ } } } catch (e) { console.error('cleanup', e.message); }
   for (const [id, j] of jobs) if (now - j.created > TTL) { jobs.delete(id); if (byKey.get(j.key) === id) byKey.delete(j.key); }
   for (const [ip, w] of hits) if (now - w.t > 3600e3) hits.delete(ip);
   saveIndex();
 }, 3600e3).unref();
+
+// a stray rejection or error must not take the queue (and the job being rendered) down with it
+process.on('unhandledRejection', e => console.error('unhandledRejection', e && e.stack || e));
+process.on('uncaughtException', e => console.error('uncaughtException', e && e.stack || e));
 
 function send(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
 http.createServer((req, res) => {
