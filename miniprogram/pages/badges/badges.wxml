@@ -1,0 +1,47 @@
+<view class="wrap">
+  <view class="card" wx:if="{{!has}}">
+    <view class="h2"><text class="no">LOG</text>飞行成就 · 长图海报</view>
+    <text class="small">导入航班后，这里会算出你的 33 枚飞行勋章，选几枚印成一张长图。下面是示例旅客的样子。</text>
+    <button class="primary" bindtap="chooseFile">从聊天中选择表格</button>
+    <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
+    <image class="sample" src="{{sampleImg}}" mode="widthFix" lazy-load bindtap="previewSample"/>
+  </view>
+
+  <view class="card" wx:if="{{has}}">
+    <view class="h2"><text class="no">01</text>飞行成就<text class="tag">{{label}}</text></view>
+    <text class="small">勋章由{{demo?'示例旅客':'你'}}的航班自动算出。点一下选中，选中的会印在长图上；灰色的还没解锁，点它看怎么拿到。</text>
+    <view class="meter"><text class="msum">已解锁 {{got}} / {{medals.length}} · 已选 {{picked}} 项印在长图上</text><view class="mtrack"><view class="mfill" style="width:{{medals.length?got*100/medals.length:0}}%"></view></view></view>
+    <view class="chips tools">
+      <view class="chip" data-m="rec" bindtap="pickSet">推荐组合</view><view class="chip" data-m="all" bindtap="pickSet">选满 12 枚</view><view class="chip" data-m="none" bindtap="pickSet">清空</view>
+    </view>
+    <view class="chips">
+      <view wx:for="{{cats}}" wx:key="c" class="chip {{cat===item.c?'on':''}}" data-c="{{item.c}}" bindtap="pickCat">{{item.t}} <text class="cn">{{item.g}}/{{item.n}}</text></view>
+    </view>
+    <view class="medals">
+      <view wx:for="{{medals}}" wx:key="id" wx:if="{{cat==='all'||item.cat===cat}}" class="medal r-{{item.rar}} {{item.lock?'locked':''}} {{item.on?'on':''}}" data-id="{{item.id}}" bindtap="toggleMedal">
+        <view class="emb"><text>{{item.lock?'🔒':item.i}}</text></view>
+        <text class="mk">{{item.lock?item.i+' ':''}}{{item.k}}</text><text class="mv">{{item.v}}</text><text class="md">{{item.d}}</text>
+        <view wx:if="{{item.showProg}}" class="mp"><view class="mpf" style="width:{{item.progPct}}%"></view></view>
+        <text wx:if="{{item.rarT&&!item.lock}}" class="rar">{{item.rarT}}</text><view wx:if="{{!item.lock}}" class="tick">✓</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{has}}">
+    <view class="h2"><text class="no">02</text>长图海报<text class="tag">夜航</text></view>
+    <text class="small">会印上你在上面选中的 {{picked}} 枚勋章。</text>
+    <button class="primary" bindtap="makePoster" disabled="{{!!busy}}">生成长图海报</button>
+    <block wx:if="{{poster}}">
+      <image class="poster" src="{{poster}}" mode="widthFix" bindtap="previewPoster"/>
+      <view class="two">
+        <button class="primary" bindtap="sharePoster">分享到朋友圈</button>
+        <button class="primary" bindtap="savePoster">存到相册</button>
+      </view>
+      <text class="small center">「分享到朋友圈」里也可以发给朋友、收藏；点图片可以放大查看</text>
+    </block>
+  </view>
+
+  <view wx:if="{{busy}}" class="busy">{{busy}}</view>
+  <view wx:if="{{err}}" class="err">{{err}}</view>
+  <canvas type="2d" id="poster" class="offscreen" style="width:1080px;height:{{posterH}}px"></canvas>
+</view>

@@ -19,6 +19,27 @@ function loadAirports() {
   return apReady;
 }
 
+// a new data set: parse once, reset the shared choices, tell the tab pages (ver)
+function loaded(rows, demo) { const g = getApp().globalData; g.rows = rows; g.demo = demo; g.res = C.buildFlights(); g.view = { year: 0, up: true, name: demo ? '林小舟' : '', latin: demo ? 'LIN XIAOZHOU' : '', label: '' }; g.ver++; }
+// after loading: open the 制作 tab (switching to the tab that is already open does not fire its onShow, so call it)
+function go(page) { if (page.route === 'pages/result/result') { if (page.onShow) page.onShow(); wx.pageScrollTo({ scrollTop: 0, duration: 0 }); } else wx.switchTab({ url: '/pages/result/result' }); }
+// the two ways in, shared by every tab: `page` shows busy/err through its own data
+function chooseFile(page) {
+  wx.chooseMessageFile({
+    count: 1, type: 'file', extension: ['xls', 'xlsx', 'csv', 'txt'],
+    success: async r => {
+      page.setData({ busy: '正在读取表格…', err: '' });
+      try { await loadAirports(); readSpreadsheet(r.tempFiles[0].path); page.setData({ busy: '' }); go(page); }
+      catch (e) { page.setData({ busy: '', err: e.message || String(e) }); }
+    },
+    fail: e => { if (!/cancel/.test(e.errMsg || '')) page.setData({ err: '没能打开文件：' + e.errMsg }); },
+  });
+}
+async function tryDemo(page) {
+  page.setData({ busy: '正在载入示例…', err: '' });
+  try { await loadAirports(); useDemo(); page.setData({ busy: '' }); go(page); }
+  catch (e) { page.setData({ busy: '', err: e.message || String(e) }); }
+}
 // read a chosen file (xls/xlsx/csv) into core's RAW; returns the row count
 function readSpreadsheet(path) {
   const XLSX = require('./xlsx.full.min.js');
@@ -26,13 +47,13 @@ function readSpreadsheet(path) {
   const rows = C.readWorkbook(XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true }));
   if (!rows.length) throw new Error('没在文件里找到航班表格：请确认表头有「出发」「到达」「日期」，或者到网页版用 AI 识别表格结构。');
   C.setRaw(rows); C.setSource('file');
-  getApp().globalData.rows = rows; getApp().globalData.demo = false;
+  loaded(rows, false);
   return rows.length;
 }
 function useDemo() {
   const rows = C.demoRows().map((r, i) => ({ ...r, st: '', src: { sheet: '示例', row: i + 2, cols: {} } }));
   C.setRaw(rows); C.setSource('demo');
-  getApp().globalData.rows = rows; getApp().globalData.demo = true;
+  loaded(rows, true);
 }
 
 // rows for the render service: dates and times as plain text (Date objects would shift through UTC in JSON)
@@ -53,4 +74,4 @@ function api(path, method, data) {
   }));
 }
 
-module.exports = { SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api };
+module.exports = { SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo };
