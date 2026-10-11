@@ -5,7 +5,7 @@
     "pages/badges/badges"
   ],
   "window": {
-    "navigationBarTitleText": "航迹护照",
+    "navigationBarTitleText": "航迹手帐",
     "navigationBarBackgroundColor": "#02040b",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#02040b",

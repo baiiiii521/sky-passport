@@ -88,7 +88,7 @@ function draw(g, data, mapImg) {
   /* cover */
   const serial = `NO. SP-${S.y1}-${(seed % 65536).toString(16).toUpperCase().padStart(4, '0')}`;
   g.font = F(700, 19, 1); g.fillStyle = NP.ac; trk(g, 'SKY PASSPORT // FLIGHT LOG', 60, 70, 4); g.fillStyle = NP.gold; trk(g, serial, W - 60, 70, 3, 'right');
-  g.font = '900 46px serif'; g.fillStyle = gold(g, 90, 140); trk(g, '航迹护照', 60, 136, 14); g.font = F(400, 18, 1); g.fillStyle = NP.mut; g.textAlign = 'right'; g.fillText('VALID · 一生有效', W - 60, 132); g.textAlign = 'left';
+  g.font = '900 46px serif'; g.fillStyle = gold(g, 90, 140); trk(g, '航迹手帐', 60, 136, 14); g.font = F(400, 18, 1); g.fillStyle = NP.mut; g.textAlign = 'right'; g.fillText('VALID · 一生有效', W - 60, 132); g.textAlign = 'left';
   g.fillStyle = NP.line; g.fillRect(60, 162, W - 120, 1); for (let x = 60; x <= W - 60; x += 24) g.fillRect(x, x % 120 === 60 ? 154 : 158, 1, x % 120 === 60 ? 9 : 5);
   const ex = W / 2, ey = 350, ER = 118; { const halo = g.createRadialGradient(ex, ey, 10, ex, ey, ER * 2.6); halo.addColorStop(0, 'rgba(94,234,255,.16)'); halo.addColorStop(1, 'rgba(94,234,255,0)'); g.fillStyle = halo; g.fillRect(0, 160, W, 420);
     g.strokeStyle = 'rgba(94,234,255,.25)'; g.lineWidth = 1.4; g.setLineDash([5, 7]); g.beginPath(); g.arc(ex, ey, ER * 1.5, 0, 7); g.stroke(); g.setLineDash([]);
@@ -149,7 +149,7 @@ function draw(g, data, mapImg) {
   g.strokeStyle = 'rgba(94,234,255,.05)'; g.lineWidth = 1; for (let x = 0; x <= W; x += 40) { g.beginPath(); g.moveTo(x, fy); g.lineTo(x, H); g.stroke(); } for (let yy = fy; yy <= H; yy += 40) { g.beginPath(); g.moveTo(0, yy); g.lineTo(W, yy); g.stroke(); }
   const qs = 196, qx = W - 60 - qs - 16, qy = fy + 56; qrDraw(g, data.site, qx, qy, qs); corners(g, qx - 26, qy - 26, qs + 52, qs + 52, 22);
   g.textAlign = 'left'; g.font = F(800, 40); g.fillStyle = gold(g, fy + 70, fy + 120); g.fillText('扫码生成你的飞行护照', 60, fy + 112); g.font = F(700, 26, 1); g.fillStyle = NP.ink; g.fillText(data.site.replace(/^https?:\/\//, ''), 60, fy + 160);
-  g.font = F(400, 19); g.fillStyle = NP.mut; g.fillText('微信小程序「航迹护照」 · 免费', 60, fy + 198);
+  g.font = F(400, 19); g.fillStyle = NP.mut; g.fillText('微信小程序「航迹手帐」 · 免费', 60, fy + 198);
   const mrz = ('P<CHN' + (data.latin || 'TRAVELLER').toUpperCase().replace(/[^A-Z]+/g, '<') + '<<FLIGHT<LOG').padEnd(44, '<').slice(0, 44), mrz2 = (serial.replace(/[^A-Z0-9]/g, '') + '<' + S.y0 + S.y1 + '<' + S.n + '<' + S.km).padEnd(44, '<').slice(0, 44);
   g.font = F(400, 17, 1); g.fillStyle = 'rgba(94,234,255,.45)'; g.fillText(mrz, 60, fy + 266); g.fillText(mrz2, 60, fy + 294);
   return H;

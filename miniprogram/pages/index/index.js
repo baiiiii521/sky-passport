@@ -25,5 +25,5 @@ Page({
   chooseFile() { SS.chooseFile(this); },
   tryDemo() { SS.tryDemo(this); },
   onShareAppMessage() { return { title: '把你的航班记录做成一本飞行护照', path: '/pages/index/index', imageUrl: M + 'share.jpg' }; }, // share card image is 5:4
-  onShareTimeline() { return { title: '航迹护照：把航班记录做成一本飞行护照' }; },
+  onShareTimeline() { return { title: '航迹手帐：把航班记录做成一本飞行护照' }; },
 });
