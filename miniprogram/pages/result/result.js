@@ -67,7 +67,7 @@ Page({
     for (let i = 0; i < files.length; i++) {
       this.setData({ busy: `正在识别第 ${i + 1} / ${files.length} 张…`, err: '' });
       try { const r = await SS.shotFlights(files[i]); todo.push(...r.todo); for (const m of r.legs) { if (have.has(key(m))) { dup++; continue; } have.add(key(m)); legs.push(m); added++; } }
-      catch (e) { fail = e.code === 429 ? '这一小时识别的张数太多了，请稍后再试' : e.code === 503 ? '截图识别暂时不可用，请先手动输入' : e.code === 400 ? '有图片读不出来，请换一张清晰的截图' : '网络不通或服务出错，请稍后再试'; if (e.code !== 400) break; }
+      catch (e) { fail = e.code === 429 ? '这一小时识别的张数太多了，请稍后再试' : e.code === 503 ? '截图识别暂时不可用，请先手动输入' : e.code === 400 ? '有图片读不出来，请换一张清晰的截图' : (e.code ? '识别服务出错了，请稍后再试' : '上传没成功（网络较慢或不通），请换个网络再试，或先手动输入'); if (e.code !== 400) break; }
     }
     this._shots = false; this.setData({ busy: '' });
     if (added) { SS.setManual(legs.slice(0, 300)); this.refresh(); }

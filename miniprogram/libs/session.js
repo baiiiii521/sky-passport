@@ -100,12 +100,15 @@ function api(path, method, data, timeout) {
 
 /* ---------- flights from screenshots: the picture goes to our server (Tencent Cloud OCR), the flights come back as text ---------- */
 const readB64 = path => new Promise((res, rej) => wx.getFileSystemManager().readFile({ filePath: path, encoding: 'base64', success: r => res(r.data), fail: e => rej(new Error(e.errMsg || '读不了图片')) }));
-const squeeze = path => new Promise(res => wx.compressImage({ src: path, quality: 60, success: r => res(r.tempFilePath), fail: () => res(path) }));
+// 760 px wide, quality 50: about 80 KB, still easy to read for the OCR, and small enough for a slow line (compressedWidth needs base library 2.26)
+const squeeze = path => new Promise(res => wx.compressImage({ src: path, quality: 50, compressedWidth: 760, success: r => res(r.tempFilePath), fail: () => res(path) }));
 // one screenshot → {legs: ready to add, todo: found but a date or an airport is missing}
 async function shotFlights(file) {
-  let b64 = await readB64(file.size > 2.5e6 ? await squeeze(file.tempFilePath) : file.tempFilePath);
+  const b64 = await readB64(await squeeze(file.tempFilePath));
   if (b64.length > 5.4e6) throw Object.assign(new Error('图片太大'), { code: 400 });
-  const r = await api('/api/shots', 'POST', { image: b64 }, 45000), legs = [], todo = [];
+  const post = () => api('/api/shots', 'POST', { image: b64 }, 60000); let r;
+  try { r = await post(); } catch (e) { if (e.code) throw e; r = await post(); }   // no status code = the upload itself failed (slow line): try once more
+  const legs = [], todo = [];
   for (const f of (r && r.flights) || []) {
     const fa = f.from && C.resolveAirport(f.from), ta = f.to && C.resolveAirport(f.to);
     if (f.date && fa && ta && fa !== ta) legs.push({ d: f.date, from: fa, to: ta, fn: f.fn || '' });

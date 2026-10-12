@@ -293,16 +293,17 @@ function qaAdd(){const d=$('qaDate').value,fa=resolveAirport($('qaFrom').value),
 ['qaFrom','qaTo','qaFn'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();qaAdd();}}));
 /* ---------- flights from screenshots (mainland site: POST /api/shots, Tencent Cloud OCR; the server returns the flights it found) ---------- */
 const SHOTS_ON=/(^|\.)nybbq\.art$/.test(location.hostname)||/[?&]shots=1/.test(location.search);let SHOT_N=0,SHOT_BUSY=false;
-/* a phone screenshot is sent as a JPEG no wider than 1080 px: a few hundred KB instead of several MB */
-function shotData(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);let k=Math.min(1,1080/im.naturalWidth);if(im.naturalHeight*k>9000)k=9000/im.naturalHeight;
-  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.86).split(',')[1]);};
+/* a phone screenshot is sent as a JPEG 760 px wide (about 80 KB): text that size still reads reliably, and the upload survives a slow line */
+function shotData(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);let k=Math.min(1,760/im.naturalWidth);if(im.naturalHeight*k>9000)k=9000/im.naturalHeight;
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.62).split(',')[1]);};
   im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('image'));};im.src=u;});}
 async function shotsAdd(files){if(SHOT_BUSY||!files.length)return;SHOT_BUSY=true;const h=$('shotHint'),ul=$('shotList'),say=(m,c)=>{h.className='qahint'+(c?' '+c:'');h.textContent=m;};$('btnShots').disabled=true;
   let added=0,dup=0,need=0,fail='';const key=r=>[r.rawDate,r.fn,r.from,r.to].join('|');
   try{for(let i=0;i<files.length;i++){say(`正在识别第 ${i+1} / ${files.length} 张…`);let j=null;
-      try{const r=await fetch('/api/shots',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:await shotData(files[i])})});j=await r.json().catch(()=>null);
+      try{const body=JSON.stringify({image:await shotData(files[i])}),post=()=>fetch('/api/shots',{method:'POST',headers:{'Content-Type':'application/json'},body});let r;try{r=await post();}catch(e){say(`第 ${i+1} 张上传较慢，正在重试…`);r=await post();} /* one retry: a dropped upload is usually a slow line, not a bad picture */
+        j=await r.json().catch(()=>null);
         if(!r.ok){fail=r.status===429?'这一小时识别的张数太多了，请稍后再试':r.status===503?'截图识别暂时不可用，请先用手动添加':r.status===400?'有图片读不出来，请换一张清晰的截图':'识别服务出错了，请稍后再试';if(r.status!==400)break;continue;}}
-      catch(e){fail=e&&e.message==='image'?'有文件不是图片，已跳过':'网络不通，请稍后再试';if(!(e&&e.message==='image'))break;continue;}
+      catch(e){fail=e&&e.message==='image'?'有文件不是图片，已跳过':'上传没成功（网络较慢或不通），请换个网络再试，或先手动添加';if(!(e&&e.message==='image'))break;continue;}
       const fl=(j&&j.flights)||[];if(!fl.length){ul.append(el('li',{},el('span',{class:'g'},`第 ${i+1} 张：没找到航班，请确认截图里有日期、航班号和起降地`)));continue;}
       if(SOURCE!=='file'){resetFixes();aiMsg('');RAW=[];SHEETS=[];SOURCE='file';natForUser();} /* the sample makes way for the user's own flights */
       const have=new Set(RAW.map(key));SHOT_N++;

@@ -21,7 +21,7 @@ const NOISE = /^(去点评|点评|添加行程|已结束|待出行|历史行程|
 const p2 = n => String(n).padStart(2, '0');
 const okDate = (y, m, d) => m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1950 && y <= 2100;
 // "南昌昌北T2" → "南昌昌北": terminals, punctuation and arrows are not part of the name
-const place = s => String(s || '').replace(TIME, ' ').replace(/[（(][^）)]*[）)]/g, ' ').replace(/(T\s?\d[A-Z]?|[一二三四]号?航站楼|航站楼|国际机场|机场)\s*$/i, '').replace(/[○●•·:：→\->—|]+/g, ' ').replace(/\s+/g, ' ').trim();
+const place = s => String(s || '').replace(TIME, ' ').replace(/[（(][^）)]*[）)]/g, ' ').replace(/(T\s?\d[A-Z]?|[一二三四]号?航站楼|航站楼|国际机场|机场)\s*$/i, '').replace(/[○●•·。.,，、°:：→\->—|]+/g, ' ').replace(/\s+/g, ' ').trim();
 const isPlace = s => { const t = place(s); return t.length >= 2 && t.length <= 24 && /[一-鿿A-Za-z]/.test(t) && !NOISE.test(t) && !FN.test(t.toUpperCase()) && !/^\d+$/.test(t) && !/(航空|累计|行程|解锁|数据)/.test(t) && !/\d\s*(小时|时|分钟?|h|hr|min|m)(\s|\d|$)/i.test(t) && !/^(周|星期)[一二三四五六日天]$/.test(t); };
 
 function parseShots(dets) {
