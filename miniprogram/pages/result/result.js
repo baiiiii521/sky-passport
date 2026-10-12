@@ -15,7 +15,7 @@ Page({
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
     video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' }, saving: '',
     busy: '', err: '',
-    manualOpen: false, legs: [], saved: 0, mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
+    manualOpen: false, legs: [], saved: 0, shotTodo: [], shotMsg: '', mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
   onShow() {
     const g = getApp().globalData, want = g.openManual; g.openManual = false;
@@ -54,6 +54,24 @@ Page({
     const legs = SS.manualLegs().concat([{ d: d.mDate, from: fa, to: ta, fn: d.mFn.toUpperCase().replace(/\s+/g, '').slice(0, 8) }]);
     SS.setManual(legs); this.refresh();
     this.setData({ mFrom: ta, mTo: '', mFn: '', mHint: `已添加 ${fa} → ${ta}，共 ${legs.length} 段`, mCls: 'ok' }); /* the next leg usually starts where this one ended */
+  },
+  /* screenshots of a trip list (航旅纵横「已结束」etc.) → legs; anything incomplete is listed so the user can type it in */
+  pickShots() {
+    if (this._shots) return;
+    wx.chooseMedia({ count: 9, mediaType: ['image'], sourceType: ['album'], sizeType: ['compressed'], success: r => this.readShots(r.tempFiles || []), fail: e => { if (!/cancel/.test(e.errMsg || '')) this.setData({ err: '没能打开相册：' + (e.errMsg || '') }); } });
+  },
+  async readShots(files) {
+    if (!files.length || this._shots) return; this._shots = true; await this.openManual();
+    if (!this.data.manualOpen) { this._shots = false; return; }
+    let legs = SS.manualLegs(), added = 0, dup = 0, fail = ''; const todo = [], key = m => [m.d, m.from, m.to, m.fn].join('|'), have = new Set(legs.map(key));
+    for (let i = 0; i < files.length; i++) {
+      this.setData({ busy: `正在识别第 ${i + 1} / ${files.length} 张…`, err: '' });
+      try { const r = await SS.shotFlights(files[i]); todo.push(...r.todo); for (const m of r.legs) { if (have.has(key(m))) { dup++; continue; } have.add(key(m)); legs.push(m); added++; } }
+      catch (e) { fail = e.code === 429 ? '这一小时识别的张数太多了，请稍后再试' : e.code === 503 ? '截图识别暂时不可用，请先手动输入' : e.code === 400 ? '有图片读不出来，请换一张清晰的截图' : '网络不通或服务出错，请稍后再试'; if (e.code !== 400) break; }
+    }
+    this._shots = false; this.setData({ busy: '' });
+    if (added) { SS.setManual(legs.slice(0, 300)); this.refresh(); }
+    this.setData({ shotTodo: todo.slice(0, 30), shotMsg: fail && !added ? fail : `识别出 ${added} 段${dup ? `，${dup} 段重复已跳过` : ''}${todo.length ? `；另有 ${todo.length} 段没认全，请照下面手动补上` : ''}${!added && !todo.length ? '：没找到航班，请确认截图里有日期、航班号和起降地' : ''}${fail ? `（${fail}）` : ''}`, mHint: '', mCls: '' });
   },
   delLeg(e) { const legs = SS.manualLegs(); legs.splice(+e.currentTarget.dataset.i, 1); SS.setManual(legs); this.refresh(); this.setData({ mHint: '', mCls: '' }); },
   clearLegs() { wx.showModal({ title: '清空手动输入的航班？', content: '只清空你手动输入的航段，不影响已选择的表格。', confirmText: '清空', success: r => { if (r.confirm) { SS.setManual([]); this.refresh(); this.setData({ mHint: '', mCls: '' }); } } }); },

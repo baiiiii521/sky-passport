@@ -260,7 +260,7 @@ const GUIDE_EN=[['In Flighty, myFlightradar24, OpenFlights or App in the Air, lo
   ['Save the file to your phone or computer, then tap the dashed box above to upload it','Columns, airport names (codes or English names) and date formats are recognised automatically.'],
   ['No app history? Download the CSV template and fill it in, or add a few flights by hand below','Chinese exports from 航旅纵横 work as they are, too.']];
 const GUIDE=[['打开「航旅纵横」App，进入「我的」，找到全部行程 / 飞行记录','不同版本的叫法可能是「行程」「飞行足迹」或「出行记录」。'],
-  ['点「导出」（常在右上角「···」里），选 Excel，发送到自己的邮箱','导出的 .xls 里通常有「已结束」「待出行」「无效票」几张表，不用改，直接上传。'],
+  ['点「导出」（常在右上角「···」里），选 Excel，发送到自己的邮箱','导出目前需要航旅纵横 Pro 会员。没有会员也没关系：用下面的「上传行程截图」或「手动添加航班」。'],
   ['在电脑或手机上下载邮件附件，回到这里点上方虚线框上传','其他 App 导出的表格、自己整理的 Excel 也可以；什么都没有就点「下载 CSV 模板」手填。']];
 function initGuide(){const ol=$('guideSteps');ol.innerHTML='';for(const [t,d] of (EN()?GUIDE_EN:GUIDE))ol.append(el('li',{},t,el('small',{},d)));}
 function renderYearQuick(ys){const box=$('yearQuick');box.innerHTML='';if(ys.length<2){box.hidden=true;return;}box.hidden=false;
@@ -291,6 +291,29 @@ function qaAdd(){const d=$('qaDate').value,fa=resolveAirport($('qaFrom').value),
   $('qaFrom').value=$('qaTo').value='';$('qaFn').value='';$('qaFrom').value=ta;$('qaFrom').focus();rebuild();} // the next leg usually starts where this one ended
 ['qaFrom','qaTo'].forEach(id=>$(id).addEventListener('input',qaUpdate));$('btnQaAdd').addEventListener('click',qaAdd);
 ['qaFrom','qaTo','qaFn'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();qaAdd();}}));
+/* ---------- flights from screenshots (mainland site: POST /api/shots, Tencent Cloud OCR; the server returns the flights it found) ---------- */
+const SHOTS_ON=/(^|\.)nybbq\.art$/.test(location.hostname)||/[?&]shots=1/.test(location.search);let SHOT_N=0,SHOT_BUSY=false;
+/* a phone screenshot is sent as a JPEG no wider than 1080 px: a few hundred KB instead of several MB */
+function shotData(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);let k=Math.min(1,1080/im.naturalWidth);if(im.naturalHeight*k>9000)k=9000/im.naturalHeight;
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.86).split(',')[1]);};
+  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('image'));};im.src=u;});}
+async function shotsAdd(files){if(SHOT_BUSY||!files.length)return;SHOT_BUSY=true;const h=$('shotHint'),ul=$('shotList'),say=(m,c)=>{h.className='qahint'+(c?' '+c:'');h.textContent=m;};$('btnShots').disabled=true;
+  let added=0,dup=0,need=0,fail='';const key=r=>[r.rawDate,r.fn,r.from,r.to].join('|');
+  try{for(let i=0;i<files.length;i++){say(`正在识别第 ${i+1} / ${files.length} 张…`);let j=null;
+      try{const r=await fetch('/api/shots',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:await shotData(files[i])})});j=await r.json().catch(()=>null);
+        if(!r.ok){fail=r.status===429?'这一小时识别的张数太多了，请稍后再试':r.status===503?'截图识别暂时不可用，请先用手动添加':r.status===400?'有图片读不出来，请换一张清晰的截图':'识别服务出错了，请稍后再试';if(r.status!==400)break;continue;}}
+      catch(e){fail=e&&e.message==='image'?'有文件不是图片，已跳过':'网络不通，请稍后再试';if(!(e&&e.message==='image'))break;continue;}
+      const fl=(j&&j.flights)||[];if(!fl.length){ul.append(el('li',{},el('span',{class:'g'},`第 ${i+1} 张：没找到航班，请确认截图里有日期、航班号和起降地`)));continue;}
+      if(SOURCE!=='file'){resetFixes();aiMsg('');RAW=[];SHEETS=[];SOURCE='file';natForUser();} /* the sample makes way for the user's own flights */
+      const have=new Set(RAW.map(key));SHOT_N++;
+      fl.forEach((f,k)=>{const row={rawDate:f.date||'',al:f.al||'',fn:f.fn||'',from:f.from||'',to:f.to||'',dt:f.dt||'',at:f.at||'',km:'',st:'',sheetUp:false,sheetVoid:false,src:{sheet:`截图 ${SHOT_N}`,row:k+1,cols:{}}};
+        if(have.has(key(row))){dup++;return;}have.add(key(row));RAW.push(row);added++;
+        const fa=row.from&&resolveAirport(row.from),ta=row.to&&resolveAirport(row.to),bad=!row.rawDate||!fa||!ta;if(bad)need++;
+        ul.append(el('li',{},el('span',{class:'d'},row.rawDate||(f.md?`??-${f.md}`:'日期?')),el('span',{},`${row.fn} ${row.from||'?'} → ${row.to||'?'}`),bad?el('span',{class:'w'},!row.rawDate?'缺年份':'地名没认出'):el('span',{class:'g'},`${fa} → ${ta}`)));});}
+    if(added){playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';rebuild();}
+    say(fail&&!added?fail:`识别出 ${added} 段${dup?`，${dup} 段重复已跳过`:''}${need?`；${need} 段要在「检查表格」里补全`:''}${fail?`（${fail}）`:''}`,fail&&!added?'err':need?'':'ok');}
+  finally{SHOT_BUSY=false;$('btnShots').disabled=false;$('shotFile').value='';}}
+if(SHOTS_ON&&!EN()){$('shotAdd').hidden=false;$('btnShots').addEventListener('click',()=>$('shotFile').click());$('shotFile').addEventListener('change',e=>shotsAdd([...e.target.files].slice(0,12)));}
 /* ---------- language switch: static text in i18n.js, everything rendered from code re-renders here ---------- */
 function natOptions(){const sel=$('nat'),keep=sel.value||'CN';sel.innerHTML='';const lab=v=>EN()?`${v[0]} · ${v[2]}`:`${v[1]} · ${v[2]}`;
   Object.entries(NAMES).sort((a,b)=>EN()?a[1][0].localeCompare(b[1][0],'en'):a[1][1].localeCompare(b[1][1],'zh')).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=lab(v);sel.appendChild(o);});sel.value=keep;}

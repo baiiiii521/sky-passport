@@ -3,12 +3,18 @@
     <view class="h2"><text class="no">01</text>导入你的航班</view>
     <text class="small">从微信聊天里选中航旅纵横导出的表格（.xls / .xlsx / .csv），在手机上解析，不上传。</text>
     <button class="primary" bindtap="chooseFile">从聊天中选择表格</button>
-    <button wx:if="{{!manualOpen}}" class="ghost" bindtap="openManual">{{saved?'继续手动输入（已有 '+saved+' 段）':'没有表格？手动输入航班'}}</button>
+    <button wx:if="{{!manualOpen}}" class="ghost" bindtap="pickShots">没有表格？上传行程截图</button>
+    <button wx:if="{{!manualOpen}}" class="ghost" bindtap="openManual">{{saved?'继续手动输入（已有 '+saved+' 段）':'或者手动输入航班'}}</button>
     <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
   </view>
 
   <view class="card" wx:if="{{manualOpen}}">
-    <view class="h2"><text class="no">+</text>手动输入航班<text class="tag" bindtap="closeManual">完成 ✓</text></view>
+    <view class="h2"><text class="no">+</text>截图识别 · 手动输入<text class="tag" bindtap="closeManual">完成 ✓</text></view>
+    <button class="ghost shotbtn" bindtap="pickShots">从行程截图识别（可选多张）</button>
+    <text class="small center">航旅纵横「行程 → 已结束」的截图即可；会上传到我们的服务器识别文字，识别完即丢弃</text>
+    <text wx:if="{{shotMsg}}" class="mhint ok">{{shotMsg}}</text>
+    <view wx:if="{{shotTodo.length}}" class="todo"><text wx:for="{{shotTodo}}" wx:key="index" class="tl">· {{item}}</text></view>
+    <view class="or"><text>或者一段一段手动输入</text></view>
     <picker mode="date" value="{{mDate}}" start="1950-01-01" end="2099-12-31" bindchange="onMDate"><view class="input pick {{mDate?'':'ph'}}">{{mDate||'日期（点这里选择）'}}</view></picker>
     <view class="mrow">
       <input class="input" placeholder="出发 如 PVG / 上海浦东" value="{{mFrom}}" bindinput="onMFrom" maxlength="30"/>
@@ -29,7 +35,7 @@
       <view class="chip {{year===0?'on':''}}" data-y="0" bindtap="pickYear">全部年份</view>
       <view wx:for="{{years}}" wx:key="*this" class="chip {{year===item?'on':''}}" data-y="{{item}}" bindtap="pickYear">{{item}} 年度</view>
     </view>
-    <view class="chips"><view class="chip" bindtap="chooseFile">换一份表格</view><view wx:if="{{!manualOpen}}" class="chip" bindtap="openManual">＋ 手动添加航班</view></view>
+    <view class="chips"><view class="chip" bindtap="chooseFile">换一份表格</view><view wx:if="{{!manualOpen}}" class="chip" bindtap="openManual">＋ 截图识别 / 手动添加</view></view>
     <view class="row"><switch checked="{{up}}" bindchange="toggleUp" color="#5eeaff"/><text class="small">计入待出行航班</text></view>
     <view wx:if="{{unres.length||noDate}}" class="warn">
       <text wx:if="{{unres.length}}">有 {{unres.length}} 个地名没认出来（{{unres[0]}}{{unres.length>1?' 等':''}}），这些航段没有算进去。</text>

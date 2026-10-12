@@ -199,6 +199,7 @@ details.guide ol{margin:10px 0 2px;padding-left:20px;font-size:14px;line-height:
 .style-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:4px 0 6px}
 .qa{display:grid;grid-template-columns:9.5em minmax(0,1fr) minmax(0,1fr) 8em;gap:10px;margin-top:12px}
 @media (max-width:620px){.qa{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.shotlist{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px;font-size:13px;font-family:var(--f-mono)}.shotlist li{display:flex;gap:10px;align-items:baseline}.shotlist li span:nth-child(2){flex:1;min-width:0}.shotlist li span:nth-child(3){flex:none}.shotlist .d{color:var(--ac);flex:none}.shotlist .w{color:var(--stamp)}.shotlist .g{color:var(--muted)}
 .qahint{font-size:13px;color:var(--muted);font-family:var(--f-mono)}.qahint.ok{color:var(--ok)}.qahint.err{color:var(--stamp)}
 /* progress, status, results */
 .bar{height:6px;border-radius:99px;background:var(--field);border:1px solid var(--line);overflow:hidden}
@@ -422,6 +423,13 @@ section[id],.ach[id]{scroll-margin-top:90px}
           <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnQaAdd" data-en="Add flight">添加这一段</button><span class="qahint" id="qaHint" aria-live="polite"></span></div>
           <p class="fine" data-en="Added flights stay in this browser tab only. To keep them, use “Download the corrected sheet” in the check panel.">添加的航段只保存在当前页面；想留着下次用，在「检查表格」里点「下载修正后的表格」。</p>
         </details>
+        <details class="more" id="shotAdd" hidden>
+          <summary>没有导出文件？上传行程截图</summary>
+          <p class="hint" style="margin-top:10px">在航旅纵横「行程 → 已结束」里截图，往下翻着多截几张，一次可以选多张；航司、订票 App 的行程列表也可以试试。每张图里要能看到日期、航班号、出发和到达。</p>
+          <div class="row" style="margin-top:10px"><button type="button" class="primary" id="btnShots">选择截图</button><input type="file" id="shotFile" accept="image/*" multiple hidden><span class="qahint" id="shotHint" aria-live="polite"></span></div>
+          <ul class="shotlist" id="shotList"></ul>
+          <p class="fine">截图会上传到我们的服务器，交给腾讯云文字识别读出文字，识别完即丢弃，不保存。认错的地方可以在下面「检查表格」里改。</p>
+        </details>
         <div class="chips" id="chips"></div>
         <div class="seg" id="yearQuick" role="group" aria-label="年份范围" data-en-aria="Year range"></div>
         <details class="more">
@@ -547,7 +555,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
 <script src="js/core.js?v=0f1ee5af"></script>
 <script src="js/engine.js?v=242d2894"></script>
 <script src="js/music.js?v=f93c8b12"></script>
-<script src="js/ui.js?v=7bc08bd5"></script>
+<script src="js/ui.js?v=377ae2c0"></script>
 <script src="js/extras.js?v=0b803638"></script>
 <script src="js/export.js?v=7d78a824"></script>
 <script src="js/home.js?v=7071ffb5"></script>

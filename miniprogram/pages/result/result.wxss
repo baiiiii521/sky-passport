@@ -73,3 +73,6 @@ button[disabled] { opacity: .65; }
 .legh { display: flex; justify-content: space-between; font-size: 22rpx; color: #8fa6c2; margin-bottom: 8rpx; } .legclr { color: #ff9aa8; padding: 0 8rpx; }
 .leg { display: flex; align-items: center; gap: 14rpx; padding: 12rpx 0; border-bottom: 1px solid rgba(94,234,255,.08); font-size: 24rpx; }
 .ld { font-family: monospace; color: #5eeaff; flex: none; } .lt { flex: 1; min-width: 0; color: #eaf4ff; } .lx { flex: none; color: #8fa6c2; padding: 4rpx 14rpx; }
+.shotbtn { margin: 0 0 6rpx !important; }
+.todo { margin-top: 12rpx; padding: 14rpx 18rpx; border: 1px solid #ffc56b; border-radius: 16rpx; display: flex; flex-direction: column; gap: 4rpx; } .tl { font-size: 23rpx; color: #ffc56b; }
+.or { display: flex; align-items: center; gap: 16rpx; margin: 26rpx 0 18rpx; font-size: 22rpx; color: #6f819b; } .or::before, .or::after { content: ""; flex: 1; height: 1px; background: rgba(94,234,255,.16); }

@@ -90,12 +90,28 @@ function rowsForServer() {
   });
 }
 
-function api(path, method, data) {
+function api(path, method, data, timeout) {
   return new Promise((resolve, reject) => wx.request({
-    url: SITE + path, method, data, timeout: 20000, header: { 'Content-Type': 'application/json' },
+    url: SITE + path, method, data, timeout: timeout || 20000, header: { 'Content-Type': 'application/json' },
     success: r => (r.statusCode === 200 ? resolve(r.data) : reject(Object.assign(new Error((r.data && r.data.error) || ('HTTP ' + r.statusCode)), { code: r.statusCode, body: r.data }))),
     fail: e => reject(new Error(e.errMsg || '网络错误')),
   }));
 }
 
-module.exports = { SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo, savedManual, manualLegs, setManual };
+/* ---------- flights from screenshots: the picture goes to our server (Tencent Cloud OCR), the flights come back as text ---------- */
+const readB64 = path => new Promise((res, rej) => wx.getFileSystemManager().readFile({ filePath: path, encoding: 'base64', success: r => res(r.data), fail: e => rej(new Error(e.errMsg || '读不了图片')) }));
+const squeeze = path => new Promise(res => wx.compressImage({ src: path, quality: 60, success: r => res(r.tempFilePath), fail: () => res(path) }));
+// one screenshot → {legs: ready to add, todo: found but a date or an airport is missing}
+async function shotFlights(file) {
+  let b64 = await readB64(file.size > 2.5e6 ? await squeeze(file.tempFilePath) : file.tempFilePath);
+  if (b64.length > 5.4e6) throw Object.assign(new Error('图片太大'), { code: 400 });
+  const r = await api('/api/shots', 'POST', { image: b64 }, 45000), legs = [], todo = [];
+  for (const f of (r && r.flights) || []) {
+    const fa = f.from && C.resolveAirport(f.from), ta = f.to && C.resolveAirport(f.to);
+    if (f.date && fa && ta && fa !== ta) legs.push({ d: f.date, from: fa, to: ta, fn: f.fn || '' });
+    else todo.push(`${f.date || (f.md ? '?年-' + f.md : '日期?')} ${f.fn || ''} ${f.from || '?'} → ${f.to || '?'}`);
+  }
+  return { legs, todo };
+}
+
+module.exports = { shotFlights, SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo, savedManual, manualLegs, setManual };
