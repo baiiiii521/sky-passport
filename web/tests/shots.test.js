@@ -32,3 +32,7 @@ test('no year next to the day: the date is left for the user', () => {
 });
 test('numbers that are not flights are ignored; nothing found gives an empty list', () => { assert.deepStrictEqual(parseShots(header), []); assert.deepStrictEqual(parseShots([]), []); assert.deepStrictEqual(parseShots(null), []); });
 test('place names lose terminals and brackets', () => { assert.strictEqual(place('南昌昌北T2'), '南昌昌北'); assert.strictEqual(place('北京大兴国际机场'), '北京大兴'); assert.strictEqual(place('上海浦东 T1（国际）'), '上海浦东'); });
+test('real OCR answer for a 航旅纵横「已结束」screenshot (GeneralBasicOCR, 2026-10-12)', () => {
+  const fx = require('./fixtures/shot_hanglv.json');
+  assert.deepStrictEqual(parseShots(fx.boxes).map(strip), fx.flights.map(strip)); assert.strictEqual(fx.flights.length, 3);
+});
