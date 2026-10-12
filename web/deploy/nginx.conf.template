@@ -35,6 +35,14 @@ server {
     proxy_set_header X-Forwarded-For $remote_addr;
     client_max_body_size 700k;
   }
+  # screenshot import: one picture per request (base64), recognised by Tencent Cloud OCR in server/shots.js; uploads from slow lines need time
+  location = /api/shots {
+    proxy_pass http://127.0.0.1:3100;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    client_max_body_size 6m; client_body_timeout 150s; proxy_read_timeout 40s;
+    limit_req zone=skyapi burst=20 nodelay;
+  }
   location /api/ {
     proxy_pass http://127.0.0.1:3100;
     proxy_set_header Host $host;
