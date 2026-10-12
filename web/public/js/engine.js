@@ -162,7 +162,7 @@ function buildBg(){
   g.save();g.translate(P.x+P.w-26,PAGE2Y+70);g.rotate(Math.PI/2);g.font=F(400,13,'SM');g.fillStyle='rgba(110,80,110,.35)';g.fillText(`${nm}·FLIGHT·LOG·${yrs}·`.repeat(4),0,0);g.restore();
   g.font=F(400,20,'SM');g.fillStyle='rgba(120,100,140,.5)';g.textAlign='center';g.fillText(`@ ${S?S.P.latin:''}  ·  SKY  PASSPORT`,W/2,MAP.y+MAP.h+28);g.textAlign='left';
   g.restore();
-  g.font=F(600,26);g.fillStyle='#3a1f2a';g.textAlign='center';g.fillText('航 迹 护 照   ·   F L I G H T   L O G',W/2,78);g.textAlign='left';
+  g.font=F(600,26);g.fillStyle='#3a1f2a';g.textAlign='center';g.fillText('航 迹 手 帐   ·   F L I G H T   L O G',W/2,78);g.textAlign='left';
 }
 
 /* ---------- map ---------- */
