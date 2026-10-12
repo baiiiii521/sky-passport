@@ -1,14 +1,14 @@
-// 航迹手帐 brand film (20 s, 1080×1920, 30 fps) — one idea per bar on the product's own music grid (112 BPM), drawn on the
+// 航迹手帐 brand film (30 s, 1080×1920, 30 fps) — one idea per bar on the product's own music grid (112 BPM), drawn on the
 // product page so every product shot is the real renderer: the film frames, the medals and the long poster are not mock-ups.
-//   bar 0  起点      the limb of the Earth, one route drawn in the dark
-//   bar 1  揭示      pull back: the whole globe, every route; the headline
-//   bar 2  导入      three ways in, one per beat: spreadsheet · screenshot (recognised) · typed by hand
-//   bar 3  解码      routes and the three numbers; the globe becomes the emblem on the passport (match cut)
-//   bar 4  影片      the cover opens, the film runs at speed …
-//   bar 5  盖章      … dead stop, hang, the stamp lands (the film's own stop → hang → slam)
-//   bar 6  成就      33 medals, three of them called out
-//   bar 7  长图      the long poster scrolls by
-//   bar 8+ 落版      emblem, name, line
+//   beats  0– 4  起点   the limb of the Earth, one flight drawn in the dark
+//   beats  4– 8  揭示   pull back: the whole globe, every route; the headline
+//   beats  8–18  导入   three ways in, 2.5 beats each: spreadsheet · screenshot (recognised) · typed by hand; then all three
+//   beats 18–24  解码   routes and the three numbers; the globe becomes the emblem on the passport (match cut)
+//   beats 24–32  影片   the cover holds, opens, the film runs at speed …
+//   beats 32–36  盖章   … dead stop, hang, the stamp lands (the film's own stop → hang → slam)
+//   beats 36–44  成就   33 medals, then three of them called out one beat apart
+//   beats 44–48  长图   the long poster scrolls by
+//   beats 48–56  落版   emblem, name, line (two bars, unhurried)
 // Sound: the product's synth on the same grid (music time = film time + 1 bar, so the film starts on the second intro bar);
 // every effect is a CC0 recording placed from the picture's own timing. Nothing here is random: hash() only.
 (function () {
@@ -17,7 +17,7 @@
   const cl = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, u) => a + (b - a) * u, seg = (t, a, d) => cl((t - a) / d);
   const eo = t => 1 - Math.pow(1 - cl(t), 3), eo5 = t => 1 - Math.pow(1 - cl(t), 5), ei = t => Math.pow(cl(t), 3), eio = t => { t = cl(t); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
   const spring = (t, d = 0.6, bounce = 0.2) => { if (t <= 0) return 0; const z = 1 - bounce, w = 2 * Math.PI / d, wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t)); };
-  const BR = BAR, Q = BEAT, END = 20, TM = { globe: BR, imp: 2 * BR, dec: 3 * BR, film: 4 * BR, hang: 5 * BR, stamp: 5 * BR + Q + 0.16, medal: 6 * BR, poster: 7 * BR, card: 8 * BR };
+  const BR = BAR, Q = BEAT, END = 30, CP = 2.5 * Q, TM = { globe: 4 * Q, imp: 8 * Q, dec: 18 * Q, film: 24 * Q, hang: 32 * Q, stamp: 33 * Q + 0.16, medal: 36 * Q, poster: 44 * Q, card: 48 * Q };   // CP: one import card
   const INK = '#f6efe2', MUTE = 'rgba(206,216,232,.66)', CY = [132, 226, 245], WARM = [255, 214, 160], GOLD = [233, 197, 142];
   const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
   const SER = (s, w = 900) => `${w} ${s}px ${SERIF}`, SAN = (w, s) => `${w} ${s}px "Noto Sans SC","Open Sans",sans-serif`, MONO = (s, w = 700) => `${w} ${s}px "Space Mono",monospace`;
@@ -40,7 +40,7 @@
   // the shared title block: eyebrow, name, one line under it — always on the same left edge
   function title(t, t0, out, eyebrow, name, sub, goldPart) { fade(eyebrow, 96, 214, t0, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 8, out });
     if (goldPart) { g.font = SER(112); const w = rise(goldPart, 96, 330, 112, t0 + 0.04, t, { fill: 'gold', out }); rise(name, 96 + w + 14, 330, 112, t0 + 0.04, t, { out }); } else rise(name, 96, 330, 112, t0 + 0.04, t, { out, tr: 4 });
-    if (sub) fade(sub, 98, 396, t0 + 0.2, t, { font: SAN(400, 34), out }); }
+    if (sub) fade(sub, 98, 400, t0 + 0.2, t, { font: SAN(400, 38), fill: 'rgba(222,230,244,.86)', out }); }
 
   /* ---------- light and surface ---------- */
   function bg(t, warm = 0, deep = 0) { g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.filter = 'none';
@@ -87,8 +87,7 @@
     g.save(); g.globalAlpha = 1 - out; globe(t, PW / 2, top + R, R, lam, phi, eo(seg(t, 0.05, 0.9)), i => (i === HERO ? seg(t, 0.35, 1.5) : seg(t, BR + 0.05 + (i * 1.25 / N), 0.7)), u); g.restore();
     const o2 = TM.imp - 0.22; fade('EVERY TAKE-OFF', 98, 352, 0.3, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 8, out: o2 });
     rise('每一次起飞', 92, 480, 118, 0.5, t, { out: o2, tr: 4 }); g.font = SER(118); const w = rise('都值得被', 92, 626, 118, BR + 0.12, t, { out: o2, tr: 4 }); rise('记住', 92 + w + 4, 626, 118, BR + 0.26, t, { out: o2, tr: 4, fill: 'gold' });
-    const F0 = S.final, ts = BR + 0.95; fade(`${F0.n} 次起飞　·　${fmt(F0.km)} 公里　·　${F0.cc} 个国家和地区`, PW / 2, 1730, ts, t, { font: SAN(500, 34), fill: 'rgba(226,234,246,.82)', align: 'center', out: o2 });
-    fade('ONE TRAVELLER · SIX YEARS', PW / 2, 1784, ts + 0.15, t, { font: MONO(22), fill: rgba(GOLD, 0.75), tr: 7, align: 'center', out: o2 });
+    fade('IS WORTH REMEMBERING', 98, 700, BR + 0.5, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 8, out: o2 });
     // one flight over the limb: a hairline arc with a bright head, the first thing that moves
     { const hk = eio(seg(t, 0.3, 1.75)), fa = 1 - seg(t, BR + 0.1, 0.6), pt = q => [70 + 940 * q, 1262 - 300 * Math.sin(Math.PI * q) - 40 * q]; if (hk > 0 && fa > 0) { g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
         for (let j = 1; j <= 60; j++) { const q0 = (j - 1) / 60 * hk, q1 = j / 60 * hk, A = pt(q0), Bp = pt(q1); g.strokeStyle = rgba(WARM, fa * (0.08 + 0.72 * Math.pow(j / 60, 2.2))); g.lineWidth = 1.2 + 2.2 * (j / 60); g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(Bp[0], Bp[1]); g.stroke(); }
@@ -117,41 +116,41 @@
   const CARDS = [[cardSheet, '表格', '上传 App 导出的 Excel / CSV'], [cardShot, '截图', '行程截图，自动认出每一段'], [cardHand, '手输', '一段一段，自己添加']];
   function card(k, p, x, y, sc, rot, a) { if (a <= 0.01 || sc <= 0.01) return; g.save(); g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.globalAlpha = a; g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 60; g.shadowOffsetY = 30; rr(g, -430, -550, 860, 1100, 34); g.fillStyle = '#060b18'; g.fill(); g.shadowColor = 'transparent'; CARDS[k][0](p); g.restore(); }
   function sImport(t) { const lt = t - TM.imp; bg(t, 0.25);
-    for (let k = 0; k < 3; k++) { const p = lt - k * Q; if (p < 0 || lt >= 3 * Q) continue; const u = eo5(seg(p, 0, 0.3)), v = k < 2 ? ei(seg(p, Q - 0.11, 0.11)) : 0;
-      if (p < Q) { fade(`0${k + 1} / 03`, 96, 214, k * Q + TM.imp, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 8, out: TM.imp + (k + 1) * Q - 0.03, d: 0.15 }); rise(CARDS[k][1], 96, 330, 112, TM.imp + k * Q + 0.02, t, { out: TM.imp + (k + 1) * Q - 0.03, tr: 8, d: 0.4 }); fade(CARDS[k][2], 98, 396, TM.imp + k * Q + 0.12, t, { font: SAN(400, 34), out: TM.imp + (k + 1) * Q - 0.03, d: 0.2 }); }
-      if (p < 0.3) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5 * (1 - u); for (let j = 0; j < 9; j++) { const y = 520 + j * 120 + 40 * hash(j + k * 9); g.fillStyle = rgba(j % 3 ? CY : WARM, 0.5); g.fillRect(540 - 430 + (1 - u) * 820 + 860, y, 500 * (1 - u), 2); } g.restore(); }
-      card(k, p, 540 + (1 - u) * 860 - v * 940, 1030, 0.95 + 0.05 * u, (1 - u) * 0.09 - v * 0.07, 1); }
-    if (lt >= 3 * Q) { const p = lt - 3 * Q, q = eo5(seg(p, 0, 0.36)), w = ei(seg(p, Q - 0.2, 0.2)), o = TM.dec - 0.18;
-      for (const j of [0, 2, 1]) { const x = lerp(lerp(540, 540 + (j - 1) * 306, q), 540, w), y = lerp(lerp(1030, 900 + Math.abs(j - 1) * 26, q), 840, w), sc = lerp(lerp(j === 2 ? 1 : 0.5, 0.36, q), 0.03, w); card(j, 9, x, y, sc, (j - 1) * 0.085 * q * (1 - w), (j === 2 ? 1 : q) * (1 - w)); if (!w) fade(CARDS[j][1], 540 + (j - 1) * 306, 1178, TM.imp + 3 * Q + 0.14 + j * 0.04, t, { font: SAN(500, 32), fill: rgba(GOLD, 0.95), align: 'center', out: o, tr: 4 }); }
-      rise('三种方式，装进来', PW / 2, 1470, 84, TM.imp + 3 * Q + 0.06, t, { align: 'center', out: o, tr: 4 }); fade('SHEET  ·  SCREENSHOT  ·  BY HAND', PW / 2, 1540, TM.imp + 3 * Q + 0.2, t, { font: MONO(24), fill: rgba(GOLD, 0.8), tr: 6, align: 'center', out: o });
+    for (let k = 0; k < 3; k++) { const p = lt - k * CP; if (p < 0 || lt >= 3 * CP) continue; const u = eo5(seg(p, 0, 0.4)), v = k < 2 ? ei(seg(p, CP - 0.14, 0.14)) : 0;
+      if (p < CP) { const o1 = TM.imp + (k + 1) * CP - 0.12; fade(`0${k + 1} / 03`, 96, 214, k * CP + TM.imp, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 8, out: o1, d: 0.2 }); rise(CARDS[k][1], 96, 330, 112, TM.imp + k * CP + 0.04, t, { out: o1, tr: 8, d: 0.5 }); fade(CARDS[k][2], 98, 400, TM.imp + k * CP + 0.2, t, { font: SAN(400, 38), fill: 'rgba(222,230,244,.86)', out: o1, d: 0.25 }); }
+      if (p < 0.4) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5 * (1 - u); for (let j = 0; j < 9; j++) { const y = 520 + j * 120 + 40 * hash(j + k * 9); g.fillStyle = rgba(j % 3 ? CY : WARM, 0.5); g.fillRect(540 - 430 + (1 - u) * 820 + 860, y, 500 * (1 - u), 2); } g.restore(); }
+      card(k, p * 0.42, 540 + (1 - u) * 860 - v * 940, 1030, 0.95 + 0.05 * u, (1 - u) * 0.09 - v * 0.07, 1); }
+    if (lt >= 3 * CP) { const p = lt - 3 * CP, q = eo5(seg(p, 0, 0.5)), w = ei(seg(p, CP - 0.22, 0.22)), o = TM.dec - 0.2;
+      for (const j of [0, 2, 1]) { const x = lerp(lerp(540, 540 + (j - 1) * 306, q), 540, w), y = lerp(lerp(1030, 900 + Math.abs(j - 1) * 26, q), 840, w), sc = lerp(lerp(j === 2 ? 1 : 0.5, 0.36, q), 0.03, w); card(j, 9, x, y, sc, (j - 1) * 0.085 * q * (1 - w), (j === 2 ? 1 : q) * (1 - w)); if (!w) fade(CARDS[j][1], 540 + (j - 1) * 306, 1178, TM.imp + 3 * CP + 0.2 + j * 0.06, t, { font: SAN(500, 32), fill: rgba(GOLD, 0.95), align: 'center', out: o, tr: 4 }); }
+      rise('三种方式，装进来', PW / 2, 1470, 84, TM.imp + 3 * CP + 0.1, t, { align: 'center', out: o, tr: 4 }); fade('SHEET  ·  SCREENSHOT  ·  BY HAND', PW / 2, 1540, TM.imp + 3 * CP + 0.3, t, { font: MONO(24), fill: rgba(GOLD, 0.8), tr: 6, align: 'center', out: o });
       if (w > 0) streak(540, 840, w * 0.9, 700); }
     flash(0.22 * Math.exp(-lt * 12), CY); }
 
   /* ---------- bar 3: decoded; the globe becomes the emblem on the cover ---------- */
   const FILM = { cx: 540, cy: 900, s0: 0.74, ex: 541, ey: 640, er: 150 };   // emblem centre and radius inside the product frame
-  function sDecode(t) { const lt = t - TM.dec, N = FL.length, u = eo5(seg(lt, 0, 0.5)), m = eio(seg(lt, BR - 0.3, 0.3)), o = TM.film - 0.32; bg(t, 0.2 + 0.4 * m);
+  function sDecode(t) { const lt = t - TM.dec, DD = TM.film - TM.dec, N = FL.length, u = eo5(seg(lt, 0, 0.7)), m = eio(seg(lt, DD - 0.36, 0.36)), o = TM.film - 0.4; bg(t, 0.2 + 0.4 * m);
     const tx = FILM.cx + (FILM.ex - 540) * FILM.s0, ty = FILM.cy + (FILM.ey - 960) * FILM.s0, R = lerp(lerp(60, 384, u), FILM.er * FILM.s0, m), cx = lerp(540, tx, m), cy = lerp(lerp(840, 880, u), ty, m);
-    globe(t, cx, cy, R, GC.lam + 14 - lt * 11 - (t - TM.dec + BR) * 3, GC.phi, u, i => seg(lt, 0.08 + i * 0.85 / N, 0.55) * (1 - m), 1 - m); if (m > 0) emblem(cx, cy, R, m * 0.9, 1, t);
+    globe(t, cx, cy, R, GC.lam + 16 - lt * 8, GC.phi, u, i => seg(lt, 0.15 + i * 1.5 / N, 0.7) * (1 - m), 1 - m); if (m > 0) emblem(cx, cy, R, m * 0.9, 1, t);
     title(t, TM.dec + 0.02, o, '03 / 06  DECODE', '自动解码', '机场、时区、国家和地区，自己认出来');
     const F0 = S.final, st = [[F0.n, '次起飞', 200], [F0.km, '公里', 540], [F0.cc, '个国家和地区', 880]];
-    st.forEach(([v, lab, x], j) => { const t0 = TM.dec + 0.3 + j * 0.13, k = eo5(seg(t, t0, 0.85)); g.save(); g.font = MONO(86); const s = fmt(v * k); rise(s, x, 1500, 86, t0, t, { font: MONO(86), fill: 'gold', align: 'center', out: o, d: 0.4 }); g.restore(); fade(lab, x, 1562, t0 + 0.15, t, { font: SAN(400, 30), align: 'center', out: o }); });
-    g.save(); g.globalAlpha = seg(t, TM.dec + 0.3, 0.4) * (1 - seg(t, o, 0.2)) * 0.5; g.fillStyle = rgba(GOLD, 0.6); g.fillRect(96, 1384, 888, 1); g.fillRect(96, 1606, 888, 1); g.restore();
+    st.forEach(([v, lab, x], j) => { const t0 = TM.dec + 0.45 + j * 0.2, k = eo5(seg(t, t0, 1.3)); g.save(); g.font = MONO(86); const s = fmt(v * k); rise(s, x, 1500, 86, t0, t, { font: MONO(86), fill: 'gold', align: 'center', out: o, d: 0.4 }); g.restore(); fade(lab, x, 1562, t0 + 0.15, t, { font: SAN(400, 32), fill: 'rgba(222,230,244,.86)', align: 'center', out: o }); });
+    g.save(); g.globalAlpha = seg(t, TM.dec + 0.45, 0.4) * (1 - seg(t, o, 0.2)) * 0.5; g.fillStyle = rgba(GOLD, 0.6); g.fillRect(96, 1384, 888, 1); g.fillRect(96, 1606, 888, 1); g.restore();
     flash(0.2 * Math.exp(-lt * 12), CY); }
 
   /* ---------- bars 4–5: the film itself — opens, runs, stops, is stamped ---------- */
   function sFilm(t) { const lt = t - TM.film, h = t - TM.stamp; bg(t, 0.7);
-    const pt = lt < Q ? T_OPEN - 0.3 + lt * 0.4 : lt < 2 * Q ? T_OPEN - 0.08 + (lt - Q) * 1.75 : lt < BR ? lerp(T_F0 + 0.3, S.T_FE - 0.3, eio((lt - 2 * Q) / (2 * Q))) : S.T_FE + (lt - BR);
+    const HB = TM.hang - TM.film, VO = 0.95 / (2 * Q), pt = lt < 2 * Q ? T_OPEN - 0.3 + lt * 0.2 : lt < 4 * Q ? T_OPEN - 0.08 + (lt - 2 * Q) * VO : lt < HB ? lerp(T_OPEN + 0.87, S.T_FE - 0.3, eio((lt - 4 * Q) / (4 * Q))) : S.T_FE + (lt - HB);
     renderFrame(Math.max(0, Math.min(S.frames - 1, Math.round(pt * FPS))));
-    let s = lt < BR ? lerp(FILM.s0, 0.8, eo(lt / BR)) : lerp(0.8, 0.86, eo((lt - BR) / (Q + 0.16))); if (h >= 0) s *= 1 + 0.03 * Math.exp(-h * 9) * Math.cos(h * 30);
+    let s = lt < HB ? lerp(FILM.s0, 0.8, eo(lt / HB)) : lerp(0.8, 0.86, eo((lt - HB) / (Q + 0.16))); if (h >= 0) s *= 1 + 0.03 * Math.exp(-h * 9) * Math.cos(h * 30);
     const w = PW * s, hh = PH * s, x0 = FILM.cx - w / 2, y0 = FILM.cy - hh / 2 + 6 * Math.sin(t * 0.9), r = 46 * s;
     { const gl = g.createRadialGradient(540, y0 + hh / 2, w * 0.3, 540, y0 + hh / 2, w * 1.25); gl.addColorStop(0, rgba(WARM, 0.2)); gl.addColorStop(1, rgba(WARM, 0)); g.fillStyle = gl; g.fillRect(0, 0, PW, PH); } bloom(0.5);
     g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 90; g.shadowOffsetY = 40; rr(g, x0, y0, w, hh, r); g.fillStyle = '#000'; g.fill(); g.restore();
     g.save(); rr(g, x0, y0, w, hh, r); g.clip(); g.drawImage(cv, x0, y0, w, hh);
-    if (lt < Q * 1.2) { const k = lt / (Q * 1.2), x = x0 - w * 0.6 + k * w * 2.2; g.globalCompositeOperation = 'lighter'; const gr = g.createLinearGradient(x - 220, 0, x + 220, 0); gr.addColorStop(0, 'rgba(255,236,200,0)'); gr.addColorStop(0.5, 'rgba(255,236,200,.16)'); gr.addColorStop(1, 'rgba(255,236,200,0)'); g.fillStyle = gr; g.transform(1, 0, -0.35, 1, 0, 0); g.fillRect(x - 220 + 400, y0, 440, hh); }
+    if (lt < Q * 2.2) { const k = lt / (Q * 2.2), x = x0 - w * 0.6 + k * w * 2.2; g.globalCompositeOperation = 'lighter'; const gr = g.createLinearGradient(x - 220, 0, x + 220, 0); gr.addColorStop(0, 'rgba(255,236,200,0)'); gr.addColorStop(0.5, 'rgba(255,236,200,.16)'); gr.addColorStop(1, 'rgba(255,236,200,0)'); g.fillStyle = gr; g.transform(1, 0, -0.35, 1, 0, 0); g.fillRect(x - 220 + 400, y0, 440, hh); }
     g.restore(); g.save(); rr(g, x0, y0, w, hh, r); g.strokeStyle = rgba(GOLD, 0.55); g.lineWidth = 2; g.stroke(); g.restore();
-    if (lt < 0.4) { const k = lt / 0.4, ex = x0 + FILM.ex * s, ey = y0 + FILM.ey * s; g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = rgba(WARM, 0.7 * (1 - k)); g.lineWidth = 3; g.beginPath(); g.arc(ex, ey, FILM.er * s * (1 + 1.6 * eo(k)), 0, 7); g.stroke(); g.restore(); }
-    if (lt >= 2 * Q && lt < BR) { const k = (lt - 2 * Q) / (2 * Q), a = Math.sin(Math.PI * k); g.save(); g.globalCompositeOperation = 'lighter'; for (let j = 0; j < 16; j++) { const y = y0 + hash(j * 5.3) * hh, len = 120 + 360 * hash(j * 2.9), x = j % 2 ? x0 - 30 - len * (0.3 + k) : x0 + w + 30 + len * (k - 0.3); g.fillStyle = rgba(j % 3 ? WARM : CY, 0.35 * a); g.fillRect(x, y, len, 2); } g.restore();
-      fade('▸▸  ×18', PW / 2, y0 - 26, TM.film + 2 * Q + 0.05, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 6, align: 'center', out: TM.hang - 0.08, d: 0.12 }); }
+    if (lt < 0.6) { const k = lt / 0.6, ex = x0 + FILM.ex * s, ey = y0 + FILM.ey * s; g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = rgba(WARM, 0.7 * (1 - k)); g.lineWidth = 3; g.beginPath(); g.arc(ex, ey, FILM.er * s * (1 + 1.6 * eo(k)), 0, 7); g.stroke(); g.restore(); }
+    if (lt >= 4 * Q && lt < HB) { const k = (lt - 4 * Q) / (4 * Q), a = Math.sin(Math.PI * k); g.save(); g.globalCompositeOperation = 'lighter'; for (let j = 0; j < 16; j++) { const y = y0 + hash(j * 5.3) * hh, len = 120 + 360 * hash(j * 2.9), x = j % 2 ? x0 - 30 - len * (0.3 + k) : x0 + w + 30 + len * (k - 0.3); g.fillStyle = rgba(j % 3 ? WARM : CY, 0.35 * a); g.fillRect(x, y, len, 2); } g.restore();
+      fade('▸▸  ×6', PW / 2, y0 - 26, TM.film + 4 * Q + 0.05, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 6, align: 'center', out: TM.hang - 0.08, d: 0.12 }); }
     if (h >= 0) { flash(0.55 * Math.exp(-h * 13)); g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = rgba(WARM, 0.7 * Math.exp(-h * 4.5)); g.lineWidth = 5 * Math.exp(-h * 3) + 1; g.beginPath(); g.arc(540, 900, 260 + 1500 * eo(h / 0.9), 0, 7); g.stroke();
       for (let j = 0; j < 46; j++) { const an = hash(j * 1.7) * 6.283, sp = 300 + 900 * hash(j * 3.9), d = sp * (1 - Math.exp(-h * 3.2)) / 3.2 * 3, a = Math.exp(-h * 2.6); g.fillStyle = rgba(j % 4 ? GOLD : CY, 0.9 * a); g.beginPath(); g.arc(540 + Math.cos(an) * (200 + d), 1000 + Math.sin(an) * (260 + d) + 240 * h * h, 2 + 3 * hash(j), 0, 7); g.fill(); } g.restore(); streak(540, y0 + hh * 0.56, 0.8 * Math.exp(-h * 6), 1000); }
     const c1 = TM.hang - 0.12; rise('一分钟 · 会动的飞行护照', PW / 2, 1810, 60, TM.film + 0.2, t, { align: 'center', out: c1, tr: 3 }); fade('A ONE-MINUTE FILM  ·  ORIGINAL SCORE', PW / 2, 1862, TM.film + 0.35, t, { font: MONO(22), fill: rgba(GOLD, 0.8), tr: 6, align: 'center', out: c1 });
@@ -164,14 +163,14 @@
     g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.strokeStyle = b.lock ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.32)'; g.lineWidth = Math.max(1.5, r * 0.035); g.beginPath(); g.arc(x, y, r * 0.9, 0, 7); g.stroke();
     const hl = g.createRadialGradient(x - r * 0.35, y - r * 0.4, 0, x - r * 0.35, y - r * 0.4, r * 0.9); hl.addColorStop(0, `rgba(255,255,255,${b.lock ? 0.08 : 0.42 + 0.5 * bright})`); hl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = hl; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
     g.globalAlpha = a * (b.lock ? 0.45 : 1); g.font = `${Math.round(r * 0.92)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(b.lock ? '🔒' : b.i, x, y + r * 0.06); g.restore(); }
-  function sMedals(t) { const lt = t - TM.medal, p2 = eo5(seg(lt, 2 * Q - 0.08, 0.45)), out = ei(seg(lt, BR - 0.2, 0.2)); bg(t, 0.45);
-    g.save(); g.translate(540, 1000 - out * 700); g.scale(lerp(1, 0.93, p2), lerp(1, 0.93, p2)); const band = -0.5 + seg(lt, 0.35, 0.75) * 2.2;
-    MEDALS.forEach((b, i) => { const c = i % 5, r = Math.floor(i / 5), n = Math.min(5, MEDALS.length - r * 5), x = (c - (n - 1) / 2) * 190, y = -530 + r * 182, d = (r + c) * 0.032, u = spring(lt - d, 0.5, 0.22), br = Math.exp(-Math.pow(((x + 470) / 940 + (y + 530) / 1100) / 2 - band, 2) * 40);
+  function sMedals(t) { const lt = t - TM.medal, MD = TM.poster - TM.medal, p2 = eo5(seg(lt, 4 * Q - 0.1, 0.5)), out = ei(seg(lt, MD - 0.22, 0.22)); bg(t, 0.45);
+    g.save(); g.translate(540, 1000 - out * 700); g.scale(lerp(1, 0.93, p2), lerp(1, 0.93, p2)); const band = -0.5 + seg(lt, 0.6, 1.3) * 2.2;
+    MEDALS.forEach((b, i) => { const c = i % 5, r = Math.floor(i / 5), n = Math.min(5, MEDALS.length - r * 5), x = (c - (n - 1) / 2) * 190, y = -530 + r * 182, d = (r + c) * 0.055, u = spring(lt - d, 0.55, 0.22), br = Math.exp(-Math.pow(((x + 470) / 940 + (y + 530) / 1100) / 2 - band, 2) * 40);
       coin(x, y, 72 * u, b, cl((lt - d) / 0.12) * lerp(1, 0.2, p2) * (1 - out), br); }); g.restore();
     const o = TM.poster - 0.2; fade('05 / 06  BADGES', 96, 214, TM.medal + 0.02, t, { font: MONO(24), fill: rgba(GOLD, 0.9), tr: 8, out: o }); g.font = SER(112); const w = rise(String(MEDALS.length), 96, 330, 112, TM.medal + 0.05, t, { fill: 'gold', out: o }); rise(' 枚飞行成就', 96 + w, 330, 112, TM.medal + 0.09, t, { out: o, tr: 2 });
-    HEROES.forEach((b, j) => { const t0 = TM.medal + 2 * Q + j * Q * 0.5, u = spring(t - t0, 0.5, 0.22), y = 660 + j * 340 - out * 500; if (t < t0) return; const a = 1 - out;
+    HEROES.forEach((b, j) => { const t0 = TM.medal + 4 * Q + j * Q, u = spring(t - t0, 0.5, 0.22), y = 660 + j * 340 - out * 500; if (t < t0) return; const a = 1 - out;
       g.save(); g.globalCompositeOperation = 'lighter'; const gl = g.createRadialGradient(250, y, 0, 250, y, 260); gl.addColorStop(0, rgba(WARM, 0.22 * a * cl(u))); gl.addColorStop(1, rgba(WARM, 0)); g.fillStyle = gl; g.fillRect(0, y - 260, 520, 520); g.restore();
-      coin(250, y, 124 * u, b, a, 0.6 * Math.exp(-(t - t0) * 4)); fade(b.k, 420, y - 44, t0 + 0.06, t, { font: SAN(500, 32), fill: rgba(GOLD, 0.95), tr: 4, out: o, d: 0.2 });
+      coin(250, y, 124 * u, b, a, 0.6 * Math.exp(-(t - t0) * 4)); fade(b.k, 420, y - 48, t0 + 0.06, t, { font: SAN(500, 36), fill: rgba(GOLD, 0.95), tr: 4, out: o, d: 0.2 });
       let sz = 70; g.font = SER(sz); while (g.measureText(b.v).width > 590 && sz > 40) { sz -= 2; g.font = SER(sz); } rise(b.v, 420, y + 40, sz, t0 + 0.05, t, { font: SER(sz), out: o, d: 0.45 }); });
     flash(0.42 * Math.exp(-lt * 9)); streak(540, 330, 0.5 * Math.exp(-lt * 5), 900); }
 
@@ -189,15 +188,15 @@
 
   /* ---------- bar 8 → 20.0 s: the name ---------- */
   function sEnd(t) { const lt = t - TM.card; bg(t, 0, 1); const glow = eo(seg(lt, 0.2, 1.4)), gw = g.createRadialGradient(540, 900, 0, 540, 900, 900); gw.addColorStop(0, rgba(WARM, 0.14 * glow)); gw.addColorStop(1, rgba(WARM, 0)); g.fillStyle = gw; g.fillRect(0, 0, PW, PH);
-    emblem(540, 600, 118, seg(lt, 0.05, 0.3), eo5(seg(lt, 0.05, 0.9)), t);
-    rise('航迹手帐', PW / 2, 960, 178, TM.card + 0.32, t, { align: 'center', tr: 26, fill: 'gold', d: 0.8 });
-    const k = seg(lt, 1.2, 0.7); if (k > 0 && k < 1) { tg.setTransform(1, 0, 0, 1, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, PW, 420); tg.font = SER(178); tg.fillStyle = '#fff'; tg.textBaseline = 'alphabetic'; const ch = [...'航迹手帐'], ws = ch.map(c => tg.measureText(c).width), tot = ws.reduce((a, b) => a + b, 0) + 26 * 3; let x = PW / 2 - tot / 2; ch.forEach((c, i) => { tg.fillText(c, x, 300); x += ws[i] + 26; });
+    emblem(540, 600, 118, seg(lt, 0.1, 0.4), eo5(seg(lt, 0.1, 1.2)), t);
+    rise('航迹手帐', PW / 2, 960, 178, TM.card + 0.5, t, { align: 'center', tr: 26, fill: 'gold', d: 0.9 });
+    const k = seg(lt, 1.75, 0.85); if (k > 0 && k < 1) { tg.setTransform(1, 0, 0, 1, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, PW, 420); tg.font = SER(178); tg.fillStyle = '#fff'; tg.textBaseline = 'alphabetic'; const ch = [...'航迹手帐'], ws = ch.map(c => tg.measureText(c).width), tot = ws.reduce((a, b) => a + b, 0) + 26 * 3; let x = PW / 2 - tot / 2; ch.forEach((c, i) => { tg.fillText(c, x, 300); x += ws[i] + 26; });
       tg.globalCompositeOperation = 'source-in'; const bx = lerp(-200, PW + 200, k), gr = tg.createLinearGradient(bx - 170, 0, bx + 170, 0); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, 'rgba(255,255,255,.95)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); tg.fillStyle = gr; tg.fillRect(0, 0, PW, 420);
       g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(TMP, 0, 660); g.restore(); streak(bx, 905, 0.5 * Math.sin(Math.PI * k), 420); }
-    fade('SKY  PASSPORT', PW / 2, 1050, TM.card + 0.75, t, { font: MONO(32), fill: rgba(GOLD, 0.9), tr: 18, align: 'center', d: 0.5 });
-    const lw = 280 * eo5(seg(lt, 0.9, 0.7)); g.fillStyle = rgba(GOLD, 0.55); g.fillRect(540 - lw, 1118, lw * 2, 1.5);
-    rise('把飞过的天空，收进一本手帐', PW / 2, 1222, 54, TM.card + 1.02, t, { font: SER(54, 600), align: 'center', tr: 5, d: 0.7 });
-    fade('网页　·　微信小程序　·　免费', PW / 2, 1690, TM.card + 1.55, t, { font: SAN(400, 32), align: 'center', tr: 4, d: 0.6 }); }
+    fade('SKY  PASSPORT', PW / 2, 1050, TM.card + 1.05, t, { font: MONO(32), fill: rgba(GOLD, 0.9), tr: 18, align: 'center', d: 0.5 });
+    const lw = 280 * eo5(seg(lt, 1.2, 0.8)); g.fillStyle = rgba(GOLD, 0.55); g.fillRect(540 - lw, 1118, lw * 2, 1.5);
+    rise('把飞过的天空，收进一本手帐', PW / 2, 1222, 54, TM.card + 1.45, t, { font: SER(54, 600), align: 'center', tr: 5, d: 0.7 });
+    fade('网页　·　微信小程序　·　免费', PW / 2, 1690, TM.card + 2.2, t, { font: SAN(500, 38), fill: 'rgba(226,234,246,.88)', align: 'center', tr: 4, d: 0.6 }); }
 
   function frame(i) { const t = i / FPS; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.shadowColor = 'transparent'; g.textAlign = 'left';
     if (t < TM.imp) sOrigin(t); else if (t < TM.dec) sImport(t); else if (t < TM.film) sDecode(t); else if (t < TM.medal) sFilm(t); else if (t < TM.poster) sMedals(t); else if (t < TM.card) sPoster(t); else sEnd(t);
@@ -205,23 +204,25 @@
     if (t < 0.4) { g.fillStyle = `rgba(0,0,0,${1 - t / 0.4})`; g.fillRect(0, 0, PW, PH); } if (t > END - 0.25) { g.fillStyle = `rgba(0,0,0,${cl((t - (END - 0.25)) / 0.25) * 0.9})`; g.fillRect(0, 0, PW, PH); } return CV; }
 
   /* ---------- sound ---------- */
-  function scene() { const years = [3, 4, 5].map((b, k) => ({ y: 2020 + k, t: b * BR, end: (b + 1) * BR, bars: 1, n: 6, dream: false, gap: false })), flights = [];
+  function scene() { const years = [3, 4, 5, 6, 7, 8].map((b, k) => ({ y: 2020 + k, t: b * BR, end: (b + 1) * BR, bars: 1, n: 6, dream: false, gap: false })), flights = [];
     years.forEach((y, k) => { if (k) [0, 3, 5].forEach(e => flights.push({ t0: y.t + e * Q / 2, dur: 0.8, km: 1500, up: 0, vd: 0 })); });
-    return { T_END: END + BR, T_FE: 6 * BR, T_STAMP: 6 * BR + Q, T_ZOOM: 7 * BR, T_CARD: 9 * BR, years, flights, order: ['CN'], visit: { CN: T_OPEN }, P: { nat: 'CN' }, style: 'groove' }; }
+    return { T_END: END + BR, T_FE: TM.hang + BR, T_STAMP: TM.hang + BR + Q, T_ZOOM: TM.medal + BR, T_CARD: TM.card + BR, years, flights, order: ['CN'], visit: { CN: T_OPEN }, P: { nat: 'CN' }, style: 'groove' }; }
   function cues() { const c = [], add = (nm, t, gain, pan = 0.5, rv = 0.1, rate = 1, fb = 3000) => c.push([nm, t + BR, gain, pan, rv, rate, fb]);
-    add('fly', 1.05, 0.12, 0.45, 0.25, 0.9, 1500); add('rev_zoom', BR, 0.10, 0.5, 0.2); add('sparkle', BR + 0.3, 0.10, 0.5, 0.25, 1, 7000);
-    for (let i = 0; i < 8; i++) add('tick' + (i % 2), BR + 0.18 + i * 0.15, 0.13, 0.25 + 0.5 * hash(i * 1.7), 0.1, 1, 4000); add('swish', TM.imp - 0.08, 0.26, 0.5, 0.12);
-    for (let k = 0; k < 3; k++) { add('card' + (k % 2), TM.imp + k * Q + 0.09, 0.3, 0.62, 0.08, [1, 1.06, 0.94][k]); add('place' + (k % 2), TM.imp + k * Q + 0.27, 0.3, 0.5, 0.1); }
-    add('blip', TM.imp + Q + 0.2, 0.2, 0.4, 0.05, 1, 3000); add('blip2', TM.imp + Q + 0.34, 0.2, 0.6, 0.05, 1, 5000); for (let i = 0; i < 6; i++) add('key' + (i % 4), TM.imp + 2 * Q + 0.08 + i * 0.055, 0.2, 0.45 + 0.02 * i, 0.05);
-    add('pop0', TM.imp + 2 * Q + 0.44, 0.2); add('paper', TM.imp + 3 * Q + 0.06, 0.22, 0.5, 0.15, 1, 4000); add('swish', TM.dec - 0.1, 0.26, 0.5, 0.12, 1.1);
-    add('data', TM.dec + 0.8, 0.12, 0.5, 0.1, 1, 2000); for (let i = 0; i < 4; i++) add('tone', TM.dec + 0.3 + i * 0.2, 0.16, 0.35 + 0.1 * i, 0.08, [1, 1.122, 1.26, 1.5][i], 1500); for (let i = 0; i < 6; i++) add('tick' + (i % 2), TM.dec + 0.45 + i * 0.12, 0.12, 0.3 + 0.08 * i, 0.08, 1, 4000);
+    add('fly', 1.15, 0.12, 0.45, 0.25, 0.9, 1500); add('rev_zoom', BR, 0.10, 0.5, 0.2); add('sparkle', BR + 0.3, 0.10, 0.5, 0.25, 1, 7000);
+    for (let i = 0; i < 8; i++) add('tick' + (i % 2), BR + 0.18 + i * 0.16, 0.13, 0.25 + 0.5 * hash(i * 1.7), 0.1, 1, 4000); add('swish', TM.imp - 0.08, 0.26, 0.5, 0.12);
+    for (let k = 0; k < 3; k++) { add('card' + (k % 2), TM.imp + k * CP + 0.12, 0.3, 0.62, 0.08, [1, 1.06, 0.94][k]); add('place' + (k % 2), TM.imp + k * CP + 0.36, 0.3, 0.5, 0.1); }
+    for (let i = 0; i < 5; i++) add('tick' + (i % 2), TM.imp + 0.5 + i * 0.16, 0.1, 0.4, 0.06, 1, 4000);   // the highlight reads down the sheet
+    add('blip', TM.imp + CP + 0.45, 0.2, 0.4, 0.05, 1, 3000); add('blip2', TM.imp + CP + 0.75, 0.2, 0.6, 0.05, 1, 5000); add('blip', TM.imp + CP + 1.02, 0.18, 0.5, 0.05, 1.12, 3000);
+    for (let i = 0; i < 9; i++) add('key' + (i % 4), TM.imp + 2 * CP + 0.14 + i * 0.085, 0.2, 0.45 + 0.012 * i, 0.05); add('pop0', TM.imp + 2 * CP + 1.05, 0.2);
+    add('paper', TM.imp + 3 * CP + 0.08, 0.22, 0.5, 0.15, 1, 4000); add('swish', TM.dec - 0.1, 0.26, 0.5, 0.12, 1.1);
+    add('data', TM.dec + 1.0, 0.12, 0.5, 0.1, 1, 2000); for (let i = 0; i < 4; i++) add('tone', TM.dec + 0.45 + i * 0.27, 0.16, 0.35 + 0.1 * i, 0.08, [1, 1.122, 1.26, 1.5][i], 1500); for (let i = 0; i < 8; i++) add('tick' + (i % 2), TM.dec + 0.6 + i * 0.17, 0.12, 0.3 + 0.06 * i, 0.08, 1, 4000);
     add('swish', TM.film - 0.12, 0.24, 0.5, 0.12, 0.92);
-    add('leather', TM.film + 0.12, 0.22, 0.5, 0.1); add('cov_sw', TM.film + Q + 0.27, 0.3, 0.5, 0.15, 1, 1500); add('cov_land', TM.film + Q + 0.44, 0.3, 0.5, 0.1); add('print', TM.film + 2 * Q + 0.1, 0.18, 0.5, 0.12, 1, 4000); add('fly', TM.film + 2 * Q + 0.55, 0.2, 0.5, 0.2, 1.15, 1500);
+    add('leather', TM.film + 0.15, 0.22, 0.5, 0.1); add('cov_sw', TM.film + 2 * Q + 0.54, 0.3, 0.5, 0.15, 1, 1500); add('cov_land', TM.film + 2 * Q + 0.87, 0.3, 0.5, 0.1); add('print', TM.film + 4 * Q + 0.1, 0.18, 0.5, 0.12, 1, 4000); add('fly', TM.film + 4 * Q + 1.05, 0.2, 0.5, 0.2, 1.1, 1500);
     const T2 = TM.stamp; add('rev_stamp', T2, 0.09, 0.5, 0.15); add('hit', T2, 0.5, 0.5, 0.1); add('boom', T2, 0.32, 0.5, 0); add('wood', T2, 0.42, 0.5, 0.08); add('paper', T2, 0.18, 0.5, 0.15);
-    add('rev_zoom', TM.medal, 0.08, 0.5, 0.2); add('sparkle', TM.medal + 0.3, 0.14, 0.5, 0.25, 1, 7000); for (let i = 0; i < 9; i++) add('pop' + (i % 2), TM.medal + 0.04 + i * 0.05, 0.13, 0.2 + 0.6 * hash(i * 2.3), 0.08, [1, 1.12, 0.92][i % 3]);
-    for (let j = 0; j < 3; j++) add('ding', TM.medal + 2 * Q + j * Q * 0.5 + 0.08, 0.18, 0.35 + 0.15 * j, 0.15, [1, 1.26, 1.498][j], 3500);
+    add('rev_zoom', TM.medal, 0.08, 0.5, 0.2); add('sparkle', TM.medal + 0.3, 0.14, 0.5, 0.25, 1, 7000); for (let i = 0; i < 11; i++) add('pop' + (i % 2), TM.medal + 0.05 + i * 0.075, 0.13, 0.2 + 0.6 * hash(i * 2.3), 0.08, [1, 1.12, 0.92][i % 3]);
+    for (let j = 0; j < 3; j++) add('ding', TM.medal + 4 * Q + j * Q + 0.08, 0.18, 0.35 + 0.15 * j, 0.15, [1, 1.26, 1.498][j], 3500);
     add('swish', TM.poster + 0.06, 0.24, 0.5, 0.12); add('paper', TM.poster + 0.2, 0.22, 0.5, 0.15, 1, 4000); add('swish', TM.card - 0.14, 0.26, 0.5, 0.12, 1.1);
-    add('chime', TM.card + 0.5, 0.22, 0.5, 0.25, 1, 2500); add('place0', TM.card + 1.08, 0.24, 0.5, 0.1); add('sparkle2', TM.card + 1.35, 0.15, 0.5, 0.25, 1, 2500); return c; }
+    add('chime', TM.card + 0.7, 0.22, 0.5, 0.25, 1, 2500); add('place0', TM.card + 1.5, 0.24, 0.5, 0.1); add('sparkle2', TM.card + 1.95, 0.15, 0.5, 0.25, 1, 2500); return c; }
   async function decodeSprite(b64, map, bank) { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)), x = (await new OfflineAudioContext(1, 48000, 48000).decodeAudioData(bin.buffer)).getChannelData(0);
     let k = 0; for (let i = 1; i < 9600; i++) if (Math.abs(x[i]) > Math.abs(x[k])) k = i; const off = k - 4800; for (const [nm, [st, len, sy]] of Object.entries(map)) bank[nm] = { d: x.slice(st + off, st + off + len), s: sy }; }
 
@@ -241,7 +242,7 @@
     frame(i) { return frame(i).toDataURL('image/jpeg', 0.93); },
     cues() { return cues().map(c => [c[0], +(c[1] - BR).toFixed(3)]); },
     /* the score on the product's grid, cut one bar in (see the header) */
-    audio() { const A = synth({ ...scene(), sfx: BANK, cues: cues(), stops: [[9 * BR - Q * 0.5, 9 * BR]] }, 48000), k0 = Math.round(BR * 48000), n = Math.round(END * 48000), o = new Int16Array(n * 2), fi = Math.round(0.012 * 48000);
+    audio() { const A = synth({ ...scene(), sfx: BANK, cues: cues(), stops: [[TM.card + BR - Q * 0.5, TM.card + BR]] }, 48000), k0 = Math.round(BR * 48000), n = Math.round(END * 48000), o = new Int16Array(n * 2), fi = Math.round(0.012 * 48000);
       for (let i = 0; i < n; i++) { const e = Math.min(1, i / fi, (n - i) / (0.25 * 48000)); o[2 * i] = Math.max(-32767, Math.min(32767, (A.L[k0 + i] || 0) * e * 32767)); o[2 * i + 1] = Math.max(-32767, Math.min(32767, (A.R[k0 + i] || 0) * e * 32767)); }
       let s = ''; const u = new Uint8Array(o.buffer); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s); },
   };

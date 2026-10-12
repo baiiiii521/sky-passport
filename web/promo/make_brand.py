@@ -1,4 +1,4 @@
-# 航迹手帐 brand film (20 s): picture and sound from brand.js, drawn on the product page.
+# 航迹手帐 brand film (30 s): picture and sound from brand.js, drawn on the product page.
 #   cd web/public && python3 -m http.server 5190 &
 #   uv run --with playwright python web/promo/make_brand.py <out_dir> [--stills t1,t2,...] [--sheet]
 # --stills writes single frames; --sheet also writes a contact sheet (one frame per half bar) for review.
@@ -27,7 +27,7 @@ with sync_playwright() as p:
     enc.stdin.close(); enc.wait()
     with wave.open(os.path.join(out, '_a.wav'), 'wb') as w: w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(base64.b64decode(pg.evaluate('BRAND.audio()')))
     json.dump(pg.evaluate('BRAND.cues()'), open(os.path.join(out, 'cues.json'), 'w')); print('errors', errs); b.close()
-full = os.path.join(out, 'brand-20s.mp4')
+full = os.path.join(out, 'brand-30s.mp4')
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(out, '_v.mp4'), '-i', os.path.join(out, '_a.wav'), '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', full], check=True)
-if '--sheet' in sys.argv: subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', full, '-vf', 'fps=30/32,scale=270:-1,tile=10x2', '-frames:v', '1', os.path.join(out, 'sheet.jpg')], check=True)
+if '--sheet' in sys.argv: subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', full, '-vf', 'fps=30/32,scale=270:-1,tile=10x3', '-frames:v', '1', os.path.join(out, 'sheet.jpg')], check=True)
 print('wrote', full)
