@@ -6,6 +6,7 @@
     <view class="verse"><view>登机牌会褪色，</view><view class="vg">飞过的天空不会。</view></view>
     <text class="lede">一分钟，把航班记录变成一本会动的护照。</text>
     <button class="cta" bindtap="chooseFile">开始制作 · 从聊天中选择表格</button>
+    <view class="notice" bindtap="manual"><text class="nb">提示</text><text class="nt">航旅纵横的「导出 Excel」现在是会员专享。没有会员也能做：在「行程 → 已结束」里多截几张图，点这里上传截图，自动识别成航班。</text></view>
     <button class="ghost wide" bindtap="manual">没有表格？截图识别 / 手动输入</button>
     <view class="cta2">
       <button class="ghost" bindtap="tryDemo">先用示例体验</button>

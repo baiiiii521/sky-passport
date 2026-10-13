@@ -314,7 +314,7 @@ async function shotsAdd(files){if(SHOT_BUSY||!files.length)return;SHOT_BUSY=true
     if(added){playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';rebuild();}
     say(fail&&!added?fail:`识别出 ${added} 段${dup?`，${dup} 段重复已跳过`:''}${need?`；${need} 段要在「检查表格」里补全`:''}${fail?`（${fail}）`:''}`,fail&&!added?'err':need?'':'ok');}
   finally{SHOT_BUSY=false;$('btnShots').disabled=false;$('shotFile').value='';}}
-if(SHOTS_ON&&!EN()){$('shotAdd').hidden=false;$('btnShots').addEventListener('click',()=>$('shotFile').click());$('shotFile').addEventListener('change',e=>shotsAdd([...e.target.files].slice(0,12)));}
+if(SHOTS_ON&&!EN()){$('shotAdd').hidden=false;$('shotNotice').hidden=false;$('shotNotice').addEventListener('click',()=>{$('shotAdd').open=true;setTimeout(()=>$('shotAdd').scrollIntoView({block:'center'}),120);});$('btnShots').addEventListener('click',()=>$('shotFile').click());$('shotFile').addEventListener('change',e=>shotsAdd([...e.target.files].slice(0,12)));}
 /* ---------- language switch: static text in i18n.js, everything rendered from code re-renders here ---------- */
 function natOptions(){const sel=$('nat'),keep=sel.value||'CN';sel.innerHTML='';const lab=v=>EN()?`${v[0]} · ${v[2]}`:`${v[1]} · ${v[2]}`;
   Object.entries(NAMES).sort((a,b)=>EN()?a[1][0].localeCompare(b[1][0],'en'):a[1][1].localeCompare(b[1][1],'zh')).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=lab(v);sel.appendChild(o);});sel.value=keep;}
