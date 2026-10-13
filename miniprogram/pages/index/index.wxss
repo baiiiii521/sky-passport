@@ -63,3 +63,4 @@
 .notice { margin-top: 20rpx; text-align: center; font-size: 24rpx; color: #d9ccb3; }
 .nu { color: #5eeaff; }
 .gnote { margin-top: 18rpx; padding: 20rpx 24rpx; border: 1px solid rgba(233,197,142,.4); border-radius: 18rpx; background: rgba(233,197,142,.06); font-size: 24rpx; line-height: 1.7; color: #e8ddc8; }
+.gsub { margin-top: 22rpx; font-size: 24rpx; color: #8fa6c2; }
