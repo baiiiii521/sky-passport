@@ -5,9 +5,11 @@
     <view class="big"><text class="g">都值得被</text><text class="c">记住</text></view>
     <view class="verse"><view>登机牌会褪色，</view><view class="vg">飞过的天空不会。</view></view>
     <text class="lede">一分钟，把航班记录变成一本会动的护照。</text>
-    <button class="cta" bindtap="chooseFile">开始制作 · 从聊天中选择表格</button>
-    <view class="notice" bindtap="manual">没有航旅纵横会员？<text class="nu">上传行程截图</text>或手动输入也可以 ›</view>
-    <button class="ghost wide" bindtap="manual">没有表格？截图识别 / 手动输入</button>
+    <view class="ways-h">选一种方式，把航班装进来</view>
+    <view class="way rec" bindtap="shots"><text class="wn">1</text><view class="wb"><view class="wt">上传行程截图<text class="wtag">推荐 · 不用会员</text></view><view class="wd">在航旅纵横「行程 → 已结束」里截图，可以选多张，自动认出每一段航班</view></view><text class="wa">›</text></view>
+    <view class="way" bindtap="chooseFile"><text class="wn">2</text><view class="wb"><view class="wt">从聊天中选择表格</view><view class="wd">航旅纵横会员可以导出 Excel，发到「文件传输助手」后来这里选</view><view class="wlink" catchtap="toGuide">不知道怎么导出？看底部的表格说明 ↓</view></view><text class="wa">›</text></view>
+    <view class="way" bindtap="manual"><text class="wn">3</text><view class="wb"><view class="wt">手动输入</view><view class="wd">航班不多？一段一段填，机场写中文名或三字码都行</view></view><text class="wa">›</text></view>
+    <view class="flow"><text class="fs"><text class="fn">①</text>导入航班</text><text class="fa">→</text><text class="fs"><text class="fn">②</text>填名字，生成视频</text><text class="fa">→</text><text class="fs"><text class="fn">③</text>看成就，出长图</text></view>
     <view class="cta2">
       <button class="ghost" bindtap="tryDemo">先用示例体验</button>
       <button class="ghost" bindtap="playIntro">▶ 20 秒看懂</button>
@@ -33,10 +35,10 @@
     </view>
   </view>
 
-  <view class="sec">
+  <view class="sec" id="guide">
     <view class="sec-h"><text class="code">GUIDE</text>怎么拿到航班表格</view>
     <view class="gnote" bindtap="manual">航旅纵横的「导出 Excel」现在是 App 会员专享功能。没有会员也没关系：在航旅纵横「行程 → 已结束」里多截几张图，上传后会自动识别成航班；也可以一段一段手动输入。<text class="nu"> 去上传截图 ›</text></view>
-    <view class="gsub">有会员、能导出表格的话：</view>
+    <view class="gsub">方式 2 · 有会员、能导出表格的话：</view>
     <block>
       <view wx:for="{{guide}}" wx:key="index" class="step"><text class="sn">{{index+1}}</text><view class="st"><view>{{item[0]}}</view><view class="small">{{item[1]}}</view></view></view>
     </block>

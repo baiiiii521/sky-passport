@@ -18,9 +18,9 @@ Page({
     manualOpen: false, legs: [], saved: 0, shotTodo: [], shotMsg: '', mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
   onShow() {
-    const g = getApp().globalData, want = g.openManual; g.openManual = false;
+    const g = getApp().globalData, want = g.openManual, shots = g.openShots; g.openManual = false; g.openShots = false;
     if (!g.rows) this.setData({ has: false, saved: SS.savedManual().length }); else if (this._ver !== g.ver) { this._ver = g.ver; this.load(); }
-    if (want) this.openManual();
+    if (shots) this.openManual().then(() => { if (this.data.manualOpen) this.pickShots(true); }); else if (want) this.openManual();   /* from the home page: straight to the album */
   },
 
   /* ---------- flights typed by hand ---------- */
@@ -56,9 +56,9 @@ Page({
     this.setData({ mFrom: ta, mTo: '', mFn: '', mHint: `已添加 ${fa} → ${ta}，共 ${legs.length} 段`, mCls: 'ok' }); /* the next leg usually starts where this one ended */
   },
   /* screenshots of a trip list (航旅纵横「已结束」etc.) → legs; anything incomplete is listed so the user can type it in */
-  pickShots() {
+  pickShots(quiet) {   /* quiet === true: opened for the user from another tab; if the album cannot open by itself, the card's own button is right there */
     if (this._shots) return;
-    wx.chooseMedia({ count: 9, mediaType: ['image'], sourceType: ['album'], sizeType: ['compressed'], success: r => this.readShots(r.tempFiles || []), fail: e => { if (!/cancel/.test(e.errMsg || '')) this.setData({ err: '没能打开相册：' + (e.errMsg || '') }); } });
+    wx.chooseMedia({ count: 9, mediaType: ['image'], sourceType: ['album'], sizeType: ['compressed'], success: r => this.readShots(r.tempFiles || []), fail: e => { if (quiet !== true && !/cancel/.test(e.errMsg || '')) this.setData({ err: '没能打开相册：' + (e.errMsg || '') }); } });
   },
   async readShots(files) {
     if (!files.length || this._shots) return; this._shots = true; await this.openManual();

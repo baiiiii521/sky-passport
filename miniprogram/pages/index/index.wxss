@@ -64,3 +64,14 @@
 .nu { color: #5eeaff; }
 .gnote { margin-top: 18rpx; padding: 20rpx 24rpx; border: 1px solid rgba(233,197,142,.4); border-radius: 18rpx; background: rgba(233,197,142,.06); font-size: 24rpx; line-height: 1.7; color: #e8ddc8; }
 .gsub { margin-top: 22rpx; font-size: 24rpx; color: #8fa6c2; }
+.ways-h { margin-top: 6rpx; font-size: 26rpx; font-weight: 700; color: #e9c58e; letter-spacing: 2rpx; }
+.way { display: flex; align-items: center; gap: 20rpx; margin-top: 16rpx; padding: 22rpx 24rpx; border-radius: 22rpx; border: 1px solid rgba(94,234,255,.22); background: rgba(8,18,40,.82); }
+.way.rec { border-color: #e9c58e; background: linear-gradient(180deg, rgba(233,197,142,.16), rgba(233,197,142,.05)); }
+.wn { flex: none; width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; border-radius: 50%; font-family: monospace; font-weight: 700; font-size: 26rpx; color: #02040b; background: #5eeaff; }
+.way.rec .wn { background: #e9c58e; }
+.wb { flex: 1; min-width: 0; } .wt { font-size: 30rpx; font-weight: 800; color: #eaf4ff; } .wd { margin-top: 4rpx; font-size: 23rpx; line-height: 1.55; color: #8fa6c2; }
+.wtag { margin-left: 14rpx; font-size: 20rpx; font-weight: 700; color: #1a0d04; background: #e9c58e; border-radius: 8rpx; padding: 2rpx 12rpx; vertical-align: 4rpx; }
+.wlink { margin-top: 8rpx; font-size: 23rpx; color: #5eeaff; padding: 4rpx 0; }
+.wa { flex: none; font-size: 40rpx; color: #5eeaff; } .way.rec .wa { color: #e9c58e; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6rpx 12rpx; margin-top: 26rpx; font-size: 22rpx; color: #8fa6c2; }
+.fn { color: #5eeaff; margin-right: 4rpx; } .fa { color: rgba(94,234,255,.5); }

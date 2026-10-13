@@ -24,6 +24,8 @@ Page({
   chooseFile() { SS.chooseFile(this); },
   tryDemo() { SS.tryDemo(this); },
   manual() { getApp().globalData.openManual = true; wx.switchTab({ url: '/pages/result/result' }); },
+  shots() { getApp().globalData.openShots = true; wx.switchTab({ url: '/pages/result/result' }); },
+  toGuide() { wx.pageScrollTo({ selector: '#guide', duration: 300, offsetTop: -16 }); },
   onShareAppMessage() { return { title: '把你的航班记录做成一本飞行护照', path: '/pages/index/index', imageUrl: M + 'share.jpg' }; }, // share card image is 5:4
   onShareTimeline() { return { title: '航迹手帐：把航班记录做成一本飞行护照' }; },
 });
