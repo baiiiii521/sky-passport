@@ -78,7 +78,7 @@ header.top{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;
 .verse em{font-style:normal;color:var(--gold)}
 .lede{color:var(--muted);font-size:15px;max-width:52ch;margin:14px 0 28px;letter-spacing:.04em}
 .cta{display:flex;gap:12px;flex-wrap:wrap}.cta button{font-size:15.5px;padding:15px 22px;border-radius:12px}
-.notice{display:flex;gap:10px;align-items:flex-start;margin-top:18px;padding:12px 14px;max-width:560px;border:1px solid rgba(233,197,142,.45);border-radius:12px;background:rgba(233,197,142,.07);color:#e8ddc8;font-size:13.5px;line-height:1.65;text-decoration:none}.notice[hidden]{display:none}.notice b{flex:none;font:700 11px var(--f-mono);letter-spacing:.1em;color:var(--bg0);background:var(--gold);border-radius:5px;padding:3px 7px;margin-top:2px}.notice u{color:var(--ac);text-underline-offset:3px}
+.notice{display:inline-block;margin-top:14px;color:#d9ccb3;font-size:13.5px;text-decoration:none}.notice[hidden]{display:none}.notice u{color:var(--ac);text-underline-offset:3px}.gnote{margin:10px 0 4px;padding:10px 12px;border:1px solid rgba(233,197,142,.4);border-radius:10px;background:rgba(233,197,142,.06);color:#e8ddc8;font-size:13.5px;line-height:1.7}.gnote[hidden]{display:none}
 .trust{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font-size:12.5px;color:var(--muted);font-family:var(--f-mono);letter-spacing:.04em}
 .trust span::before{content:"◆";color:var(--ac);margin-right:7px;font-size:9px;vertical-align:2px}
 /* globe stage */
@@ -350,7 +350,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
       <p class="verse" data-en="Boarding passes fade.&lt;br&gt;&lt;em&gt;The sky you crossed doesn't.&lt;/em&gt;">登机牌会褪色，<br><em>飞过的天空不会。</em></p>
       <p class="lede" data-en="One minute turns your flight log into a passport that moves.">一分钟，把航班记录变成一本会动的护照。</p>
       <div class="cta"><button type="button" class="primary" id="btnStart" data-en="Start with my flights ↓">开始，导入我的航班 ↓</button><button type="button" class="introBtn ghost" data-en="▶ Watch the 20-second intro">▶ 看 20 秒介绍</button></div>
-      <a class="notice" id="shotNotice" href="#/studio/s1" data-go="studio:s1" hidden><b>提示</b><span>航旅纵横的「导出 Excel」现在是会员专享。没有会员也能做：在「行程 → 已结束」里多截几张图，<u>点这里上传截图</u>，自动识别成航班；小程序「航迹手帐」里也可以。</span></a>
+      <a class="notice" id="shotNotice" href="#/studio/s1" data-go="studio:s1" hidden>没有航旅纵横会员？<u>上传行程截图</u>或手动输入也可以 →</a>
       <div class="trust"><span data-en="Your sheet never leaves the browser">表格只在你的浏览器里处理</span><span data-en="Free · no sign-up">免费 · 无需注册</span><span data-en="1080×1920 MP4 + original score">1080×1920 MP4 + 原创配乐</span></div>
     </div>
     <div class="stage">
@@ -412,6 +412,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
         </div>
         <details class="guide" id="guide">
           <summary data-en="Where do I get my flight history? 3 steps">不知道怎么导出记录？看 3 步说明</summary>
+          <p class="gnote" id="guideNote" hidden>航旅纵横的「导出 Excel」现在是 App 会员专享功能。没有会员也没关系：在航旅纵横「行程 → 已结束」里多截几张图，上传后会自动识别成航班；也可以一段一段手动输入。</p>
           <ol id="guideSteps"></ol>
         </details>
         <details class="more" id="quickAdd">
@@ -557,7 +558,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
 <script src="js/core.js?v=0f1ee5af"></script>
 <script src="js/engine.js?v=2ebd5d55"></script>
 <script src="js/music.js?v=f93c8b12"></script>
-<script src="js/ui.js?v=c331cfa2"></script>
+<script src="js/ui.js?v=12719d65"></script>
 <script src="js/extras.js?v=0b803638"></script>
 <script src="js/export.js?v=7d78a824"></script>
 <script src="js/home.js?v=7071ffb5"></script>
