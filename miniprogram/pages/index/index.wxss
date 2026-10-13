@@ -80,3 +80,5 @@
 .links { display: flex; justify-content: center; align-items: center; gap: 16rpx; margin-top: 26rpx; font-size: 24rpx; }
 .lk { color: #5eeaff; padding: 8rpx 0; } .ld { color: rgba(143,166,194,.5); }
 .sec .way { background: rgba(5,12,30,.6); }
+.pick { margin-top: 18rpx; text-align: center; font-size: 24rpx; color: #5eeaff; padding: 6rpx 0; }
+.links { margin-top: 30rpx; }

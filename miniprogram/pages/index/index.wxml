@@ -11,7 +11,8 @@
       <button class="ghost" bindtap="chooseFile">选择表格</button>
       <button class="ghost" bindtap="manual">手动输入</button>
     </view>
-    <view class="links"><text class="lk" bindtap="tryDemo">先看示例</text><text class="ld">·</text><text class="lk" bindtap="playIntro">▶ 20 秒看懂</text><text class="ld">·</text><text class="lk" bindtap="toGuide">三种方式怎么选 ↓</text></view>
+    <view class="pick" bindtap="toGuide">三种方式怎么选 ↓</view>
+    <view class="links"><text class="lk" bindtap="tryDemo">先看示例</text><text class="ld">·</text><text class="lk" bindtap="playIntro">▶ 20 秒看懂</text></view>
     <video wx:if="{{introSrc}}" class="demo" src="{{introSrc}}" autoplay controls object-fit="contain" show-fullscreen-btn bindended="introEnded"></video>
     <view class="more2" bindtap="playDemo">{{showDemo?'收起成片示例 ▴':'看一段生成的成片示例 ▾'}}</view>
     <video wx:if="{{showDemo}}" class="demo" src="{{demoVideo}}" poster="{{demoPoster}}" autoplay controls object-fit="contain" show-fullscreen-btn></video>
