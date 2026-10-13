@@ -5,16 +5,13 @@
     <view class="big"><text class="g">都值得被</text><text class="c">记住</text></view>
     <view class="verse"><view>登机牌会褪色，</view><view class="vg">飞过的天空不会。</view></view>
     <text class="lede">一分钟，把航班记录变成一本会动的护照。</text>
-    <view class="ways-h">选一种方式，把航班装进来</view>
-    <view class="free">本小程序免费，不用注册，也没有会员</view>
-    <view class="way rec" bindtap="shots"><text class="wn">1</text><view class="wb"><view class="wt">上传行程截图<text class="wtag">推荐</text></view><view class="wd">不需要航旅纵横的会员：在航旅纵横「行程 → 已结束」里截图，可以选多张，自动认出每一段航班</view></view><text class="wa">›</text></view>
-    <view class="way" bindtap="chooseFile"><text class="wn">2</text><view class="wb"><view class="wt">从聊天中选择表格</view><view class="wd">航旅纵横的会员可以在它的 App 里导出 Excel，发到「文件传输助手」后来这里选</view><view class="wlink" catchtap="toGuide">不知道怎么导出？看底部的表格说明 ↓</view></view><text class="wa">›</text></view>
-    <view class="way" bindtap="manual"><text class="wn">3</text><view class="wb"><view class="wt">手动输入</view><view class="wd">航班不多？一段一段填，机场写中文名或三字码都行</view></view><text class="wa">›</text></view>
-    <view class="flow"><text class="fs"><text class="fn">①</text>导入航班</text><text class="fa">→</text><text class="fs"><text class="fn">②</text>填名字，生成视频</text><text class="fa">→</text><text class="fs"><text class="fn">③</text>看成就，出长图</text></view>
+    <button class="cta" bindtap="shots">上传行程截图 · 开始制作</button>
+    <view class="hint">在航旅纵横「行程 → 已结束」里截几张图就行</view>
     <view class="cta2">
-      <button class="ghost" bindtap="tryDemo">先用示例体验</button>
-      <button class="ghost" bindtap="playIntro">▶ 20 秒看懂</button>
+      <button class="ghost" bindtap="chooseFile">选择表格</button>
+      <button class="ghost" bindtap="manual">手动输入</button>
     </view>
+    <view class="links"><text class="lk" bindtap="tryDemo">先看示例</text><text class="ld">·</text><text class="lk" bindtap="playIntro">▶ 20 秒看懂</text><text class="ld">·</text><text class="lk" bindtap="toGuide">三种方式怎么选 ↓</text></view>
     <video wx:if="{{introSrc}}" class="demo" src="{{introSrc}}" autoplay controls object-fit="contain" show-fullscreen-btn bindended="introEnded"></video>
     <view class="more2" bindtap="playDemo">{{showDemo?'收起成片示例 ▴':'看一段生成的成片示例 ▾'}}</view>
     <video wx:if="{{showDemo}}" class="demo" src="{{demoVideo}}" poster="{{demoPoster}}" autoplay controls object-fit="contain" show-fullscreen-btn></video>
@@ -37,15 +34,17 @@
   </view>
 
   <view class="sec" id="guide">
-    <view class="sec-h"><text class="code">GUIDE</text>怎么拿到航班表格</view>
-    <view class="gnote" bindtap="manual">航旅纵横的「导出 Excel」现在是航旅纵横 App 自己的会员专享功能。没有航旅纵横会员也没关系：在航旅纵横「行程 → 已结束」里多截几张图，上传后会自动识别成航班；也可以一段一段手动输入。<text class="nu"> 去上传截图 ›</text></view>
-    <view class="gsub">方式 2 · 有航旅纵横会员、能导出表格的话：</view>
+    <view class="sec-h"><text class="code">GUIDE</text>三种方式怎么选</view>
+    <view class="way rec" bindtap="shots"><text class="wn">1</text><view class="wb"><view class="wt">上传行程截图<text class="wtag">推荐</text></view><view class="wd">不需要航旅纵横的会员：在航旅纵横「行程 → 已结束」里截图，可以选多张，自动认出每一段航班</view></view><text class="wa">›</text></view>
+    <view class="way" bindtap="chooseFile"><text class="wn">2</text><view class="wb"><view class="wt">从聊天中选择表格</view><view class="wd">航旅纵横的会员可以在它的 App 里导出 Excel，发到「文件传输助手」后来这里选</view></view><text class="wa">›</text></view>
+    <view class="way" bindtap="manual"><text class="wn">3</text><view class="wb"><view class="wt">手动输入</view><view class="wd">航班不多？一段一段填，机场写中文名或三字码都行</view></view><text class="wa">›</text></view>
+    <view class="gsub">方式 2 怎么导出表格（需要航旅纵横会员）：</view>
     <block>
       <view wx:for="{{guide}}" wx:key="index" class="step"><text class="sn">{{index+1}}</text><view class="st"><view>{{item[0]}}</view><view class="small">{{item[1]}}</view></view></view>
     </block>
   </view>
 
-  <text class="foot">表格只在你的手机上解析；生成视频时才把航段发到我们的服务器渲染，24 小时后自动删除。</text>
+  <text class="foot">本小程序免费，不用注册。表格只在你的手机上解析；生成视频时才把航段发到我们的服务器渲染，24 小时后自动删除。</text>
   <view wx:if="{{busy}}" class="busy">{{busy}}</view>
   <view wx:if="{{err}}" class="err">{{err}}</view>
 </view>

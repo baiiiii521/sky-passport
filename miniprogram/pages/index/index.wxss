@@ -76,3 +76,7 @@
 .flow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6rpx 12rpx; margin-top: 26rpx; font-size: 22rpx; color: #8fa6c2; }
 .fn { color: #5eeaff; margin-right: 4rpx; } .fa { color: rgba(94,234,255,.5); }
 .free { margin-top: 6rpx; font-size: 22rpx; color: #8fa6c2; }
+.hint { margin-top: 14rpx; text-align: center; font-size: 23rpx; color: #8fa6c2; }
+.links { display: flex; justify-content: center; align-items: center; gap: 16rpx; margin-top: 26rpx; font-size: 24rpx; }
+.lk { color: #5eeaff; padding: 8rpx 0; } .ld { color: rgba(143,166,194,.5); }
+.sec .way { background: rgba(5,12,30,.6); }
