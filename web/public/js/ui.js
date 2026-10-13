@@ -260,7 +260,7 @@ const GUIDE_EN=[['In Flighty, myFlightradar24, OpenFlights or App in the Air, lo
   ['Save the file to your phone or computer, then tap the dashed box above to upload it','Columns, airport names (codes or English names) and date formats are recognised automatically.'],
   ['No app history? Download the CSV template and fill it in, or add a few flights by hand below','Chinese exports from 航旅纵横 work as they are, too.']];
 const GUIDE=[['打开「航旅纵横」App，进入「我的」，找到全部行程 / 飞行记录','不同版本的叫法可能是「行程」「飞行足迹」或「出行记录」。'],
-  ['点「导出」（常在右上角「···」里），选 Excel，发送到自己的邮箱','导出目前需要航旅纵横 Pro 会员。没有会员也没关系：用下面的「上传行程截图」或「手动添加航班」。'],
+  ['点「导出」（常在右上角「···」里），选 Excel，发送到自己的邮箱','导出目前需要航旅纵横 App 的会员。没有航旅纵横会员也没关系：用下面的「上传行程截图」或「手动添加航班」。'],
   ['在电脑或手机上下载邮件附件，回到这里点上方虚线框上传','其他 App 导出的表格、自己整理的 Excel 也可以；什么都没有就点「下载 CSV 模板」手填。']];
 function initGuide(){const ol=$('guideSteps');ol.innerHTML='';for(const [t,d] of (EN()?GUIDE_EN:GUIDE))ol.append(el('li',{},t,el('small',{},d)));}
 function renderYearQuick(ys){const box=$('yearQuick');box.innerHTML='';if(ys.length<2){box.hidden=true;return;}box.hidden=false;

@@ -1,11 +1,11 @@
 <view class="wrap">
   <view class="card empty" wx:if="{{!has}}">
     <view class="h2"><text class="no">01</text>导入你的航班</view>
-    <text class="small">三种方式，选一种：截图最省事，不需要航旅纵横会员；有会员可以导出表格；航班不多也可以手动输入。</text>
+    <text class="small">三种方式，选一种：截图最省事，不需要航旅纵横的会员；有航旅纵横会员可以导出表格；航班不多也可以手动输入。</text>
     <button class="primary" bindtap="pickShots">① 上传行程截图（推荐）</button>
     <text class="small center">在航旅纵横「行程 → 已结束」里截图，可以选多张</text>
     <button class="ghost" bindtap="chooseFile">② 从聊天中选择表格</button>
-    <text class="small center">会员导出的 Excel，先发到「文件传输助手」；怎么导出见首页底部说明</text>
+    <text class="small center">航旅纵横会员导出的 Excel，先发到「文件传输助手」；怎么导出见首页底部说明</text>
     <button wx:if="{{!manualOpen}}" class="ghost" bindtap="openManual">{{saved?'③ 继续手动输入（已有 '+saved+' 段）':'③ 手动输入航班'}}</button>
     <button class="ghost" bindtap="tryDemo">先用示例数据体验</button>
   </view>
