@@ -5,7 +5,7 @@ const M = SS.SITE + '/mp/';
 Page({
   data: {
     busy: '', err: '', version: '', showDemo: false, introSrc: '',
-    demoVideo: M + 'demo.mp4', demoPoster: M + 'cover.jpg',
+    demoVideo: M + 'demo.mp4?v=113', demoPoster: M + 'cover.jpg?v=113',
     globeImg: M + 'globe.jpg',
     sample: [{ c: ['5', '1'], l: '次起飞' }, { c: ['1', '3', '1', ',', '4', '8', '3'], l: '公里' }, { c: ['1', '3'], l: '个国家地区' }, { c: ['1', '9', '8'], l: '小时在空中' }],
 
@@ -27,6 +27,6 @@ Page({
   manual() { getApp().globalData.openManual = true; wx.switchTab({ url: '/pages/result/result' }); },
   shots() { getApp().globalData.openShots = true; wx.switchTab({ url: '/pages/result/result' }); },
   toGuide() { wx.pageScrollTo({ selector: '#guide', duration: 300, offsetTop: -16 }); },
-  onShareAppMessage() { return { title: '航迹手帐：把航班记录做成一本会动的护照', path: '/pages/index/index', imageUrl: M + 'share.jpg' }; }, // share card image is 5:4
+  onShareAppMessage() { return { title: '航迹手帐：把航班记录做成一本会动的护照', path: '/pages/index/index', imageUrl: M + 'share.jpg?v=113' }; }, // share card image is 5:4
   onShareTimeline() { return { title: '航迹手帐：把航班记录做成一本会动的护照' }; },
 });

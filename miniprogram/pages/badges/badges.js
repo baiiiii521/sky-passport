@@ -9,7 +9,7 @@ const RAR_T = { legend: '传奇', gold: '金', silver: '银' }, MAX_PICK = 12; /
 const loadMapBase = () => SS.mapBase();
 
 Page({
-  data: { has: false, demo: false, name: '', latin: '', label: '', sum: null, badges: [], medals: [], cats: [], cat: 'all', got: 0, picked: 0, poster: '', posterH: 1000, busy: '', err: '', xhs: [], card: '', version: '', sampleImg: SS.SITE + '/mp/long.jpg?v=104' },
+  data: { has: false, demo: false, name: '', latin: '', label: '', sum: null, badges: [], medals: [], cats: [], cat: 'all', got: 0, picked: 0, poster: '', posterH: 1000, busy: '', err: '', xhs: [], card: '', version: '', sampleImg: SS.SITE + '/mp/long.jpg?v=113' },
   onShow() {
     const g = getApp().globalData; if (this.data.version !== g.version) this.setData({ version: g.version }); if (!g.rows || !g.res) return this.setData({ has: false });
     const key = g.ver + '/' + (g.viewVer || 0); if (this._key === key) return; this._key = key;

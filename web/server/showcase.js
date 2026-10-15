@@ -29,6 +29,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await b.close();
   const api = 'http://127.0.0.1:' + (process.env.RENDER_PORT || 3102) + '/api/video';
   const job = await (await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': 'showcase' }, body: JSON.stringify({ rows, opts: { name: '林小舟', latin: 'LIN XIAOZHOU' } }) })).json();
-  for (;;) { await new Promise(r => setTimeout(r, 3000)); const st = await (await fetch(api + '/' + job.id)).json(); if (st.state === 'done') { fs.copyFileSync(path.join('/srv/sky-passport/videos', job.id + '.mp4'), path.join(OUT, 'demo.mp4')); break; } if (st.state === 'error') throw new Error(st.error); }
+  for (;;) { await new Promise(r => setTimeout(r, 3000)); const st = await (await fetch(api + '/' + job.id)).json(); if (st.state === 'done') { const local = path.join('/srv/sky-passport/videos', job.id + '.mp4');   // finished films move to COS: fetch it back from there when the local copy is gone
+      if (fs.existsSync(local)) fs.copyFileSync(local, path.join(OUT, 'demo.mp4')); else fs.writeFileSync(path.join(OUT, 'demo.mp4'), Buffer.from(await (await fetch(`https://${process.env.COS_BUCKET}.cos.${process.env.COS_REGION}.myqcloud.com/v/${job.id}.mp4`)).arrayBuffer())); break; } if (st.state === 'error') throw new Error(st.error); }
   console.log('showcase →', OUT, fs.readdirSync(OUT));
 })().catch(e => { console.error(e); process.exit(1); });
