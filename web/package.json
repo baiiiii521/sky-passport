@@ -5,7 +5,7 @@
     "build:data": "node scripts/build_data.js",
     "dev": "npx --yes http-server@14.1.1 public -p 5173 -c-1",
     "build:china": "node scripts/build_china.js",
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.js",
     "build:fonts": "node scripts/vendor_fonts.js",
     "stamp": "node scripts/stamp.js"
   },
