@@ -46,6 +46,7 @@
   </view>
 
   <text class="foot">本小程序免费，不用注册。表格只在你的手机上解析；生成视频时才把航段发到我们的服务器渲染，24 小时后自动删除。</text>
+  <view class="ver">航迹手帐 · 版本 {{version}}</view>
   <view wx:if="{{busy}}" class="busy">{{busy}}</view>
   <view wx:if="{{err}}" class="err">{{err}}</view>
 </view>

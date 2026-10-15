@@ -2,6 +2,8 @@
 const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const SS = require('../../libs/session.js');
+const CA = require('../../libs/cards.js');
+const PICK = 'skypassport.badgesOn';
 const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
 const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
@@ -15,10 +17,11 @@ Page({
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
     video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' }, saving: '',
     busy: '', err: '',
+    step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
     manualOpen: false, legs: [], saved: 0, shotTodo: [], shotMsg: '', mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
   onShow() {
-    const g = getApp().globalData, want = g.openManual, shots = g.openShots; g.openManual = false; g.openShots = false;
+    const g = getApp().globalData, want = g.openManual, shots = g.openShots; g.openManual = false; g.openShots = false; if (this.data.version !== g.version) this.setData({ version: g.version });
     if (!g.rows) this.setData({ has: false, saved: SS.savedManual().length }); else if (this._ver !== g.ver) { this._ver = g.ver; this.load(); }
     if (shots) this.openManual().then(() => { if (this.data.manualOpen) this.pickShots(true); }); else if (want) this.openManual();   /* from the home page: straight to the album */
   },
@@ -52,7 +55,7 @@ Page({
     if (fa === ta) return bad('出发和到达是同一个机场');
     if (d.legs.length >= 300) return bad('手动输入最多 300 段，更多请用表格导入');
     const legs = SS.manualLegs().concat([{ d: d.mDate, from: fa, to: ta, fn: d.mFn.toUpperCase().replace(/\s+/g, '').slice(0, 8) }]);
-    SS.setManual(legs); this.refresh();
+    SS.track('import_manual'); SS.setManual(legs); this.refresh();
     this.setData({ mFrom: ta, mTo: '', mFn: '', mHint: `已添加 ${fa} → ${ta}，共 ${legs.length} 段`, mCls: 'ok' }); /* the next leg usually starts where this one ended */
   },
   /* screenshots of a trip list (航旅纵横「已结束」etc.) → legs; anything incomplete is listed so the user can type it in */
@@ -70,7 +73,7 @@ Page({
       catch (e) { fail = e.code === 429 ? '这一小时识别的张数太多了，请稍后再试' : e.code === 503 ? '截图识别暂时不可用，请先手动输入' : e.code === 400 ? '有图片读不出来，请换一张清晰的截图' : (e.code ? '识别服务出错了，请稍后再试' : '上传没成功（网络较慢或不通），请换个网络再试，或先手动输入'); if (e.code !== 400) break; }
     }
     this._shots = false; this.setData({ busy: '' });
-    if (added) { SS.setManual(legs.slice(0, 300)); this.refresh(); }
+    SS.track(added ? 'import_shots' : 'shots_none'); if (added) { SS.setManual(legs.slice(0, 300)); this.refresh(); }
     this.setData({ shotTodo: todo.slice(0, 30), shotMsg: fail && !added ? fail : `识别出 ${added} 段${dup ? `，${dup} 段重复已跳过` : ''}${todo.length ? `；另有 ${todo.length} 段没认全，请照下面手动补上` : ''}${!added && !todo.length ? '：没找到航班，请确认截图里有日期、航班号和起降地' : ''}${fail ? `（${fail}）` : ''}`, mHint: '', mCls: '' });
   },
   delLeg(e) { const legs = SS.manualLegs(); legs.splice(+e.currentTarget.dataset.i, 1); SS.setManual(legs); this.refresh(); this.setData({ mHint: '', mCls: '' }); },
@@ -79,7 +82,8 @@ Page({
   chooseFile() { SS.chooseFile(this); }, tryDemo() { SS.tryDemo(this); }, toBadges() { wx.switchTab({ url: '/pages/badges/badges' }); },
   load() {
     const g = getApp().globalData, res = g.res || C.buildFlights(); ALL = res.all; clearTimeout(pollTimer); clearTimeout(specTimer);
-    this.setData({ has: true, year: 0, up: true, video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } });
+    this.setData({ has: true, step: 1, year: 0, up: true, card: '', video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } });
+    this.setData({ next: this.nextFlight() }); if (this.data.next && !this._cdTracked) { this._cdTracked = true; SS.track('countdown'); }
     const years = [...new Set(ALL.filter(f => !f.vd).map(f => f.y))].sort((a, b) => a - b);
     this.setData({ demo: g.demo, name: g.view.name || '', latin: g.view.latin || '', years, unres: [...res.diag.refs.keys()].slice(0, 8), noDate: res.diag.noDate.length });
     this.recompute();
@@ -95,16 +99,37 @@ Page({
     const list = ST.pick(ALL, { up: this.data.up, year: this.data.year }), sum = ST.summarize(list, 'CN');
     const label = !sum.n ? '' : sum.y0 === sum.y1 ? `${sum.y0} 年度` : `${sum.y0} — ${sum.y1}`;
     this.setData({ sum: { ...sum, kmText: ST.fmt(sum.km), hours: Math.round(sum.min / 60) }, label });
-    this.share();
-    this.resetVideo();
+    this._list = list; this.share();
+    this.resetVideo(); this.cardSoon();
+  },
+  /* the next upcoming flight, for the countdown (dates are the traveller's local dates) */
+  nextFlight() {
+    const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const f = ALL.filter(x => !x.vd && x.date && x.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1))[0]; if (!f) return null;
+    const days = Math.round((new Date(f.date + 'T00:00:00') - new Date(today + 'T00:00:00')) / 864e5);
+    return { days, when: `${+f.date.slice(5, 7)} 月 ${+f.date.slice(8, 10)} 日`, route: `${ST.placeName(f.f)} → ${ST.placeName(f.to)}${f.fn ? ' · ' + f.fn : ''}` };
+  },
+  /* the personal share card (5:4): redrawn a moment after the numbers or the name change */
+  cardSoon() { clearTimeout(this._cardT); this._cardT = setTimeout(() => this.makeCard(), 500); },
+  async makeCard() {
+    const d = this.data; if (!d.sum || !d.sum.n || !this._list) return;
+    const all = ST.allBadges(this._list, 'CN'), sel = wx.getStorageSync(PICK), picked = all.filter(b => !b.lock && (Array.isArray(sel) ? sel.includes(b.id) : ST.BADGE_DEFAULT.includes(b.id)));
+    try { const img = await SS.mapBase(), path = await CA.render(this, 'share', CA.cardData({ name: d.name, label: d.label }, d.sum, this._list, picked, all), img); this.setData({ card: path }); } catch (e) { /* the static card is used instead */ }
+  },
+  goStep(e) { const n = +e.currentTarget.dataset.n; if (n === this.data.step || (n > 1 && (!this.data.sum || !this.data.sum.n))) return; this.setData({ step: n }); wx.pageScrollTo({ scrollTop: 0, duration: 200 }); },
+  nextStep() { this.setData({ step: Math.min(3, this.data.step + 1) }); wx.pageScrollTo({ scrollTop: 0, duration: 200 }); },
+  prevStep() { this.setData({ step: Math.max(1, this.data.step - 1) }); wx.pageScrollTo({ scrollTop: 0, duration: 200 }); },
+  forget() {
+    wx.showModal({ title: '清空这些航班？', content: '会清空保存在这台手机上的表格和手动输入的航段，回到导入页重新开始。', confirmText: '清空', success: r => { if (!r.confirm) return;
+      SS.forgetLast(); SS.setManual([]); const g = getApp().globalData; g.rows = null; g.res = null; g.demo = false; g.ver++; this._ver = g.ver; this.setData({ has: false, saved: 0, card: '', step: 1 }); } });
   },
   /* the choices the 成就 tab also needs */
   share() { const d = this.data, g = getApp().globalData; g.view = { year: d.year, up: d.up, name: d.name, latin: d.latin, label: d.label }; g.viewVer = (g.viewVer || 0) + 1; },
   resetVideo() { if (this.data.video.state && this.data.video.state !== 'done') return; this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); this.prerender(); },
   pickYear(e) { this.setData({ year: +e.currentTarget.dataset.y }); this.recompute(); },
   toggleUp() { this.setData({ up: !this.data.up }); this.recompute(); },
-  onName(e) { this.setData({ name: e.detail.value.trim() }); this.share(); this.resetVideo(); },
-  onLatin(e) { this.setData({ latin: e.detail.value.toUpperCase().replace(/[^A-Z ]/g, '') }); this.share(); this.resetVideo(); },
+  onName(e) { this.setData({ name: e.detail.value.trim() }); this.share(); this.resetVideo(); this.cardSoon(); },
+  onLatin(e) { this.setData({ latin: e.detail.value.toUpperCase().replace(/[^A-Z ]/g, '') }); this.share(); this.resetVideo(); this.cardSoon(); },
   pick(e) { const { k, v } = e.currentTarget.dataset; this.setData({ [k]: v }); this.resetVideo(); },
 
   /* ---------- video: rendered on the server with the web engine ---------- */
@@ -141,7 +166,7 @@ Page({
   async submitVideo() {
     this.setData({ video: { state: 'sending', progress: 0, ahead: 0, url: '', size: '', err: '' } });
     try {
-      clearTimeout(specTimer); const d = this.data, r = await SS.api('/api/video', 'POST', this.videoBody());
+      clearTimeout(specTimer); SS.track('video_req'); const d = this.data, r = await SS.api('/api/video', 'POST', this.videoBody());
       wx.setStorageSync(LAST, { id: r.id, sig: dataSig(SS.rowsForServer()), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
       this.setData({ 'video.state': 'queued', 'video.ahead': r.ahead || 0 });
       this.poll(r.id);
@@ -155,8 +180,8 @@ Page({
     pollTimer = setTimeout(async () => {
       try {
         const s = await SS.api('/api/video/' + id, 'GET');
-        if (s.state === 'done') return this.setData({ video: { state: 'done', progress: 1, ahead: 0, url: SS.SITE + s.url, size: (s.size / 1048576).toFixed(1) + ' MB', err: '' } });
-        if (s.state === 'error') return this.setData({ 'video.state': 'error', 'video.err': '生成失败了，请再点一次「生成视频」；还不行可以用下面的网页版' });
+        if (s.state === 'done') { if (!resume) SS.track('video_ok'); return this.setData({ video: { state: 'done', progress: 1, ahead: 0, url: SS.SITE + s.url, size: (s.size / 1048576).toFixed(1) + ' MB', err: '' } }); }
+        if (s.state === 'error') { SS.track('video_fail'); return this.setData({ 'video.state': 'error', 'video.err': '生成失败了，请再点一次「生成视频」；还不行可以用下面的网页版' }); }
         if (s.state === 'cancelled') { wx.removeStorageSync(LAST); return this.setData({ 'video.state': 'error', 'video.err': '这次生成被取消了，请再点一次「生成视频」' }); }
         this._pollFail = 0;
         this.setData({ 'video.state': s.state === 'rendering' ? 'rendering' : 'queued', 'video.progress': Math.round((s.progress || 0) * 100), 'video.ahead': s.ahead || 0 });
@@ -183,12 +208,12 @@ Page({
   },
   async saveVideo() {
     if (!this.data.video.url || this.data.saving) return;
-    try { const f = await this.localVideo(); wx.saveVideoToPhotosAlbum({ filePath: f, success: () => wx.showModal({ title: '已保存到相册', content: '发朋友圈：打开朋友圈 → 右上角相机 → 从相册选择这段视频。', showCancel: false }), fail: e => this.albumDenied(e) }); }
+    try { const f = await this.localVideo(); wx.saveVideoToPhotosAlbum({ filePath: f, success: () => SS.track('video_save') || wx.showModal({ title: '已保存到相册', content: '发朋友圈：打开朋友圈 → 右上角相机 → 从相册选择这段视频。', showCancel: false }), fail: e => this.albumDenied(e) }); }
     catch (e) { wx.showToast({ title: e.message, icon: 'none' }); }
   },
   async sendVideo() {
     if (!this.data.video.url || this.data.saving) return;
-    try { const f = await this.localVideo(); wx.shareVideoMessage({ videoPath: f, fail: e => { if (!/cancel/.test(e.errMsg || '')) wx.showToast({ title: '发送失败', icon: 'none' }); } }); }
+    try { const f = await this.localVideo(); SS.track('video_send'); wx.shareVideoMessage({ videoPath: f, fail: e => { if (!/cancel/.test(e.errMsg || '')) wx.showToast({ title: '发送失败', icon: 'none' }); } }); }
     catch (e) { wx.showToast({ title: e.message, icon: 'none' }); }
   },
   albumDenied(e) {
@@ -196,5 +221,5 @@ Page({
     wx.showModal({ title: '需要相册权限', content: '请在设置里允许「保存到相册」，再点一次保存。', confirmText: '去设置', success: r => { if (r.confirm) wx.openSetting(); } });
   },
 
-  onShareAppMessage() { return { title: '我的飞行护照：' + (this.data.label || ''), path: '/pages/index/index', imageUrl: SS.SITE + '/mp/share.jpg' }; }, // share card image is 5:4
+  onShareAppMessage() { const d = this.data; if (d.card) SS.track('share_card'); return { title: d.sum && d.sum.n ? `${d.name || '我'}的航迹手帐：${d.sum.n} 次起飞，${d.sum.cc} 个国家和地区` : '把航班记录做成一本会动的护照', path: '/pages/index/index', imageUrl: d.card || SS.SITE + '/mp/share.jpg' }; }, // share card image is 5:4
 });

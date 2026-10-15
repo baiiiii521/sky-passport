@@ -2,23 +2,20 @@
 const ST = require('../../libs/stats.js');
 const PO = require('../../libs/poster.js');
 const SS = require('../../libs/session.js');
+const CA = require('../../libs/cards.js');
 const PICK = 'skypassport.badgesOn';
 const RAR_T = { legend: '传奇', gold: '金', silver: '银' }, MAX_PICK = 12; // the poster canvas must stay under ~4000 px tall on every phone
 
-let mapImgPath = '';
-function loadMapBase() {
-  if (mapImgPath) return Promise.resolve(mapImgPath);
-  return new Promise(res => wx.downloadFile({ url: SS.SITE + '/mp-world-night.png', success: r => { if (r.statusCode === 200) mapImgPath = r.tempFilePath; res(mapImgPath); }, fail: () => res('') }));
-}
+const loadMapBase = () => SS.mapBase();
 
 Page({
-  data: { has: false, demo: false, name: '', latin: '', label: '', sum: null, badges: [], medals: [], cats: [], cat: 'all', got: 0, picked: 0, poster: '', posterH: 1000, busy: '', err: '', sampleImg: SS.SITE + '/mp/long.jpg?v=104' },
+  data: { has: false, demo: false, name: '', latin: '', label: '', sum: null, badges: [], medals: [], cats: [], cat: 'all', got: 0, picked: 0, poster: '', posterH: 1000, busy: '', err: '', xhs: [], card: '', version: '', sampleImg: SS.SITE + '/mp/long.jpg?v=104' },
   onShow() {
-    const g = getApp().globalData; if (!g.rows || !g.res) return this.setData({ has: false });
+    const g = getApp().globalData; if (this.data.version !== g.version) this.setData({ version: g.version }); if (!g.rows || !g.res) return this.setData({ has: false });
     const key = g.ver + '/' + (g.viewVer || 0); if (this._key === key) return; this._key = key;
     const v = g.view, list = ST.pick(g.res.all, { up: v.up, year: v.year }), sum = ST.summarize(list, 'CN'); this._list = list;
     const label = !sum.n ? '' : sum.y0 === sum.y1 ? `${sum.y0} 年度` : `${sum.y0} — ${sum.y1}`;
-    this.setData({ has: !!sum.n, demo: g.demo, name: v.name, latin: v.latin, label, sum, poster: '' }); this.medals(ST.allBadges(list, 'CN')); loadMapBase();
+    this.setData({ has: !!sum.n, demo: g.demo, name: v.name, latin: v.latin, label, sum, poster: '', xhs: [], card: '' }); this._all = ST.allBadges(list, 'CN'); this.medals(this._all); loadMapBase().then(() => this.makeShareCard());
   },
   chooseFile() { SS.chooseFile(this); }, tryDemo() { SS.tryDemo(this); },
   manual() { getApp().globalData.openManual = true; wx.switchTab({ url: '/pages/result/result' }); },
@@ -48,7 +45,7 @@ Page({
   },
   /* ---------- long poster (drawn on the phone) ---------- */
   async makePoster() {
-    if (!this.data.sum || !this.data.sum.n) return;
+    if (!this.data.sum || !this.data.sum.n) return; SS.track('poster');
     this.setData({ busy: '正在生成长图…', err: '' });
     try {
       const list = this._list;
@@ -63,6 +60,27 @@ Page({
       this.setData({ poster: out, busy: '' });
     } catch (e) { this.setData({ busy: '', err: '生成失败：' + (e.errMsg || e.message || e) }); }
   },
+  /* ---------- cards: the share card, three 小红书 cards, one card per medal ---------- */
+  cardData() { return CA.cardData({ name: this.data.name, label: this.data.label }, this.data.sum, this._list, this.data.badges, this._all || []); },
+  async makeShareCard() { if (!this.data.has) return; try { const p = await CA.render(this, 'share', this.cardData(), await loadMapBase()); this.setData({ card: p }); } catch (e) {} },
+  async makeXhs() {
+    if (!this.data.sum || !this.data.sum.n) return; this.setData({ busy: '正在生成小红书卡片…', err: '' });
+    try { const d = this.cardData(), img = await loadMapBase(), out = []; for (const k of ['xhs1', 'xhs2', 'xhs3']) out.push(await CA.render(this, k, d, img)); this.setData({ xhs: out, busy: '' }); SS.track('xhs_cards'); }
+    catch (e) { this.setData({ busy: '', err: '生成失败：' + (e.errMsg || e.message || e) }); }
+  },
+  previewXhs(e) { wx.previewImage({ urls: this.data.xhs, current: this.data.xhs[+e.currentTarget.dataset.i] }); },
+  async saveXhs() {
+    let n = 0; for (const p of this.data.xhs) { const ok = await new Promise(res => wx.saveImageToPhotosAlbum({ filePath: p, success: () => res(true), fail: e => { this.albumDenied(e); res(false); } })); if (!ok) break; n++; }
+    if (n === this.data.xhs.length) wx.showToast({ title: `已保存 ${n} 张`, icon: 'success' });
+  },
+  copyCaption() { wx.setClipboardData({ data: CA.caption(this.cardData()), success: () => wx.showToast({ title: '文案已复制', icon: 'none' }) }); },
+  async medalCard(e) {
+    const m = this.data.medals.find(b => b.id === e.currentTarget.dataset.id); if (!m || m.lock) return;
+    this.setData({ busy: '正在生成勋章卡…', err: '' });
+    try { const p = await CA.render(this, 'medal', this.cardData(), null, m); this.setData({ busy: '' }); SS.track('medal_card');
+      if (wx.showShareImageMenu) wx.showShareImageMenu({ path: p, fail: () => wx.previewImage({ urls: [p] }) }); else wx.previewImage({ urls: [p] }); }
+    catch (err) { this.setData({ busy: '', err: '生成失败：' + (err.errMsg || err.message || err) }); }
+  },
   previewPoster() { if (this.data.poster) wx.previewImage({ urls: [this.data.poster] }); },
   sharePoster() {
     if (!this.data.poster) return;
@@ -72,5 +90,5 @@ Page({
   savePoster() {
     wx.saveImageToPhotosAlbum({ filePath: this.data.poster, success: () => wx.showToast({ title: '已保存到相册', icon: 'success' }), fail: e => this.albumDenied(e) });
   },
-  onShareAppMessage() { return { title: '我的飞行护照：' + (this.data.label || ''), path: '/pages/index/index', imageUrl: SS.SITE + '/mp/share.jpg' }; }, // share card image is 5:4
+  onShareAppMessage() { const d = this.data; if (d.card) SS.track('share_card'); return { title: d.sum && d.sum.n ? `${d.name || '我'}的航迹手帐：已解锁 ${d.got} 枚飞行勋章` : '把航班记录做成一本会动的护照', path: '/pages/index/index', imageUrl: d.card || SS.SITE + '/mp/share.jpg' }; }, // share card image is 5:4
 });

@@ -1,2 +1,5 @@
 @import "../result/result.wxss";
 .sample { width: 100%; border-radius: 18rpx; border: 1px solid rgba(94,234,255,.2); margin-top: 20rpx; }
+.hl { color: #e9c58e; }
+.xhs { display: flex; gap: 12rpx; margin-top: 20rpx; } .xi { flex: 1; min-width: 0; border-radius: 14rpx; border: 1px solid rgba(94,234,255,.2); }
+.ver { margin-top: 30rpx; text-align: center; font-size: 22rpx; color: rgba(169,187,211,.55); font-family: monospace; }

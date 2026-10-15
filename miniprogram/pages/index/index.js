@@ -4,7 +4,7 @@ const M = SS.SITE + '/mp/';
 
 Page({
   data: {
-    busy: '', err: '', showDemo: false, introSrc: '',
+    busy: '', err: '', version: '', showDemo: false, introSrc: '',
     demoVideo: M + 'demo.mp4', demoPoster: M + 'cover.jpg',
     globeImg: M + 'globe.jpg',
     sample: [{ c: ['5', '1'], l: '次起飞' }, { c: ['1', '3', '1', ',', '4', '8', '3'], l: '公里' }, { c: ['1', '3'], l: '个国家地区' }, { c: ['1', '9', '8'], l: '小时在空中' }],
@@ -18,7 +18,8 @@ Page({
   onLoad() { SS.loadAirports().catch(() => {}); },
   playDemo() { this.setData({ showDemo: !this.data.showDemo, introSrc: '' }); },
   /* three short intro films (A rapid fire, B one pass, C departures board): a different one each tap */
-  playIntro() { let k = Math.floor(Math.random() * 3); if (k === this._intro) k = (k + 1) % 3; this._intro = k; this.setData({ introSrc: SS.SITE + '/promo/intro-' + 'abc'[k] + '.mp4', showDemo: false }); },
+  onShow() { const v = getApp().globalData.version; if (v !== this.data.version) this.setData({ version: v }); },
+  playIntro() { SS.track('intro_play'); let k = Math.floor(Math.random() * 3); if (k === this._intro) k = (k + 1) % 3; this._intro = k; this.setData({ introSrc: SS.SITE + '/promo/intro-' + 'abc'[k] + '.mp4', showDemo: false }); },
   introEnded() { this.setData({ introSrc: '' }); },
 
   chooseFile() { SS.chooseFile(this); },
@@ -26,6 +27,6 @@ Page({
   manual() { getApp().globalData.openManual = true; wx.switchTab({ url: '/pages/result/result' }); },
   shots() { getApp().globalData.openShots = true; wx.switchTab({ url: '/pages/result/result' }); },
   toGuide() { wx.pageScrollTo({ selector: '#guide', duration: 300, offsetTop: -16 }); },
-  onShareAppMessage() { return { title: '把你的航班记录做成一本飞行护照', path: '/pages/index/index', imageUrl: M + 'share.jpg' }; }, // share card image is 5:4
-  onShareTimeline() { return { title: '航迹手帐：把航班记录做成一本飞行护照' }; },
+  onShareAppMessage() { return { title: '航迹手帐：把航班记录做成一本会动的护照', path: '/pages/index/index', imageUrl: M + 'share.jpg' }; }, // share card image is 5:4
+  onShareTimeline() { return { title: '航迹手帐：把航班记录做成一本会动的护照' }; },
 });

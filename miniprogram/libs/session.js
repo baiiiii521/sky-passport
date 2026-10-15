@@ -28,7 +28,7 @@ function loadXLSX() {
   return xlsxReady;
 }
 // a new data set: parse once, reset the shared choices, tell the tab pages (ver)
-function loaded(rows, demo, keep) { const g = getApp().globalData, was = g.view || {}, own = keep && !g.demo; g.rows = rows; g.demo = demo; g.res = C.buildFlights();
+function loaded(rows, demo, keep, nosave) { const g = getApp().globalData, was = g.view || {}, own = keep && !g.demo; g.rows = rows; g.demo = demo; g.res = C.buildFlights(); if (!demo && !nosave) saveLast(rows);
   g.view = { year: 0, up: true, name: demo ? '林小舟' : own ? was.name || '' : '', latin: demo ? 'LIN XIAOZHOU' : own ? was.latin || '' : '', label: '' }; g.ver++; }
 
 /* ---------- flights typed by hand (same idea as the web's 手动添加): kept on the phone, added to whatever spreadsheet is loaded ---------- */
@@ -53,7 +53,7 @@ function chooseFile(page) {
     count: 1, type: 'file', extension: ['xls', 'xlsx', 'csv', 'txt'],
     success: async r => {
       page.setData({ busy: '正在读取表格…', err: '' });
-      try { await Promise.all([loadAirports(), loadXLSX()]); readSpreadsheet(r.tempFiles[0].path); page.setData({ busy: '' }); go(page); }
+      try { await Promise.all([loadAirports(), loadXLSX()]); readSpreadsheet(r.tempFiles[0].path); track('import_file'); page.setData({ busy: '' }); go(page); }
       catch (e) { page.setData({ busy: '', err: e.message || String(e) }); }
     },
     fail: e => { if (!/cancel/.test(e.errMsg || '')) page.setData({ err: '没能打开文件：' + e.errMsg }); },
@@ -61,7 +61,7 @@ function chooseFile(page) {
 }
 async function tryDemo(page) {
   page.setData({ busy: '正在载入示例…', err: '' });
-  try { await loadAirports(); useDemo(); page.setData({ busy: '' }); go(page); }
+  try { await loadAirports(); useDemo(); track('import_demo'); page.setData({ busy: '' }); go(page); }
   catch (e) { page.setData({ busy: '', err: e.message || String(e) }); }
 }
 // read a chosen file (xls/xlsx/csv) into core's RAW; returns the row count
@@ -117,4 +117,21 @@ async function shotFlights(file) {
   return { legs, todo };
 }
 
-module.exports = { shotFlights, SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo, savedManual, manualLegs, setManual };
+/* ---------- last time's flights stay on the phone (only the rows of the spreadsheet / screenshots; hand-typed legs have their own key) ---------- */
+const LASTROWS = 'skypassport.lastRows';
+const plainRow = r => { const t2 = v => { const t = C.parseTime(v); return t ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : ''; }, d = C.parseDate(r.rawDate);
+  return { rawDate: d ? C.ymd(d) : String(r.rawDate || ''), fn: r.fn, al: r.al, from: r.from, to: r.to, dt: t2(r.dt), at: t2(r.at), km: String(r.km || ''), st: r.st || '', sheetUp: !!r.sheetUp || !!r.up, sheetVoid: !!r.sheetVoid || !!r.vd, sheet: r.src ? r.src.sheet : '', row: r.src ? r.src.row : 0 }; };
+function saveLast(rows) { try { const own = rows.filter(r => !(r.src && r.src.manual)).map(plainRow), s = JSON.stringify(own); if (s.length < 900e3) wx.setStorageSync(LASTROWS, own); else wx.removeStorageSync(LASTROWS); } catch (e) { /* storage full: next time the user imports again */ } }
+function restoreLast() {
+  const g = getApp().globalData; if (g.rows) return 0; let last = null; try { last = wx.getStorageSync(LASTROWS); } catch (e) {}
+  const legs = savedManual(), rows = (Array.isArray(last) ? last : []).map((r, i) => ({ ...r, src: { sheet: r.sheet || '表格', row: r.row || i + 2, cols: {} } })).concat(legs.map(manualRow));
+  if (!rows.length) return 0; C.setRaw(rows); C.setSource('file'); loaded(rows, false, false, true); return rows.length;
+}
+function forgetLast() { try { wx.removeStorageSync(LASTROWS); } catch (e) {} }
+/* ---------- anonymous usage counts (server/ev.js): the event name only ---------- */
+function track(e) { wx.request({ url: SITE + '/api/ev', method: 'POST', data: { e, s: 'mp' }, timeout: 8000, fail: () => {} }); }
+/* ---------- the long poster's base map, shared by the poster and the cards ---------- */
+let mapImgPath = '';
+function mapBase() { if (mapImgPath) return Promise.resolve(mapImgPath); return new Promise(res => wx.downloadFile({ url: SITE + '/mp-world-night.png', success: r => { if (r.statusCode === 200) mapImgPath = r.tempFilePath; res(mapImgPath); }, fail: () => res('') })); }
+
+module.exports = { restoreLast, forgetLast, track, mapBase, shotFlights, SITE, loadAirports, readSpreadsheet, useDemo, rowsForServer, api, chooseFile, tryDemo, savedManual, manualLegs, setManual };

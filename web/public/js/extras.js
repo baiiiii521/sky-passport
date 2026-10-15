@@ -108,6 +108,7 @@ function allBadges(sc){
 const computeBadges=sc=>allBadges(sc).filter(b=>!b.lock);
 /* achievements gallery: medals you tap to pick what the long poster shows */
 let ACH_CAT='all';
+let POSTER_BRAND='航迹护照';   /* the long posters' title on the web (the owner's choice); the mini program's sample image is rendered with 航迹手帐 (server/showcase.js) */
 function renderBadges(){const box=$('badges');if(!box)return;box.innerHTML='';const all=allBadges(S),o=posterOpts(),got=all.filter(b=>!b.lock);
   const cats=$('achCats');if(cats){cats.innerHTML='';for(const [c,zh,en] of BADGE_CATS){const k=all.filter(b=>c==='all'||b.cat===c),g=k.filter(b=>!b.lock).length;
     cats.append(el('button',{type:'button','aria-pressed':String(ACH_CAT===c),on:{click:()=>{ACH_CAT=c;renderBadges();}}},L(zh,en),el('small',{},` ${g}/${k.length}`)));}}
@@ -120,7 +121,8 @@ function renderBadges(){const box=$('badges');if(!box)return;box.innerHTML='';co
       el('span',{cls:'emb','aria-hidden':'true'},el('span',{cls:'ico'},b.lock?'🔒':b.i)),
       el('span',{cls:'mt'},el('span',{cls:'mk'},b.lock?`${b.i} ${b.k}`:b.k),el('span',{cls:'mv'},b.v),el('span',{cls:'md'},b.d)),
       b.prog!=null&&b.prog<1?el('span',{cls:'mp','aria-hidden':'true'},el('i',{})):null,
-      RAR[b.rar]&&!b.lock?el('span',{cls:'rar'},RAR[b.rar]):null,el('span',{cls:'tick','aria-hidden':'true'},'✓'));
+      RAR[b.rar]&&!b.lock?el('span',{cls:'rar'},RAR[b.rar]):null,el('span',{cls:'tick','aria-hidden':'true'},'✓'),
+      b.lock?null:el('span',{cls:'mshare',role:'button',tabindex:'0',title:L('生成这枚勋章的分享卡','Make a card for this medal'),on:{click:e=>{e.stopPropagation();medalCard(b);},keydown:e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();medalCard(b);}}}},L('分享卡 ↗','Card ↗')));
     m.style.setProperty('--i',i);if(b.prog!=null)m.style.setProperty('--p',Math.max(0.02,Math.min(1,b.prog)));
     if(b.lock){m.setAttribute('aria-disabled','true');m.title=L('未解锁','Locked');}else m.title=L('点一下：加入 / 移出长图','Tap to add to / remove from the long poster');
     m.addEventListener('click',()=>{if(b.lock)return;const q=posterOpts();if(!q.sel)q.sel=new Set(got.filter(x=>badgeOn(q,x)).map(x=>x.id));
@@ -166,7 +168,7 @@ async function renderLongPosterClassic(){
     const hd=g.createRadialGradient(W/2,180,40,W/2,300,900);hd.addColorStop(0,TH.c[0]);hd.addColorStop(.6,TH.c[1]);hd.addColorStop(1,TH.c[2]);g.fillStyle=hd;g.fillRect(0,0,W,Hd);
     g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=0.45;g.drawImage(GRAIN[0],0,0,W,Hd);g.restore();
     const gold=goldText(g,60,520);g.save();g.translate(W/2,215);g.strokeStyle=g.fillStyle=gold;emblem(g,0.6,false);g.restore();
-    g.textAlign='center';g.fillStyle=gold;if(EN()){g.font=`900 84px ${SERIF}`;spaced(g,'SKY PASSPORT',W/2,452,6);g.font=F(600,26);spaced(g,'航迹护照',W/2,500,12);}else{g.font=`900 96px ${SERIF}`;spaced(g,'航迹护照',W/2,452,18);g.font='600 26px "Open Sans",sans-serif';spaced(g,'SKY PASSPORT',W/2,500,12);}
+    g.textAlign='center';g.fillStyle=gold;if(EN()){g.font=`900 84px ${SERIF}`;spaced(g,'SKY PASSPORT',W/2,452,6);g.font=F(600,26);spaced(g,POSTER_BRAND,W/2,500,12);}else{g.font=`900 96px ${SERIF}`;spaced(g,POSTER_BRAND,W/2,452,18);g.font='600 26px "Open Sans",sans-serif';spaced(g,'SKY PASSPORT',W/2,500,12);}
     g.strokeStyle='rgba(227,189,132,.6)';g.lineWidth=2;rr(g,24,24,W-48,512,26);g.stroke();
     let y=Hd;
     // who and when
@@ -193,7 +195,7 @@ async function renderLongPosterClassic(){
     if(parts.qr){drawQrCard(g,W-238,fy+44,170,1,null);g.fillStyle=goldText(g,fy+60,fy+200);g.font=F(700,40);g.fillText(L('扫码生成你的飞行护照','Scan to make your own'),70,fy+105);
       g.font=F(400,26,'SM');g.fillStyle='#e9d8cf';g.fillText(SITE_HOST,70,fy+152);g.font=F(400,20,'SM');g.fillStyle='rgba(233,216,207,.6)';
       if(parts.name)g.fillText(('P<'+P.nat3+P.latin.replace(/ /g,'<')+'<<FLIGHT<LOG').padEnd(40,'<').slice(0,40),70,fy+204);}
-    else{g.textAlign='center';g.fillStyle=goldText(g,fy+30,fy+80);g.font=F(600,30);g.fillText('航迹护照 · SKY PASSPORT',W/2,fy+66);}
+    else{g.textAlign='center';g.fillStyle=goldText(g,fy+30,fy+80);g.font=F(600,30);g.fillText(POSTER_BRAND+' · SKY PASSPORT',W/2,fy+66);}
   }finally{ctx=keep;}
   return c;}
 
@@ -224,6 +226,29 @@ function medalFill(g,cx,cy,r,rar){let gr;if(rar==='legend'&&g.createConicGradien
   g.beginPath();g.arc(cx,cy,r+6,0,7);g.fillStyle='rgba(0,0,0,.4)';g.fill();g.beginPath();g.arc(cx,cy,r,0,7);g.fillStyle=gr;g.fill();
   const hl=g.createRadialGradient(cx-r*0.35,cy-r*0.45,1,cx-r*0.35,cy-r*0.45,r*0.9);hl.addColorStop(0,'rgba(255,255,255,.55)');hl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=hl;g.fill();
   g.lineWidth=2;g.strokeStyle='rgba(255,255,255,.25)';g.stroke();g.setLineDash([3,4]);g.beginPath();g.arc(cx,cy,r+11,0,7);g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=1.2;g.stroke();g.setLineDash([]);}
+/* the dark route map of the night poster (also used by the 小红书 map card): the scene's own Path2D caches, same China rules */
+function npMapCanvas(sc,MW,MH){
+      const tm=Math.max(sc.T_ZOOM+1.6,sc.T_CARD-0.7),cam=sc.cam[Math.min(sc.cam.length-1,Math.floor(tm*FPS))],k=MW/MAP.w;
+      const mc=document.createElement('canvas');mc.width=MW;mc.height=MH;const m=mc.getContext('2d'),T2=()=>m.setTransform(cam.z*k,0,0,cam.z*k,k*(MAP.w/2-cam.cx*cam.z),k*(MAP.h/2-cam.cy*cam.z)),lw=v=>v/(cam.z*k);
+      m.fillStyle='#040b1e';m.fillRect(0,0,MW,MH);T2();m.lineWidth=lw(1);m.strokeStyle='rgba(94,234,255,.07)';m.stroke(sc.gratP);
+      m.fillStyle='#0b1a3a';m.fill(sc.landP);if(sc.chinaP)m.fill(sc.chinaP);
+      const dp=document.createElement('canvas');dp.width=dp.height=7;const dg=dp.getContext('2d');dg.fillStyle='rgba(94,234,255,.26)';dg.fillRect(2.5,2.5,1.6,1.6);const pat=m.createPattern(dp,'repeat');
+      for(const pth of [sc.landP,sc.chinaP]){if(!pth)continue;m.save();T2();m.clip(pth);m.setTransform(1,0,0,1,0,0);m.fillStyle=pat;m.fillRect(0,0,MW,MH);m.restore();}
+      T2();m.lineWidth=lw(1);m.strokeStyle='rgba(94,234,255,.16)';m.stroke(sc.landP);
+      for(const kc of sc.order){const p=sc.cpath[kc];if(!p)continue;const clip=sc.outsideCN&&!REGIONS.has(kc);if(clip){m.save();m.clip(sc.outsideCN,'evenodd');}
+        m.fillStyle='rgba(94,234,255,.17)';m.fill(p);m.lineWidth=lw(1.3);m.strokeStyle='rgba(94,234,255,.6)';m.stroke(p);if(clip)m.restore();}
+      if(sc.jdP){m.fillStyle='rgba(94,234,255,.7)';m.fill(sc.jdP);m.lineWidth=lw(0.8);m.strokeStyle='rgba(94,234,255,.7)';m.stroke(sc.jdP);} /* nine-dash line, always shown */
+      m.setTransform(1,0,0,1,0,0);m.lineCap='round';const S2=p=>{const q=toScr(p,cam);return [q[0]*k,q[1]*k];};const rts=new Map(),aps=new Map();
+      for(const f of sc.flights){if(f.vd)continue;const key=[f.f,f.to].sort().join()+(f.up?'u':'');const r=rts.get(key);if(r)r.n++;else rts.set(key,{f,n:1});for(const a of [f.f,f.to])aps.set(a,(aps.get(a)||0)+1);}
+      m.globalCompositeOperation='lighter';
+      for(const {f,n} of rts.values()){const a=S2(f.a),b=S2(f.b),cc=ctrl(a,b);if(f.up){m.setLineDash([8,8]);m.lineWidth=2;m.strokeStyle='rgba(94,234,255,.75)';strokeQ(m,a,cc,b,1);m.setLineDash([]);continue;}
+        m.lineWidth=9+Math.min(6,n);m.strokeStyle='rgba(255,79,154,.08)';strokeQ(m,a,cc,b,1);const lg=m.createLinearGradient(a[0],a[1],b[0]+0.01,b[1]);lg.addColorStop(0,'rgba(255,214,150,.95)');lg.addColorStop(1,'rgba(255,79,154,.95)');m.lineWidth=1.6+Math.min(2.4,n*0.35);m.strokeStyle=lg;strokeQ(m,a,cc,b,1);
+        const hp=qpt(a,cc,b,0.62);m.fillStyle='rgba(255,246,220,.95)';m.beginPath();m.arc(hp[0],hp[1],2.4,0,7);m.fill();}
+      for(const [code,n] of aps){if(!AP[code])continue;const p=S2(sc.proj([AP[code].lon,AP[code].lat])),r=6+Math.min(8,Math.sqrt(n)*2);const rg=m.createRadialGradient(p[0],p[1],0,p[0],p[1],r*2);rg.addColorStop(0,'rgba(111,247,200,.55)');rg.addColorStop(1,'rgba(111,247,200,0)');m.fillStyle=rg;m.beginPath();m.arc(p[0],p[1],r*2,0,7);m.fill();m.fillStyle='#eafff7';m.beginPath();m.arc(p[0],p[1],3,0,7);m.fill();}
+      m.globalCompositeOperation='source-over';m.font=F(700,15,'SM');m.lineJoin='round';
+      for(const [code] of [...aps].sort((a,b)=>b[1]-a[1]).slice(0,8)){if(!AP[code])continue;const p=S2(sc.proj([AP[code].lon,AP[code].lat]));if(p[0]<20||p[0]>MW-60||p[1]<24||p[1]>MH-10)continue;m.lineWidth=5;m.strokeStyle='rgba(4,11,30,.9)';m.strokeText(code,p[0]+9,p[1]-9);m.fillStyle=NP.ac;m.fillText(code,p[0]+9,p[1]-9);}
+      m.globalCompositeOperation='destination-out';const fe=46;for(const [x0,y0,w0,h0,a0,b0,a1,b1] of [[0,0,fe,MH,0,0,fe,0],[MW-fe,0,fe,MH,MW,0,MW-fe,0],[0,0,MW,fe,0,0,0,fe],[0,MH-fe,MW,fe,0,MH,0,MH-fe]]){const g1=m.createLinearGradient(a0,b0,a1,b1);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');m.fillStyle=g1;m.fillRect(x0,y0,w0,h0);}
+      return mc;}
 async function renderLongPosterNight(){
   const sc=S;if(!sc||!sc.ok)return null;
   const PO=posterOpts(),{parts}=PO,B=parts.badges?computeBadges(sc).filter(b=>badgeOn(PO,b)):[],P=sc.P,F0=sc.final,years=sc.years.filter(y=>y.n>0),showYears=parts.years&&years.length>1;
@@ -247,7 +272,7 @@ async function renderLongPosterNight(){
     /* ===== cover ===== */
     g.textAlign='left';g.font=F(700,19,'SM');g.fillStyle=NP.ac;trk(g,'SKY PASSPORT // FLIGHT LOG',60,70,4);
     const serial=`NO. SP-${String(sc.years[sc.years.length-1].y)}-${(seed%65536).toString(16).toUpperCase().padStart(4,'0')}`;g.font=F(700,19,'SM');g.fillStyle=NP.gold;trk(g,serial,W-60,70,3,'right');
-    g.font=`900 46px ${SERIF}`;g.fillStyle=goldText(g,90,140);if(EN())trk(g,'SKY PASSPORT',60,136,6);else trk(g,'航迹护照',60,136,14);
+    g.font=`900 46px ${SERIF}`;g.fillStyle=goldText(g,90,140);if(EN())trk(g,'SKY PASSPORT',60,136,6);else trk(g,POSTER_BRAND,60,136,14);
     g.font=F(400,18,'SM');g.fillStyle=NP.mut;g.textAlign='right';g.fillText(L('VALID · 一生有效','VALID · FOR LIFE'),W-60,132);g.textAlign='left';
     g.fillStyle=NP.line;g.fillRect(60,162,W-120,1);for(let x=60;x<=W-60;x+=24)g.fillRect(x,x%120===60?154:158,1,x%120===60?9:5);
     /* globe with HUD rings */
@@ -288,26 +313,7 @@ async function renderLongPosterNight(){
       y+=2*168;}
     /* ===== route map ===== */
     if(parts.map){y+=GAP;npHead(g,y,'ROUTE MAP',EN()?'':'航线图',L(`${new Set(LF.map(f=>[f.f,f.to].sort().join())).size} 条航线`,`${new Set(LF.map(f=>[f.f,f.to].sort().join())).size} ROUTES`));y+=58;
-      const tm=Math.max(sc.T_ZOOM+1.6,sc.T_CARD-0.7),cam=sc.cam[Math.min(sc.cam.length-1,Math.floor(tm*FPS))],k=MW/MAP.w;
-      const mc=document.createElement('canvas');mc.width=MW;mc.height=MH;const m=mc.getContext('2d'),T2=()=>m.setTransform(cam.z*k,0,0,cam.z*k,k*(MAP.w/2-cam.cx*cam.z),k*(MAP.h/2-cam.cy*cam.z)),lw=v=>v/(cam.z*k);
-      m.fillStyle='#040b1e';m.fillRect(0,0,MW,MH);T2();m.lineWidth=lw(1);m.strokeStyle='rgba(94,234,255,.07)';m.stroke(sc.gratP);
-      m.fillStyle='#0b1a3a';m.fill(sc.landP);if(sc.chinaP)m.fill(sc.chinaP);
-      const dp=document.createElement('canvas');dp.width=dp.height=7;const dg=dp.getContext('2d');dg.fillStyle='rgba(94,234,255,.26)';dg.fillRect(2.5,2.5,1.6,1.6);const pat=m.createPattern(dp,'repeat');
-      for(const pth of [sc.landP,sc.chinaP]){if(!pth)continue;m.save();T2();m.clip(pth);m.setTransform(1,0,0,1,0,0);m.fillStyle=pat;m.fillRect(0,0,MW,MH);m.restore();}
-      T2();m.lineWidth=lw(1);m.strokeStyle='rgba(94,234,255,.16)';m.stroke(sc.landP);
-      for(const kc of sc.order){const p=sc.cpath[kc];if(!p)continue;const clip=sc.outsideCN&&!REGIONS.has(kc);if(clip){m.save();m.clip(sc.outsideCN,'evenodd');}
-        m.fillStyle='rgba(94,234,255,.17)';m.fill(p);m.lineWidth=lw(1.3);m.strokeStyle='rgba(94,234,255,.6)';m.stroke(p);if(clip)m.restore();}
-      if(sc.jdP){m.fillStyle='rgba(94,234,255,.7)';m.fill(sc.jdP);m.lineWidth=lw(0.8);m.strokeStyle='rgba(94,234,255,.7)';m.stroke(sc.jdP);} /* nine-dash line, always shown */
-      m.setTransform(1,0,0,1,0,0);m.lineCap='round';const S2=p=>{const q=toScr(p,cam);return [q[0]*k,q[1]*k];};const rts=new Map(),aps=new Map();
-      for(const f of sc.flights){if(f.vd)continue;const key=[f.f,f.to].sort().join()+(f.up?'u':'');const r=rts.get(key);if(r)r.n++;else rts.set(key,{f,n:1});for(const a of [f.f,f.to])aps.set(a,(aps.get(a)||0)+1);}
-      m.globalCompositeOperation='lighter';
-      for(const {f,n} of rts.values()){const a=S2(f.a),b=S2(f.b),cc=ctrl(a,b);if(f.up){m.setLineDash([8,8]);m.lineWidth=2;m.strokeStyle='rgba(94,234,255,.75)';strokeQ(m,a,cc,b,1);m.setLineDash([]);continue;}
-        m.lineWidth=9+Math.min(6,n);m.strokeStyle='rgba(255,79,154,.08)';strokeQ(m,a,cc,b,1);const lg=m.createLinearGradient(a[0],a[1],b[0]+0.01,b[1]);lg.addColorStop(0,'rgba(255,214,150,.95)');lg.addColorStop(1,'rgba(255,79,154,.95)');m.lineWidth=1.6+Math.min(2.4,n*0.35);m.strokeStyle=lg;strokeQ(m,a,cc,b,1);
-        const hp=qpt(a,cc,b,0.62);m.fillStyle='rgba(255,246,220,.95)';m.beginPath();m.arc(hp[0],hp[1],2.4,0,7);m.fill();}
-      for(const [code,n] of aps){if(!AP[code])continue;const p=S2(sc.proj([AP[code].lon,AP[code].lat])),r=6+Math.min(8,Math.sqrt(n)*2);const rg=m.createRadialGradient(p[0],p[1],0,p[0],p[1],r*2);rg.addColorStop(0,'rgba(111,247,200,.55)');rg.addColorStop(1,'rgba(111,247,200,0)');m.fillStyle=rg;m.beginPath();m.arc(p[0],p[1],r*2,0,7);m.fill();m.fillStyle='#eafff7';m.beginPath();m.arc(p[0],p[1],3,0,7);m.fill();}
-      m.globalCompositeOperation='source-over';m.font=F(700,15,'SM');m.lineJoin='round';
-      for(const [code] of [...aps].sort((a,b)=>b[1]-a[1]).slice(0,8)){if(!AP[code])continue;const p=S2(sc.proj([AP[code].lon,AP[code].lat]));if(p[0]<20||p[0]>MW-60||p[1]<24||p[1]>MH-10)continue;m.lineWidth=5;m.strokeStyle='rgba(4,11,30,.9)';m.strokeText(code,p[0]+9,p[1]-9);m.fillStyle=NP.ac;m.fillText(code,p[0]+9,p[1]-9);}
-      m.globalCompositeOperation='destination-out';const fe=46;for(const [x0,y0,w0,h0,a0,b0,a1,b1] of [[0,0,fe,MH,0,0,fe,0],[MW-fe,0,fe,MH,MW,0,MW-fe,0],[0,0,MW,fe,0,0,0,fe],[0,MH-fe,MW,fe,0,MH,0,MH-fe]]){const g1=m.createLinearGradient(a0,b0,a1,b1);g1.addColorStop(0,'#000');g1.addColorStop(1,'rgba(0,0,0,0)');m.fillStyle=g1;m.fillRect(x0,y0,w0,h0);}
+      const mc=npMapCanvas(sc,MW,MH);
       npPanel(g,60,y,MW,MH,22);g.save();rr(g,60,y,MW,MH,22);g.clip();g.drawImage(mc,60,y);g.restore();npCorners(g,72,y+12,MW-24,MH-24,26,'rgba(94,234,255,.7)');
       g.font=F(400,15,'SM');g.fillStyle=NP.mut;g.fillText(`${L('投影','PROJ')} · ${P.nat3||''} · ${fmt(km)} KM`,90,y+MH-26);
       y+=MH+22;g.font=F(400,18);let lx=60;for(const [col,dash,txt] of [['#ffb08a',false,L('已飞','Flown')],[NP.ac,true,L('待出行','Upcoming')],['#6ff7c8',null,L('机场','Airport')]]){
@@ -350,7 +356,7 @@ async function renderLongPosterNight(){
       g.font=F(800,40);g.fillStyle=goldText(g,fy+70,fy+120);g.fillText(L('扫码生成你的飞行护照','Scan to make your own'),60,fy+112);g.font=F(700,26,'SM');g.fillStyle=NP.ink;g.fillText(SITE_HOST,60,fy+160);
       g.font=F(400,19);g.fillStyle=NP.mut;g.fillText(L('免费 · 在浏览器里完成 · 表格不上传','Free · made in your browser · nothing uploaded'),60,fy+198);
       g.font=F(400,17,'SM');g.fillStyle='rgba(94,234,255,.45)';g.fillText(mrz1,60,fy+266);g.fillText(mrz2,60,fy+294);}
-    else{g.textAlign='center';g.font=F(700,24,'SM');g.fillStyle=goldText(g,fy+50,fy+90);trk(g,'SKY PASSPORT · 航迹护照',W/2,fy+78,4,'center');g.font=F(400,16,'SM');g.fillStyle='rgba(94,234,255,.45)';g.fillText(mrz1,W/2,fy+124);g.textAlign='left';}
+    else{g.textAlign='center';g.font=F(700,24,'SM');g.fillStyle=goldText(g,fy+50,fy+90);trk(g,'SKY PASSPORT · '+POSTER_BRAND,W/2,fy+78,4,'center');g.font=F(400,16,'SM');g.fillStyle='rgba(94,234,255,.45)';g.fillText(mrz1,W/2,fy+124);g.textAlign='left';}
   }finally{ctx=keep;}
   return c;}
 async function renderLongPoster(){return posterStyle()==='classic'?renderLongPosterClassic():renderLongPosterNight();}
@@ -364,12 +370,62 @@ document.querySelectorAll('#segPoster button').forEach(b=>b.addEventListener('cl
 function renderCoverImage(){const sc=S;if(!sc||!sc.ok)return null;const c=document.createElement('canvas');c.width=W;c.height=H;
   renderFrame(Math.max(0,sc.frames-12));c.getContext('2d').drawImage(cv,0,0);drawAt(playT);return c;}
 
+/* ---------- 3:4 cards: three for 小红书 (cover, map, medals) and one per medal; same night look as the long poster ---------- */
+const CARD_H=1440;
+function cardBg(g,seed){const bg=g.createLinearGradient(0,0,0,CARD_H);bg.addColorStop(0,'#030716');bg.addColorStop(0.5,'#071533');bg.addColorStop(1,'#02040b');g.fillStyle=bg;g.fillRect(0,0,W,CARD_H);
+  for(const [x,y,r,col] of [[W*0.85,140,900,'rgba(56,90,210,.30)'],[W*0.05,800,700,'rgba(255,79,154,.08)']]){const rg=g.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,col);rg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=rg;g.fillRect(0,0,W,CARD_H);}
+  const rnd=rngF(seed);for(let i=0;i<110;i++){const sz=1+2*rnd();g.fillStyle=`rgba(214,230,255,${(0.12+0.4*rnd()).toFixed(2)})`;g.fillRect(rnd()*W,rnd()*CARD_H,sz,sz);}}
+function cardFoot(g){g.fillStyle='rgba(233,197,142,.35)';g.fillRect(W/2-200,CARD_H-112,400,1.5);g.font=`900 34px ${SERIF}`;g.fillStyle=goldText(g,CARD_H-90,CARD_H-50);trk(g,L('航迹手帐','SKY PASSPORT'),W/2,CARD_H-58,10,'center');
+  g.font=F(400,22,'SM');g.fillStyle=NP.mut;trk(g,L('SKY PASSPORT · 网页 / 微信小程序','FLIGHT JOURNAL · sky-passport.vercel.app'),W/2,CARD_H-24,4,'center');}
+function cardEmblem(g,cx,cy,R){g.save();g.strokeStyle=goldText(g,cy-R,cy+R);g.lineWidth=4;g.beginPath();g.arc(cx,cy,R,0,7);g.stroke();g.lineWidth=2.4;for(const k of [0.36,0.74]){g.beginPath();g.ellipse(cx,cy,R*k,R,0,0,7);g.stroke();}
+  for(const la of [-0.62,-0.3,0,0.3,0.62]){const y=cy+R*Math.sin(la),hw=R*Math.cos(la);g.beginPath();g.ellipse(cx,y,hw,hw*0.16,0,0,Math.PI);g.stroke();}g.lineWidth=3.4;g.beginPath();g.ellipse(cx,cy,R*1.32,R*0.34,-0.34,0,Math.PI);g.stroke();g.restore();}
+function cardCoin(g,cx,cy,r,b){medalFill(g,cx,cy,r,b.rar);g.textAlign='center';g.textBaseline='middle';g.font=`${Math.round(r*0.95)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;g.fillText(b.i,cx,cy+r*0.04);g.textBaseline='alphabetic';g.textAlign='left';}
+function cardWho(){const n=(S.P&&S.P.disp)||'';return n?L(`${n}的航迹手帐`,`${n}'s flight journal`):L('我的航迹手帐','My flight journal');}
+function cardPicked(){const o=posterOpts();return computeBadges(S).filter(b=>badgeOn(o,b));}
+function cardRoutes(){const m=new Map();for(const f of S.flights){if(f.vd||f.up)continue;const k=[f.f,f.to].sort().join('|');m.set(k,(m.get(k)||0)+1);}return [...m].sort((a,b)=>b[1]-a[1]).map(([k,n])=>{const [a,b]=k.split('|');return {t:`${placeName(a)} — ${placeName(b)}`,n};});}
+function cardCaption(){const F0=S.final,lab=yearsLabel(S,' — ');return L(`我的飞行手帐 ✈️ ${lab}，${F0.n} 次起飞、${fmt(F0.km)} 公里、${F0.cc} 个国家和地区，绕地球 ${(F0.km/40075).toFixed(2)} 圈。\n用「航迹手帐」把航班记录做成了一本会动的护照，还能出长图和成就卡。\n#航迹手帐 #飞行记录 #我的飞行足迹 #旅行日记 #年度总结`,
+  `My flight journal ✈️ ${lab}: ${F0.n} flights, ${fmt(F0.km)} km, ${F0.cc} countries — ${(F0.km/40075).toFixed(2)}× around the Earth. Made with Sky Passport. #travel #flights #avgeek`);}
+async function renderCard(kind,b){const sc=S;if(!sc||!sc.ok)return null;const F0=sc.final,picked=cardPicked(),all=allBadges(sc),routes=cardRoutes();
+  await Promise.all([ensureFonts(),loadGlyphs(cardWho()+picked.map(x=>x.k+x.v).join('')+(b?b.k+b.v+b.d:'')+routes.slice(0,5).map(r=>r.t).join(''))]);
+  const c=document.createElement('canvas');c.width=W;c.height=CARD_H;const g=c.getContext('2d'),lab=yearsLabel(sc,' — ');cardBg(g,{xhs1:11,xhs2:13,xhs3:17,medal:19}[kind]||7);g.textAlign='left';
+  const big=(t,y,max,sz)=>{let s=sz;g.font=`900 ${s}px ${SERIF}`;while(g.measureText(t).width>max&&s>40){s-=4;g.font=`900 ${s}px ${SERIF}`;}return s;};
+  if(kind==='xhs1'){npCorners(g,40,40,W-80,CARD_H-80,46,'rgba(94,234,255,.55)');g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,'FLIGHT JOURNAL',W/2,140,10,'center');cardEmblem(g,W/2,330,108);
+    big(cardWho(),590,940,96);g.fillStyle=goldText(g,500,600);g.textAlign='center';g.fillText(cardWho(),W/2,590);g.font=F(700,34,'SM');g.fillStyle=NP.ink;trk(g,lab,W/2,650,6,'center');
+    [[fmt(F0.n),L('次起飞','flights')],[fmt(F0.km),L('公里','km')],[String(F0.cc),L('个国家和地区','countries')],[String(Math.round(F0.min/60)),L('小时在空中','hours aloft')]].forEach(([v,l],i)=>{const x=80+(i%2)*470,y=720+Math.floor(i/2)*230;npPanel(g,x,y,450,200,24);let fs=64;while(flapW(v,fs)>380&&fs>28)fs-=2;npFlap(g,x+34,y+30,v,fs);g.textAlign='left';g.font=F(400,28);g.fillStyle=NP.mut;g.fillText(l,x+36,y+172);});
+    g.textAlign='center';g.font=`900 48px ${SERIF}`;g.fillStyle=goldText(g,1180,1240);g.fillText(L(`绕地球 ${(F0.km/40075).toFixed(2)} 圈`,`${(F0.km/40075).toFixed(2)}× around the Earth`),W/2,1240);g.textAlign='left';}
+  else if(kind==='xhs2'){g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,'ROUTE MAP',60,150,8);g.font=`900 86px ${SERIF}`;g.fillStyle=goldText(g,170,260);g.fillText(L('我飞过的地方','Where I have flown'),60,258);
+    g.font=F(400,32);g.fillStyle=NP.mut;g.fillText(L(`${F0.ap} 个机场 · ${F0.cc} 个国家和地区 · ${fmt(F0.km)} 公里`,`${F0.ap} airports · ${F0.cc} countries · ${fmt(F0.km)} km`),62,318);
+    const MW=960,MH=Math.round(MW*MAP.h/MAP.w),mc=npMapCanvas(sc,MW,MH);npPanel(g,60,360,MW,MH,22);g.save();rr(g,60,360,MW,MH,22);g.clip();g.drawImage(mc,60,360);g.restore();npCorners(g,72,372,MW-24,MH-24,26,'rgba(94,234,255,.7)');
+    const y0=360+MH+90;g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,L('TOP ROUTES · 最常飞','TOP ROUTES'),60,y0,4);
+    routes.slice(0,Math.max(3,Math.min(6,Math.floor((CARD_H-200-y0)/72)))).forEach((r,i)=>{const y=y0+70+i*72;g.fillStyle='rgba(94,234,255,.1)';g.fillRect(60,y+24,W-120,1);g.font=F(700,34);g.fillStyle=NP.ink;fitFont(g,r.t,740,34,22,v=>F(700,v));g.fillText(r.t,60,y);g.font=F(700,32,'SM');g.fillStyle=NP.gold;g.textAlign='right';g.fillText(L(`${r.n} 次`,`${r.n}×`),W-60,y);g.textAlign='left';});}
+  else if(kind==='xhs3'){g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,'ACHIEVEMENTS',60,150,8);g.font=`900 86px ${SERIF}`;g.fillStyle=goldText(g,170,260);g.fillText(L('飞行成就','Achievements'),60,258);
+    g.font=F(400,32);g.fillStyle=NP.mut;g.fillText(L(`已解锁 ${all.filter(x=>!x.lock).length} / ${all.length} 枚飞行勋章`,`${all.filter(x=>!x.lock).length} of ${all.length} medals unlocked`),62,318);
+    picked.slice(0,9).forEach((m,i)=>{const x=50+(i%3)*330,y=370+Math.floor(i/3)*300;npPanel(g,x,y,310,280,22,m.rar==='gold'?'rgba(233,197,142,.45)':m.rar==='legend'?'rgba(255,79,154,.5)':null);cardCoin(g,x+155,y+92,62,m);
+      g.textAlign='center';g.font=F(400,24);g.fillStyle=NP.mut;g.fillText(m.k,x+155,y+196);g.fillStyle=NP.ink;fitFont(g,m.v,280,34,20,v=>F(700,v));g.fillText(m.v,x+155,y+244);g.textAlign='left';});}
+  else if(kind==='medal'&&b){const glow=g.createRadialGradient(W/2,560,0,W/2,560,520);glow.addColorStop(0,b.rar==='gold'||b.rar==='legend'?'rgba(255,214,160,.28)':'rgba(94,234,255,.2)');glow.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=glow;g.fillRect(0,0,W,CARD_H);
+    npCorners(g,40,40,W-80,CARD_H-80,46,'rgba(233,197,142,.5)');g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,'ACHIEVEMENT UNLOCKED',W/2,150,8,'center');
+    const RN={legend:L('传奇 · LEGEND','LEGEND'),gold:L('金 · GOLD','GOLD'),silver:L('银 · SILVER','SILVER')}[b.rar];if(RN){g.font=F(700,28);const w=g.measureText(RN).width+40;rr(g,W/2-w/2,180,w,46,23);g.fillStyle=b.rar==='legend'?'#ff4f9a':b.rar==='gold'?'#e9c58e':'#cfd8e4';g.fill();g.fillStyle='#02040b';g.textAlign='center';g.fillText(RN,W/2,213);}
+    cardCoin(g,W/2,560,230,b);g.textAlign='center';g.font=`900 52px ${SERIF}`;g.fillStyle=goldText(g,860,910);g.fillText(b.k,W/2,910);
+    let fs=92;g.font=F(800,fs);while(g.measureText(b.v).width>960&&fs>44){fs-=4;g.font=F(800,fs);}g.fillStyle='#fff6e2';g.fillText(b.v,W/2,1030);
+    g.font=F(400,34);g.fillStyle=NP.mut;const ch=[...(b.d||'')];let line='',ly=1100,n=0;for(const k of ch){if(g.measureText(line+k).width>900){g.fillText(line,W/2,ly);ly+=50;line=k;if(++n===2)break;}else line+=k;}if(n<2&&line)g.fillText(line,W/2,ly);
+    g.font=F(400,28,'SM');g.fillStyle=NP.ink;g.fillText(`${(S.P&&S.P.disp)||L('我','me')} · ${lab}`,W/2,1236);g.textAlign='left';}
+  cardFoot(g);return c;}
+let XHS=[];
+async function makeXhs(){if(!S||!S.ok)return;const btn=$('btnXhs');btn.disabled=true;try{XHS=[];const box=$('xhsImgs');box.innerHTML='';
+    for(const k of ['xhs1','xhs2','xhs3']){const c=await renderCard(k);const blob=await new Promise(r=>c.toBlob(r,'image/png'));XHS.push(blob);box.append(el('img',{src:URL.createObjectURL(blob),alt:L('小红书卡片','Card')}));}
+    $('xhsOut').hidden=false;track('xhs_cards');}finally{btn.disabled=false;}}
+async function saveXhs(){if(!XHS.length)return;const files=XHS.map((b,i)=>new File([b],`${L('航迹手帐','sky-passport')}_card${i+1}.png`,{type:'image/png'}));
+  if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:L('航迹手帐','Sky Passport')});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  for(const f of files){saveFile(f.name,f);await new Promise(r=>setTimeout(r,400));}}
+async function copyCaption(){const t=cardCaption();try{await navigator.clipboard.writeText(t);{const t=$('toast');t.textContent=L('文案已复制，去小红书粘贴即可','Caption copied');t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2600);}}catch(e){prompt(L('复制这段文案：','Copy this caption:'),t);}}
+async function medalCard(b){const c=await renderCard('medal',b);if(!c)return;showImage(c,`${L('航迹手帐','sky-passport')}_${b.id}.png`);track('medal_card');setTimeout(()=>$('imgOut').scrollIntoView({behavior:'smooth',block:'center'}),150);}
 let lastImg=null,lastImgName='';
 function showImage(c,name,isPoster){if(!c)return;lastIsPoster=!!isPoster;c.toBlob(b=>{lastImg=b;lastImgName=name;$('imgPrev').src=URL.createObjectURL(b);$('imgOut').hidden=false;},'image/png');}
 async function saveImage(){if(!lastImg)return;const file=new File([lastImg],lastImgName,{type:'image/png'});
   if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:L('航迹手帐','Sky Passport')});return;}catch(e){if(e&&e.name==='AbortError')return;}}
   saveFile(lastImgName,lastImg);}
 const imgBase=()=>`${L('航迹手帐','sky-passport')}_${(S.P.latin||'flight').replace(/\s+/g,'_')}_${yearsLabel(S,'-','')}`;
+$('btnXhs').addEventListener('click',makeXhs);$('btnSaveXhs').addEventListener('click',saveXhs);$('btnCaption').addEventListener('click',copyCaption);
 $('btnLong').addEventListener('click',async()=>{if(!S||!S.ok)return;track('poster');const b=$('btnLong');b.disabled=true;b.textContent=L('正在生成…','Making…');
   try{showImage(await renderLongPoster(),imgBase()+L('_长图.png','_poster.png'),true);}finally{b.disabled=false;b.textContent=L('生成长图海报','Make a long poster');}});
 $('btnCoverImg').addEventListener('click',async()=>{if(!S||!S.ok)return;await Promise.all([ensureFonts(),loadFlags(S.order)]);showImage(renderCoverImage(),imgBase()+L('_封面.png','_cover.png'));});

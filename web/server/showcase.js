@@ -22,7 +22,7 @@ fs.mkdirSync(OUT, { recursive: true });
     return { cover: at(S.T_END - 0.4), page: at(S.T_FE - 3.2), world: at(S.T_CARD - 1.2), share: share() };
   });
   for (const [k, d] of Object.entries(shots)) fs.writeFileSync(path.join(OUT, k + '.jpg'), Buffer.from(d.split(',')[1], 'base64'));
-  const long = await p.evaluate(async () => (await renderLongPoster()).toDataURL('image/jpeg', 0.8));
+  const long = await p.evaluate(async () => { POSTER_BRAND = '航迹手帐'; return (await renderLongPoster()).toDataURL('image/jpeg', 0.8); });   // the mini program's sample: its own name
   fs.writeFileSync(path.join(OUT, 'long.jpg'), Buffer.from(long.split(',')[1], 'base64'));
   // the home page's sample video: the demo traveller rendered by the live service, kept permanently
   const rows = await p.evaluate(() => demoRows().map((r, i) => ({ ...r, row: i + 2 })));

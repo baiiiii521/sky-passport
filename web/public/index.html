@@ -78,6 +78,11 @@ header.top{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;
 .verse em{font-style:normal;color:var(--gold)}
 .lede{color:var(--muted);font-size:15px;max-width:52ch;margin:14px 0 28px;letter-spacing:.04em}
 .cta{display:flex;gap:12px;flex-wrap:wrap}.cta button{font-size:15.5px;padding:15px 22px;border-radius:12px}
+.issues.fold{display:none}.check-head .foldbtn{margin-left:6px;vertical-align:1px}
+.medal .mshare{position:absolute;right:10px;bottom:10px;font:700 11px var(--f-mono);letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid rgba(233,197,142,.5);color:var(--gold);background:rgba(2,4,11,.6);opacity:.85;cursor:pointer}.medal .mshare:hover{opacity:1;background:rgba(233,197,142,.12)}
+.xhsout{margin-top:14px}.xhsimgs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.xhsimgs img{width:100%;border-radius:12px;border:1px solid var(--line)}
+.cdw{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin:14px 0 4px;padding:12px 16px;border:1px solid rgba(233,197,142,.45);border-radius:14px;background:linear-gradient(180deg,rgba(233,197,142,.12),rgba(233,197,142,.03))}.cdw[hidden]{display:none}.cdw .k{color:var(--gold);font-size:13px}.cdw b{font:900 34px var(--f-display);color:#fff6e2}.cdw .r{color:var(--muted);font-size:13px}
+@media (max-width:560px){#ticker{display:none}.board .bline{display:none}}
 .foot .ver{margin-top:10px;font:12px var(--f-mono);color:rgba(170,190,215,.55);letter-spacing:.04em}
 .notice{display:inline-block;margin-top:14px;color:#d9ccb3;font-size:13.5px;text-decoration:none}.notice[hidden]{display:none}.notice u{color:var(--ac);text-underline-offset:3px}.gnote{margin:10px 0 4px;padding:10px 12px;border:1px solid rgba(233,197,142,.4);border-radius:10px;background:rgba(233,197,142,.06);color:#e8ddc8;font-size:13.5px;line-height:1.7}.gnote[hidden]{display:none}
 .trust{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font-size:12.5px;color:var(--muted);font-family:var(--f-mono);letter-spacing:.04em}
@@ -434,6 +439,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
           <ul class="shotlist" id="shotList"></ul>
           <p class="fine">截图会上传到我们的服务器，交给腾讯云文字识别读出文字，识别完即丢弃，不保存。认错的地方可以在下面「检查表格」里改。</p>
         </details>
+        <div class="cdw" id="cdBox" hidden></div>
         <div class="chips" id="chips"></div>
         <div class="seg" id="yearQuick" role="group" aria-label="年份范围" data-en-aria="Year range"></div>
         <details class="more">
@@ -535,6 +541,8 @@ section[id],.ach[id]{scroll-margin-top:90px}
       <p class="hint" data-en="On Instagram, WeChat Moments or Xiaohongshu, a picture gets shared more than a video. The long poster carries the medals you picked above.">朋友圈、小红书发图比发视频更容易被转发。长图会印上你在上面选中的勋章。</p>
       <div class="f" style="margin-top:4px"><span data-en="Poster style">长图风格</span><div class="seg" id="segPoster" role="group" aria-label="长图风格" data-en-aria="Poster style"><button type="button" data-v="night" data-en="Night flight · new">夜航 · 新</button><button type="button" data-v="classic" data-en="Classic passport">经典护照</button></div></div>
       <details class="more" id="posterOpts"><summary data-en="What else the long poster shows">长图还显示哪些内容</summary><div id="posterChecks"></div></details>
+      <div class="row" style="margin-top:12px"><button type="button" class="primary" id="btnXhs" data-en="Three cards for Xiaohongshu / Instagram (3:4)">小红书卡片（3 张 · 3:4）</button><button type="button" id="btnCaption" data-en="Copy a caption">复制配文</button></div>
+      <div class="xhsout" id="xhsOut" hidden><div class="xhsimgs" id="xhsImgs"></div><div class="row"><button type="button" class="primary" id="btnSaveXhs" data-en="⬇ Save all three">⬇ 保存 3 张</button><span class="hint" data-en="Post them in this order, then paste the caption.">按顺序发这 3 张，再粘贴配文。</span></div></div>
       <div class="row" style="margin-top:12px"><button type="button" class="primary" id="btnLong" data-en="Make a long poster">生成长图海报</button><button type="button" id="btnCoverImg" data-en="Export the cover image">导出视频封面图</button></div>
       <div class="imgout" id="imgOut" hidden><img id="imgPrev" alt="生成的图片预览" data-en-alt="Preview of the generated image"><div class="row"><button type="button" class="primary" id="btnSaveImg" data-en="⬇ Save image">⬇ 保存图片</button></div></div>
     </div>
@@ -560,7 +568,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
 <script src="js/core.js?v=51cd1a00"></script>
 <script src="js/engine.js?v=2ebd5d55"></script>
 <script src="js/music.js?v=f93c8b12"></script>
-<script src="js/ui.js?v=b25c7249"></script>
-<script src="js/extras.js?v=f566d66e"></script>
+<script src="js/ui.js?v=c69d977d"></script>
+<script src="js/extras.js?v=7f865b41"></script>
 <script src="js/export.js?v=11a9a84b"></script>
 <script src="js/home.js?v=3aebbef7"></script>

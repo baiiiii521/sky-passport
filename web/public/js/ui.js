@@ -116,6 +116,7 @@ function filteredOutMsg(){const a=S&&S.res?S.res.all:[];if(!a.length)return L('�
   if(v===a.length)return L(`⛔ ${v} 段都是退票 / 作废：在上面「更多」里勾选「计入退票 / 作废」才能放进动画。`,`⛔ All ${v} flights are cancelled or void: tick “Include cancelled / void tickets” under “More” above to use them.`);
   if(v+u===a.length)return L('⛔ 剩下的都是待出行航班：在上面「更多」里勾选「计入待出行航班」。','⛔ Only upcoming flights are left: tick “Include upcoming flights” under “More” above.');
   return L('⛔ 选中的年份里没有航班：换一个年份范围。','⛔ No flights in the chosen years: pick another range.');}
+let CHECK_OPEN=false;
 function renderCheck(){
   const sec=$('stepCheck'),box=$('issues'),head=$('checkHead');box.innerHTML='';
   if(SOURCE!=='file'){sec.hidden=true;return;}sec.hidden=false;
@@ -176,6 +177,8 @@ function renderCheck(){
     if(SEG_OPEN){det.open=true;fill();}box.append(det);}
   head.className='check-head '+(!ok||(bad&&needColumns())?'bad':bad||warn?'warn':'ok');
   head.textContent=!ok?(bad?L('⛔ 还不能生成视频：先处理下面「必须修改」的问题。','⛔ Not ready yet: fix the “must fix” items below first.'):filteredOutMsg()):bad?L('⚠️ 可以生成，但有航班会缺失，建议先按下面的提示修改。','⚠️ Ready, but some flights would be missing — fixing the items below is recommended.'):warn?L('⚠️ 可以生成，有几处建议确认一下。','⚠️ Ready; a few items are worth a look.'):L('✅ 表格没有问题，可以直接生成视频。','✅ The sheet looks good — go ahead and make the film.');
+  /* plain view first: one line with the count, the details unfold on request (CHECK_OPEN is remembered while the page is open) */
+  {const n=box.children.length;box.classList.toggle('fold',n>0&&!CHECK_OPEN);if(n>0)head.append(' ',el('button',{type:'button',cls:'sm foldbtn',on:{click:()=>{CHECK_OPEN=!CHECK_OPEN;renderCheck();}}},CHECK_OPEN?L('收起细节 ▴','Hide details ▴'):L(`有 ${n} 处需要你看一下 · 展开 ▾`,`${n} thing${n>1?'s':''} to look at · show ▾`)));}
   if(!AI_PROBED){AI_PROBED=true;fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.status===503?r.json():null).then(j=>{if(j&&(j.error==='disabled'||j.error==='not_configured')){AI_OFF=true;renderCheck();}}).catch(()=>{});}
   $('btnAI').hidden=AI_OFF;$('aiNote').hidden=AI_OFF;
   const n=aiPending(),hf=highFixes().length;$('btnAI').disabled=AI_BUSY||!n;$('btnAI').textContent=n?L(`AI 检查（Jev · ${n} 项）`,`AI check (Jev · ${n})`):L('AI 检查（Jev）','AI check (Jev)');
@@ -209,7 +212,8 @@ $('btnTpl').addEventListener('click',async()=>{
 ['name','latin','tagEn','tagZh'].forEach(id=>$(id).addEventListener('input',rebuild));
 $('btnPhoto').addEventListener('click',()=>$('photo').click());
 $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{PHOTO=im;$('thumb').src=url;$('btnPhotoClear').hidden=false;rebuild();};im.src=url;e.target.value='';});
-$('btnPhotoClear').addEventListener('click',()=>{PHOTO=null;$('thumb').removeAttribute('src');$('btnPhotoClear').hidden=true;rebuild();});
+$('btnPhotoClear').addEventListener('click',()=>{PHOTO=null;$('thumb').removeAttribute('src');$('btnPhotoClear').hidden=true;rebuild();
+});
 // preview playback
 function audioKey(){return [SFXB?'sfx':'',S.T_END,S.P.nat,S.P.mstyle,S.order.join(','),S.years.map(y=>y.bars+(y.dream?'d':'')+(y.gap?'g':'')).join(','),S.flights.map(f=>f.t0.toFixed(3)+':'+f.km+(f.up?'u':'')+(f.vd?'v':'')).join(',')].join('|');}
 // the score is synthesised off the main thread (a Worker built from the same functions), so the page never freezes
@@ -326,7 +330,13 @@ function onLangChange(){if(typeof HOME!=='undefined')HOME.relang();initGuide();i
 $('btnLang').addEventListener('click',()=>setLang(EN()?'zh':'en'));
 /* ---------- hero: the traveller's numbers, counted up like a flight-log readout ---------- */
 let HERO_ANIM=0,HERO_MINE=false;
-function heroStats(){const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.final:{n:0,km:0,cc:0,min:0},to={n:F.n,km:F.km,cc:F.cc,h:Math.round(F.min/60)},id=++HERO_ANIM,t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+/* the next upcoming flight, as a countdown on the import step */
+function updateCountdown(){const box=$('cdBox');if(!box)return;const now=new Date(),today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const f=S&&S.ok&&SOURCE==='file'?S.res.all.filter(x=>!x.vd&&x.date&&x.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0]:null;box.hidden=!f;if(!f)return;
+  const days=Math.round((new Date(f.date+'T00:00:00')-new Date(today+'T00:00:00'))/864e5);box.innerHTML='';
+  box.append(el('span',{cls:'k'},L('✈ 距离下一次起飞','✈ Next take-off in')),el('b',{},days===0?L('今天','today'):String(days)),days===0?'':el('span',{cls:'k'},L('天','days')),el('span',{cls:'r'},`${f.date} · ${placeName(f.f)} → ${placeName(f.to)}${f.fn?' · '+f.fn:''}`));
+  if(!updateCountdown.seen){updateCountdown.seen=true;track('countdown');}}
+function heroStats(){updateCountdown();const box=$('heroStats');if(!box||!S)return;const F=S.ok?S.final:{n:0,km:0,cc:0,min:0},to={n:F.n,km:F.km,cc:F.cc,h:Math.round(F.min/60)},id=++HERO_ANIM,t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   /* the board says whose numbers these are: the fictional sample until the visitor's own flights are in, then theirs (with a notice) */
   const mine=SOURCE!=='demo',who=$('heroWho'),nm=mine?(($('name').value||'').trim()||L('你','You')):L('林小舟','Lin Xiaozhou');who.textContent='';
   who.append(el('span',{},mine?L('你的航迹 · ','Your flight log · '):L('示例旅客 · ','Sample traveller · '),el('b',{},nm)),el('span',{cls:'tag'},mine?L('已换成你的数据','YOUR DATA'):L('虚构示例','FICTIONAL')));
