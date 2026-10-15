@@ -26,7 +26,7 @@ Page({
     const sel = wx.getStorageSync(PICK), isOn = b => !b.lock && (Array.isArray(sel) ? sel.includes(b.id) : ST.BADGE_DEFAULT.includes(b.id));
     const medals = (all || this.data.medals).map(b => ({ ...b, on: isOn(b), rarT: RAR_T[b.rar] || '', showProg: typeof b.prog === 'number' && b.prog < 1, progPct: Math.round(Math.max(0.02, Math.min(1, b.prog || 0)) * 100) })).sort((a, b) => (a.lock ? 1 : 0) - (b.lock ? 1 : 0));
     const cats = ST.BADGE_CATS.map(([c, t]) => { const k = medals.filter(b => c === 'all' || b.cat === c); return { c, t, n: k.length, g: k.filter(b => !b.lock).length }; });
-    this.setData({ medals, cats, got: medals.filter(b => !b.lock).length, picked: medals.filter(b => b.on).length, badges: medals.filter(b => b.on), poster: '' });
+    this.setData({ medals, cats, got: medals.filter(b => !b.lock).length, picked: medals.filter(b => b.on).length, badges: medals.filter(b => b.on), poster: '', xhs: [] });   // a new pick: the poster and the cards are drawn again
   },
   pickCat(e) { this.setData({ cat: e.currentTarget.dataset.c }); },
   toggleMedal(e) {

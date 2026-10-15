@@ -72,8 +72,12 @@ const DRAW = {
     const W = 1080, H = 1440; bg(g, W, H, 17);
     g.font = F(700, 24, 1); g.fillStyle = NP.ac; trk(g, 'ACHIEVEMENTS', 60, 150, 8); g.font = SF(86); g.fillStyle = gold(g, 170, 260); g.fillText('飞行成就', 60, 258);
     g.font = F(400, 32); g.fillStyle = NP.mut; g.fillText(`已解锁 ${d.got} / ${d.total} 枚飞行勋章`, 62, 318);
-    d.badges.slice(0, 9).forEach((b, i) => { const x = 50 + (i % 3) * 330, y = 370 + Math.floor(i / 3) * 300; panel(g, x, y, 310, 280, 22, b.rar === 'gold' ? 'rgba(233,197,142,.45)' : b.rar === 'legend' ? 'rgba(255,79,154,.5)' : null);
-      coin(g, x + 155, y + 92, 62, b); g.textAlign = 'center'; g.font = F(400, 24); g.fillStyle = NP.mut; g.fillText(b.k, x + 155, y + 196); g.fillStyle = NP.ink; const sz = fit(g, b.v, 280, 34, 800); g.font = F(800, sz); g.fillText(b.v, x + 155, y + 244); g.textAlign = 'left'; });
+    // the medals picked for the long poster, all of them: 3 columns up to 9, then 4, 5, 6 (the card is always 1080×1440)
+    const B = d.badges.slice(0, 36), n = Math.max(1, B.length), cols = n <= 9 ? 3 : n <= 16 ? 4 : n <= 25 ? 5 : 6, rows = Math.ceil(n / cols), gap = 14, cw = (W - 100 - gap * (cols - 1)) / cols, chh = Math.min(280, (1270 - 370 - gap * (rows - 1)) / rows), small = cols > 3;
+    B.forEach((b, i) => { const x = 50 + (i % cols) * (cw + gap), y = 370 + Math.floor(i / cols) * (chh + gap), cx = x + cw / 2; panel(g, x, y, cw, chh, small ? 16 : 22, b.rar === 'gold' ? 'rgba(233,197,142,.45)' : b.rar === 'legend' ? 'rgba(255,79,154,.5)' : null);
+      const r = Math.min(62, chh * 0.24, cw * 0.22); coin(g, cx, y + chh * 0.33, r, b); g.textAlign = 'center';
+      if (!small) { g.font = F(400, 24); g.fillStyle = NP.mut; g.fillText(b.k, cx, y + chh * 0.7); }
+      g.fillStyle = NP.ink; const sz = fit(g, b.v, cw - 20, small ? Math.round(Math.min(28, chh * 0.16)) : 34, 800); g.font = F(800, sz); g.fillText(b.v, cx, y + chh * (small ? 0.8 : 0.87)); g.textAlign = 'left'; });
     foot(g, W, H);
   },
   medal(g, d, img, b) {

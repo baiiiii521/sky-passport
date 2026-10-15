@@ -126,7 +126,7 @@ function renderBadges(){const box=$('badges');if(!box)return;box.innerHTML='';co
     m.style.setProperty('--i',i);if(b.prog!=null)m.style.setProperty('--p',Math.max(0.02,Math.min(1,b.prog)));
     if(b.lock){m.setAttribute('aria-disabled','true');m.title=L('未解锁','Locked');}else m.title=L('点一下：加入 / 移出长图','Tap to add to / remove from the long poster');
     m.addEventListener('click',()=>{if(b.lock)return;const q=posterOpts();if(!q.sel)q.sel=new Set(got.filter(x=>badgeOn(q,x)).map(x=>x.id));
-      if(q.sel.has(b.id))q.sel.delete(b.id);else q.sel.add(b.id);savePosterOpts(q);m.setAttribute('aria-pressed',String(q.sel.has(b.id)));achSummary(all,q);refreshPoster();});
+      if(q.sel.has(b.id))q.sel.delete(b.id);else q.sel.add(b.id);savePosterOpts(q);m.setAttribute('aria-pressed',String(q.sel.has(b.id)));achSummary(all,q);refreshPoster();const xo=$('xhsOut');if(xo)xo.hidden=true;});
     box.append(m);});
   }
 function achSummary(all,o){const s=$('achSum');if(!s)return;const got=all.filter(b=>!b.lock),sel=got.filter(b=>badgeOn(o,b));
@@ -400,8 +400,10 @@ async function renderCard(kind,b){const sc=S;if(!sc||!sc.ok)return null;const F0
     routes.slice(0,Math.max(3,Math.min(6,Math.floor((CARD_H-200-y0)/72)))).forEach((r,i)=>{const y=y0+70+i*72;g.fillStyle='rgba(94,234,255,.1)';g.fillRect(60,y+24,W-120,1);g.font=F(700,34);g.fillStyle=NP.ink;fitFont(g,r.t,740,34,22,v=>F(700,v));g.fillText(r.t,60,y);g.font=F(700,32,'SM');g.fillStyle=NP.gold;g.textAlign='right';g.fillText(L(`${r.n} 次`,`${r.n}×`),W-60,y);g.textAlign='left';});}
   else if(kind==='xhs3'){g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,'ACHIEVEMENTS',60,150,8);g.font=`900 86px ${SERIF}`;g.fillStyle=goldText(g,170,260);g.fillText(L('飞行成就','Achievements'),60,258);
     g.font=F(400,32);g.fillStyle=NP.mut;g.fillText(L(`已解锁 ${all.filter(x=>!x.lock).length} / ${all.length} 枚飞行勋章`,`${all.filter(x=>!x.lock).length} of ${all.length} medals unlocked`),62,318);
-    picked.slice(0,9).forEach((m,i)=>{const x=50+(i%3)*330,y=370+Math.floor(i/3)*300;npPanel(g,x,y,310,280,22,m.rar==='gold'?'rgba(233,197,142,.45)':m.rar==='legend'?'rgba(255,79,154,.5)':null);cardCoin(g,x+155,y+92,62,m);
-      g.textAlign='center';g.font=F(400,24);g.fillStyle=NP.mut;g.fillText(m.k,x+155,y+196);g.fillStyle=NP.ink;fitFont(g,m.v,280,34,20,v=>F(700,v));g.fillText(m.v,x+155,y+244);g.textAlign='left';});}
+    /* the medals picked for the long poster, all of them: 3 columns up to 9, then 4, 5, 6 */
+    const Bs=picked.slice(0,36),n=Math.max(1,Bs.length),cols=n<=9?3:n<=16?4:n<=25?5:6,rows=Math.ceil(n/cols),gap=14,cw=(W-100-gap*(cols-1))/cols,chh=Math.min(280,(1270-370-gap*(rows-1))/rows),small=cols>3;
+    Bs.forEach((m,i)=>{const x=50+(i%cols)*(cw+gap),y=370+Math.floor(i/cols)*(chh+gap),cx=x+cw/2;npPanel(g,x,y,cw,chh,small?16:22,m.rar==='gold'?'rgba(233,197,142,.45)':m.rar==='legend'?'rgba(255,79,154,.5)':null);cardCoin(g,cx,y+chh*0.33,Math.min(62,chh*0.24,cw*0.22),m);
+      g.textAlign='center';if(!small){g.font=F(400,24);g.fillStyle=NP.mut;g.fillText(m.k,cx,y+chh*0.7);}g.fillStyle=NP.ink;fitFont(g,m.v,cw-20,small?Math.round(Math.min(28,chh*0.16)):34,14,v=>F(700,v));g.fillText(m.v,cx,y+chh*(small?0.8:0.87));g.textAlign='left';});}
   else if(kind==='medal'&&b){const glow=g.createRadialGradient(W/2,560,0,W/2,560,520);glow.addColorStop(0,b.rar==='gold'||b.rar==='legend'?'rgba(255,214,160,.28)':'rgba(94,234,255,.2)');glow.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=glow;g.fillRect(0,0,W,CARD_H);
     npCorners(g,40,40,W-80,CARD_H-80,46,'rgba(233,197,142,.5)');g.font=F(700,24,'SM');g.fillStyle=NP.ac;trk(g,'ACHIEVEMENT UNLOCKED',W/2,150,8,'center');
     const RN={legend:L('传奇 · LEGEND','LEGEND'),gold:L('金 · GOLD','GOLD'),silver:L('银 · SILVER','SILVER')}[b.rar];if(RN){g.font=F(700,28);const w=g.measureText(RN).width+40;rr(g,W/2-w/2,180,w,46,23);g.fillStyle=b.rar==='legend'?'#ff4f9a':b.rar==='gold'?'#e9c58e':'#cfd8e4';g.fill();g.fillStyle='#02040b';g.textAlign='center';g.fillText(RN,W/2,213);}

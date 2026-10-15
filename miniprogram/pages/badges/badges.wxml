@@ -45,7 +45,7 @@
 
   <view class="card" wx:if="{{has}}">
     <view class="h2"><text class="no">03</text>小红书卡片<text class="tag">3:4 · 3 张</text></view>
-    <text class="small">封面、航线图、成就各一张，文案也配好了，存到相册就能发。</text>
+    <text class="small">封面、航线图、成就各一张，文案也配好了，存到相册就能发。成就卡印的是你在上面选中的勋章（和长图一致），选得越多排得越密。</text>
     <button class="primary" bindtap="makeXhs" disabled="{{!!busy}}">生成 3 张卡片</button>
     <block wx:if="{{xhs.length}}">
       <view class="xhs"><image wx:for="{{xhs}}" wx:key="*this" src="{{item}}" mode="widthFix" class="xi" data-i="{{index}}" bindtap="previewXhs"/></view>
