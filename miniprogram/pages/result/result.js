@@ -157,7 +157,7 @@ Page({
     return new Promise((res, rej) => wx.createSelectorQuery().in(this).select('#card').fields({ node: true }).exec(q => {
       const cv = q && q[0] && q[0].node; if (!cv) return rej(new Error('画布不可用')); const W = 1080, H = 1320; cv.width = 1080; cv.height = 1440; const g = cv.getContext('2d'), im = cv.createImage(); g.clearRect(0, 0, 1080, 1440);
       im.onload = () => { const k = Math.min(W / im.width, H / im.height), w = im.width * k, h = im.height * k; g.fillStyle = '#efe9e1'; g.fillRect(0, 0, W, H); g.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
-        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: W, height: H, destWidth: 360, destHeight: 440, fileType: 'jpg', quality: 0.82, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
+        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: W, height: H, destWidth: 360, destHeight: 440, fileType: 'jpg', quality: 0.7, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
       im.onerror = () => rej(new Error('读不了这张图')); im.src = path; }));
   },
   clearPhoto() { this._photoB64 = ''; try { wx.removeStorageSync(PHOTO); } catch (e) {} this.setData({ photo: '' }); this.resetVideo(); },
@@ -186,7 +186,7 @@ Page({
   prerender() {
     clearTimeout(specTimer);
     if (this.data.manualOpen || !wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n || this.data.video.state) return;
-    specTimer = setTimeout(() => SS.api('/api/video', 'POST', { ...this.videoBody(), spec: true }).catch(() => {}), 3000); // settle typing first
+    specTimer = setTimeout(() => SS.api('/api/video', 'POST', { ...this.videoBody(), spec: true }, 60000).catch(() => {}), 3000); // settle typing first
   },
   copySite() { wx.setClipboardData({ data: 'https://passport.nybbq.art', success: () => wx.showToast({ title: '网址已复制，请到浏览器粘贴打开', icon: 'none', duration: 2500 }) }); },
   makeVideo() {
@@ -203,12 +203,13 @@ Page({
   async submitVideo() {
     this.setData({ video: { state: 'sending', progress: 0, ahead: 0, url: '', size: '', err: '' } });
     try {
-      clearTimeout(specTimer); SS.track('video_req'); const d = this.data, r = await SS.api('/api/video', 'POST', this.videoBody());
+      clearTimeout(specTimer); SS.track('video_req'); const d = this.data, body = this.videoBody(), post = () => SS.api('/api/video', 'POST', body, 60000); let r;
+      try { r = await post(); } catch (e) { if (e.code) throw e; this.setData({ 'video.state': 'sending' }); r = await post(); }   /* no status = the upload itself failed (slow line, e.g. with a photo): try once more */
       wx.setStorageSync(LAST, { id: r.id, sig: dataSig(SS.rowsForServer()), opts: { name: d.name, latin: d.latin, nat: d.nat, natIdx: d.natIdx, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
       this.setData({ 'video.state': 'queued', 'video.ahead': r.ahead || 0 });
       this.poll(r.id);
     } catch (e) {
-      const msg = e.code === 429 ? '一小时内生成次数太多，请稍后再试' : e.code === 503 ? '现在排队的人太多，请稍后再试' : '提交失败：' + e.message;
+      const msg = e.code === 429 ? '一小时内生成次数太多，请稍后再试' : e.code === 503 ? '现在排队的人太多，请稍后再试' : (e.code ? '提交失败：' + e.message : '上传没成功（网络较慢），请再点一次「生成视频」，或换个网络；也可以先不加照片');
       this.setData({ 'video.state': 'error', 'video.err': msg });
     }
   },
