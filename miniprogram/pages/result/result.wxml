@@ -70,7 +70,15 @@
       <view class="fields">
         <input class="input" placeholder="名字（如 林小舟）" value="{{name}}" bindinput="onName" maxlength="16"/>
         <input class="input" placeholder="拼音 / 英文名（如 LIN XIAOZHOU）" value="{{latin}}" bindinput="onLatin" maxlength="24"/>
-        <picker mode="selector" range="{{natList}}" value="{{natIdx}}" bindchange="onNat"><view class="input pick natp"><text class="nl">国籍</text>{{natList[natIdx]}}<text class="na2">更改 ›</text></view></picker>
+        <view class="input pick natp" bindtap="natShow"><text class="nl">国籍</text>{{natList[natIdx]}}<text class="na2">更改 ›</text></view>
+        <view wx:if="{{natOpen}}" class="natbox">
+          <input class="input" placeholder="搜索国家或地区，如 日本 / Japan / JP" value="{{natQ}}" bindinput="natSearch" focus="{{natOpen}}" confirm-type="search"/>
+          <scroll-view scroll-y class="natlist">
+            <view wx:for="{{natHits}}" wx:key="k" class="nati {{item.k===nat?'on':''}}" data-k="{{item.k}}" bindtap="natPick">{{item.t}}</view>
+            <view wx:if="{{!natHits.length}}" class="small center">没找到，换个写法试试</view>
+          </scroll-view>
+          <view class="natx" bindtap="natHide">收起</view>
+        </view>
       </view>
       <text class="small">国籍会印在护照封皮和内页上，也决定哪些航班算「出境」。</text>
       <image wx:if="{{card}}" class="cardimg" src="{{card}}" mode="widthFix"/>

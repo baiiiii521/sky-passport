@@ -187,8 +187,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,.drop:focus-visibl
 label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);min-width:0}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 @media (max-width:520px){.fields{grid-template-columns:minmax(0,1fr)}}
-input[type=text],input[type=date],select{font:15px var(--f-body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;color-scheme:dark;transition:border-color .15s,box-shadow .15s}
-input[type=text]:focus,input[type=date]:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(94,234,255,.15),0 0 18px rgba(94,234,255,.12);outline:none}
+input[type=text],input[type=date],input[type=search],select{font:15px var(--f-body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;color-scheme:dark;transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus,input[type=date]:focus,input[type=search]:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(94,234,255,.15),0 0 18px rgba(94,234,255,.12);outline:none}
 input.code{font-family:var(--f-mono);text-transform:uppercase;width:90px;letter-spacing:.1em}
 .check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink)}.check input{accent-color:var(--ac);width:16px;height:16px}
 .photo-row{display:flex;gap:14px;align-items:center}.thumb{width:64px;height:80px;border-radius:8px;border:1px solid var(--line);object-fit:cover;background:var(--field)}
@@ -481,7 +481,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
         <details class="more">
           <summary data-en="More: nationality, photo, closing line">更多：国籍、照片、结尾文案</summary>
           <div class="fields" style="margin-top:12px">
-          <label class="f" for="nat"><span data-en="Nationality / region">国籍 / 地区</span><select id="nat"></select></label>
+          <label class="f" for="nat"><span data-en="Nationality / region">国籍 / 地区</span><input type="search" id="natQ" style="margin-bottom:8px" placeholder="搜索，如 日本 / Japan / JP" data-en-ph="Search, e.g. Japan / JP" autocomplete="off"><select id="nat"></select></label>
           <div class="f"><span data-en="Photo (optional)">照片（可选）</span>
             <div class="photo-row"><img class="thumb" id="thumb" alt="照片预览" data-en-alt="Photo preview"><button type="button" id="btnPhoto" data-en="Choose photo">选择照片</button><button type="button" id="btnPhotoClear" hidden data-en="Remove">移除</button></div>
             <input type="file" id="photo" accept="image/*" class="sr" aria-label="选择照片" data-en-aria="Choose a photo">
@@ -568,7 +568,7 @@ section[id],.ach[id]{scroll-margin-top:90px}
 <script src="js/core.js?v=51cd1a00"></script>
 <script src="js/engine.js?v=2ebd5d55"></script>
 <script src="js/music.js?v=f93c8b12"></script>
-<script src="js/ui.js?v=c69d977d"></script>
+<script src="js/ui.js?v=3253b620"></script>
 <script src="js/extras.js?v=84fc705e"></script>
 <script src="js/export.js?v=11a9a84b"></script>
 <script src="js/home.js?v=3aebbef7"></script>

@@ -320,8 +320,11 @@ async function shotsAdd(files){if(SHOT_BUSY||!files.length)return;SHOT_BUSY=true
   finally{SHOT_BUSY=false;$('btnShots').disabled=false;$('shotFile').value='';}}
 if(SHOTS_ON&&!EN()){$('shotAdd').hidden=false;$('shotNotice').hidden=false;$('guideNote').hidden=false;$('shotNotice').addEventListener('click',()=>{$('shotAdd').open=true;setTimeout(()=>$('shotAdd').scrollIntoView({block:'center'}),120);});$('btnShots').addEventListener('click',()=>$('shotFile').click());$('shotFile').addEventListener('change',e=>shotsAdd([...e.target.files].slice(0,12)));}
 /* ---------- language switch: static text in i18n.js, everything rendered from code re-renders here ---------- */
-function natOptions(){const sel=$('nat'),keep=sel.value||'CN';sel.innerHTML='';const lab=v=>EN()?`${v[0]} · ${v[2]}`:`${v[1]} · ${v[2]}`;
-  Object.entries(NAMES).sort((a,b)=>EN()?a[1][0].localeCompare(b[1][0],'en'):a[1][1].localeCompare(b[1][1],'zh')).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=lab(v);sel.appendChild(o);});sel.value=keep;}
+/* nationality list: common places first, then A–Z; the search box above it narrows the list (NAMES says 中国台湾 / 中国香港 / 中国澳门) */
+const NAT_TOP=['CN','HK','MO','TW','JP','KR','SG','MY','TH','US','GB','CA','AU','NZ','DE','FR'];
+function natOptions(){const sel=$('nat'),keep=sel.value||'CN',q=(($('natQ')||{}).value||'').trim().toLowerCase();sel.innerHTML='';const lab=v=>EN()?`${v[0]} · ${v[2]}`:`${v[1]} · ${v[2]}`;
+  Object.entries(NAMES).filter(([k,v])=>k===keep||!q||`${v[0]} ${v[1]} ${v[2]} ${k}`.toLowerCase().includes(q)).sort((a,b)=>((NAT_TOP.indexOf(a[0])+1||99)-(NAT_TOP.indexOf(b[0])+1||99))||(EN()?a[1][0].localeCompare(b[1][0],'en'):a[1][1].localeCompare(b[1][1],'zh'))).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=lab(v);sel.appendChild(o);});sel.value=keep;}
+$('natQ').addEventListener('input',()=>{natOptions();const sel=$('nat'),hit=[...sel.options].find(o=>o.value!==sel.value&&$('natQ').value.trim());if(hit&&sel.options.length<=2){sel.value=hit.value;rebuild();}});
 // nationality: the sample is a Chinese traveller; once the data is the user's own and they have not picked one, use the browser's region
 let NAT_TOUCHED=false;
 function natForUser(){if(NAT_TOUCHED)return;const m=(navigator.language||'').match(/[-_]([A-Za-z]{2})\b/),r=m?m[1].toUpperCase():/^zh/i.test(navigator.language||'')?'CN':'';if(r&&NAMES[r])$('nat').value=r;}

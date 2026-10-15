@@ -5,7 +5,9 @@ const SS = require('../../libs/session.js');
 const CA = require('../../libs/cards.js');
 const PICK = 'skypassport.badgesOn', NAT = 'skypassport.nat';
 // nationality: the passport's issuing country in the film (cover, page, MRZ) and the home country for the stats (international flights, 首次出境)
-let NATS = null; const nats = () => NATS || (NATS = Object.entries(C.NAMES).filter(([k]) => /^[A-Z]{2}$/.test(k) && k !== 'TW').sort((a, b) => a[1][1].localeCompare(b[1][1], 'zh')).map(([k, v]) => ({ k, t: `${v[1]} · ${v[2]}` })));
+const TOP = ['CN', 'HK', 'MO', 'TW', 'JP', 'KR', 'SG', 'MY', 'TH', 'US', 'GB', 'CA', 'AU', 'NZ', 'DE', 'FR'];   // offered first, before the full list
+let NATS = null; const nats = () => NATS || (NATS = Object.entries(C.NAMES).filter(([k]) => /^[A-Z]{2}$/.test(k)).sort((a, b) => (TOP.indexOf(a[0]) + 1 || 99) - (TOP.indexOf(b[0]) + 1 || 99) || a[1][1].localeCompare(b[1][1], 'zh'))
+  .map(([k, v]) => ({ k, t: `${v[1]} · ${v[2]}`, q: `${v[1]} ${v[0]} ${v[2]} ${k}`.toLowerCase() })));   /* NAMES already says 中国台湾 / 中国香港 / 中国澳门 */
 const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
 const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
@@ -19,7 +21,7 @@ Page({
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
     video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' }, saving: '',
     busy: '', err: '',
-    nat: 'CN', natIdx: 0, natList: [], step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
+    nat: 'CN', natIdx: 0, natList: [], natOpen: false, natQ: '', natHits: [], step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
     manualOpen: false, legs: [], saved: 0, shotTodo: [], shotMsg: '', mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
   onLoad() { const list = nats(), k = wx.getStorageSync(NAT) || 'CN', i = Math.max(0, list.findIndex(n => n.k === k)); this.setData({ natList: list.map(n => n.t), nat: list[i] ? list[i].k : 'CN', natIdx: i }); },
@@ -131,7 +133,11 @@ Page({
   resetVideo() { if (this.data.video.state && this.data.video.state !== 'done') return; this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); this.prerender(); },
   pickYear(e) { this.setData({ year: +e.currentTarget.dataset.y }); this.recompute(); },
   toggleUp() { this.setData({ up: !this.data.up }); this.recompute(); },
-  onNat(e) { const n = nats()[+e.detail.value]; if (!n) return; wx.setStorageSync(NAT, n.k); this.setData({ nat: n.k, natIdx: +e.detail.value }); this.recompute(); },
+  /* nationality: a search box over the list (scrolling 250 places was too slow) */
+  natShow() { this.setData({ natOpen: true, natQ: '', natHits: nats().slice(0, 40).map(n => ({ k: n.k, t: n.t })) }); },
+  natHide() { this.setData({ natOpen: false }); },
+  natSearch(e) { const q = e.detail.value.trim().toLowerCase(), all = nats(); this.setData({ natQ: e.detail.value, natHits: (q ? all.filter(n => n.q.includes(q)) : all.slice(0, 40)).slice(0, 60).map(n => ({ k: n.k, t: n.t })) }); },
+  natPick(e) { const k = e.currentTarget.dataset.k, i = nats().findIndex(n => n.k === k); if (i < 0) return; wx.setStorageSync(NAT, k); this.setData({ nat: k, natIdx: i, natOpen: false }); this.recompute(); },
   onName(e) { this.setData({ name: e.detail.value.trim() }); this.share(); this.resetVideo(); this.cardSoon(); },
   onLatin(e) { this.setData({ latin: e.detail.value.toUpperCase().replace(/[^A-Z ]/g, '') }); this.share(); this.resetVideo(); this.cardSoon(); },
   pick(e) { const { k, v } = e.currentTarget.dataset; this.setData({ [k]: v }); this.resetVideo(); },

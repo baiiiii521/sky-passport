@@ -97,3 +97,6 @@ button[disabled] { opacity: .65; }
 .wait { margin-top: 16rpx; } .wait .ghost { margin-top: 18rpx !important; }
 .ver { margin-top: 30rpx; text-align: center; font-size: 22rpx; color: rgba(169,187,211,.55); font-family: monospace; }
 .natp { display: flex; align-items: center; gap: 16rpx; } .nl { color: #a9bbd3; font-size: 24rpx; } .na2 { margin-left: auto; color: #5eeaff; font-size: 24rpx; }
+.natbox { margin-top: -2rpx; padding: 16rpx; border: 1px solid rgba(94,234,255,.3); border-radius: 18rpx; background: rgba(4,11,28,.95); }
+.natlist { height: 520rpx; margin-top: 12rpx; } .nati { padding: 20rpx 12rpx; font-size: 28rpx; border-bottom: 1px solid rgba(94,234,255,.08); } .nati.on { color: #5eeaff; font-weight: 700; }
+.natx { margin-top: 10rpx; text-align: center; color: #5eeaff; font-size: 26rpx; padding: 8rpx; }
