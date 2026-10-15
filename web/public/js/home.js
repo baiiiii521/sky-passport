@@ -115,7 +115,8 @@ const HOME=(()=>{
   function relang(){scramble(q('#heroH'));update();}
   /* server render pages (?render=) only need the film engine: no globe, no motion, no ticker */
   const RENDER=/[?&]render=/.test(location.search);
-  function init(){if(RENDER)return;initViews();initGlobe();initMotion();scramble(q('#heroH'));update();}
+  function init(){if(RENDER)return;initViews();initGlobe();initMotion();scramble(q('#heroH'));update();
+    const v=q('#appVer'),sc=document.querySelector('script[src*="js/ui.js"]'),h=sc&&(sc.getAttribute('src').split('v=')[1]||'');if(v)v.textContent=`v${APP_VERSION}${h?' · '+h:''}`;track('visit');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
   /* a still of the globe facing the traveller's routes, comets frozen mid-flight (fixed clock, so the same input gives the same picture) */
   function paintGlobe(g,cx,cy,R,scale){update();paint(g,cx,cy,R,scale||1,G.yaw0||0,G.tilt0==null?0.35:G.tilt0,2600);return G.arcs.length;}

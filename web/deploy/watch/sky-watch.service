@@ -1,0 +1,6 @@
+[Unit]
+Description=Sky Passport self-check (restarts a service that stopped answering)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sky-watch.sh

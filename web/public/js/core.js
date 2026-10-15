@@ -23,6 +23,9 @@ function ingestAirports(a){
 }
 /* ?v= for data files (index.html is stamped by scripts/stamp.js), and libraries fetched on first use */
 const VQ=typeof ASSET_V==='string'?'?v='+ASSET_V:'';
+const APP_VERSION='3.3.0'; /* bump on every release; shown in the footer with the scripts' content hash */
+/* anonymous usage counts (server/ev.js): the event name only, never flights or names; mainland site only, server renders and promo pages never count */
+function track(e){try{if(/[?&](render|site)=/.test(location.search))return;const s=typeof EN==='function'&&EN()?'en':'web',b=JSON.stringify({e,s});if(/(^|\.)nybbq\.art$/.test(location.hostname)||/[?&]ev=1/.test(location.search)){if(!(navigator.sendBeacon&&navigator.sendBeacon('/api/ev',b)))fetch('/api/ev',{method:'POST',body:b,keepalive:true}).catch(()=>{});}else if(window.va)window.va('event',{name:e});}catch(_){}}
 const LIBP={};
 function loadLib(k,g){if(typeof globalThis[g]!=='undefined')return Promise.resolve();if(!LIBP[k])LIBP[k]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=(typeof LIBS==='object'&&LIBS[k])||{xlsx:'vendor/xlsx.full.min.js',muxer:'vendor/mp4-muxer.js'}[k];s.onload=()=>res();s.onerror=()=>{delete LIBP[k];rej(new Error('could not load '+k));};document.head.appendChild(s);});return LIBP[k];}
 async function loadData(){

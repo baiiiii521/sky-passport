@@ -370,7 +370,7 @@ async function saveImage(){if(!lastImg)return;const file=new File([lastImg],last
   if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:L('航迹手帐','Sky Passport')});return;}catch(e){if(e&&e.name==='AbortError')return;}}
   saveFile(lastImgName,lastImg);}
 const imgBase=()=>`${L('航迹手帐','sky-passport')}_${(S.P.latin||'flight').replace(/\s+/g,'_')}_${yearsLabel(S,'-','')}`;
-$('btnLong').addEventListener('click',async()=>{if(!S||!S.ok)return;const b=$('btnLong');b.disabled=true;b.textContent=L('正在生成…','Making…');
+$('btnLong').addEventListener('click',async()=>{if(!S||!S.ok)return;track('poster');const b=$('btnLong');b.disabled=true;b.textContent=L('正在生成…','Making…');
   try{showImage(await renderLongPoster(),imgBase()+L('_长图.png','_poster.png'),true);}finally{b.disabled=false;b.textContent=L('生成长图海报','Make a long poster');}});
 $('btnCoverImg').addEventListener('click',async()=>{if(!S||!S.ok)return;await Promise.all([ensureFonts(),loadFlags(S.order)]);showImage(renderCoverImage(),imgBase()+L('_封面.png','_cover.png'));});
 $('btnSaveImg').addEventListener('click',saveImage);

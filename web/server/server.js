@@ -5,14 +5,15 @@
 'use strict';
 const http = require('http');
 const check = require('../api/check.js');
-const shots = require('./shots.js');   // POST /api/shots: flights from a screenshot (Tencent Cloud OCR)
+const shots = require('./shots.js');
+const ev = require('./ev.js');         // POST /api/ev: anonymous usage counts   // POST /api/shots: flights from a screenshot (Tencent Cloud OCR)
 const PORT = +process.env.PORT || 3100;
 
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/api/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
-  if (url !== '/api/check' && url !== '/api/shots') { res.writeHead(404); return res.end(); }
-  const run = url === '/api/shots' ? shots.handler : check, max = url === '/api/shots' ? 6e6 : 200e3;   // a screenshot is a few hundred KB of base64
+  if (url !== '/api/check' && url !== '/api/shots' && url !== '/api/ev') { res.writeHead(404); return res.end(); }
+  const run = url === '/api/shots' ? shots.handler : url === '/api/ev' ? ev.handler : check, max = url === '/api/shots' ? 6e6 : url === '/api/ev' ? 2e3 : 200e3;   // a screenshot is a few hundred KB of base64
   let size = 0; const chunks = [];
   req.on('data', c => { size += c.length; if (size > max) { res.writeHead(413); res.end(); req.destroy(); } else chunks.push(c); });
   req.on('end', () => {

@@ -187,7 +187,7 @@ async function loadFile(file){
     if(/\.csv$|\.txt$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes(String.fromCharCode(0xFFFD)))txt=new TextDecoder('gb18030').decode(buf);wb=XLSX.read(txt,{type:'string',raw:true});}
     else wb=XLSX.read(buf,{type:'array',cellDates:true});
     const rows=readWorkbook(wb);if(!rows.length&&!SHEETS.length){setStatus(L('文件里没有内容。','The file is empty.'),true);return;}
-    resetFixes();aiMsg('');RAW=rows;SOURCE='file';natForUser();playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';
+    resetFixes();aiMsg('');RAW=rows;SOURCE='file';natForUser();track('import_file');playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';
     setStatus(rows.length?L(`已读取 ${rows.length} 行记录，检查结果见「检查表格」。`,`Read ${rows.length} rows — see “Check the spreadsheet”.`):L('没认出表格结构，见「检查表格」。','Table structure not recognised — see “Check the spreadsheet”.'),!rows.length);rebuild();
   }catch(e){console.error(e);setStatus(L('文件读取失败：','Could not read the file: ')+(e.message||e)+L('。可以另存为 .xlsx 或 CSV 再试。','. Try saving it as .xlsx or CSV.'),true);}
 }
@@ -197,7 +197,7 @@ $('file').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(
 ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
 drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
-$('btnDemo').addEventListener('click',()=>{resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';if(!NAT_TOUCHED)$('nat').value='CN';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus(L('已换回示例数据。','Back to the sample data.'));rebuild();});
+$('btnDemo').addEventListener('click',()=>{track('import_demo');resetFixes();aiMsg('');RAW=demoRows();SOURCE='demo';if(!NAT_TOUCHED)$('nat').value='CN';playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';if(!$('name').value)$('name').value='';setStatus(L('已换回示例数据。','Back to the sample data.'));rebuild();});
 $('btnAI').addEventListener('click',runAI);$('btnApplyAll').addEventListener('click',applyAll);
 $('btnFixedCsv').addEventListener('click',()=>saveFile(L('航迹手帐_修正版.csv','sky-passport-corrected.csv'),new Blob([fixedCsv()],{type:'text/csv'})));
 $('btnToMake').addEventListener('click',()=>HOME.go('studio','s3'));
@@ -238,7 +238,7 @@ function ensureAudio(){if(!S||!S.ok)return Promise.resolve(null);if(!SFXB&&!SFXF
 let audioTimer=null;function scheduleAudio(){clearTimeout(audioTimer);audioTimer=setTimeout(()=>{if(!playing&&!exporting&&S&&S.ok)ensureAudio();},800);}
 function stopPlay(){playing=false;$('btnPlay').textContent=L('▶ 播放','▶ Play');$('btnPlay').setAttribute('aria-label',L('播放预览','Play the preview'));if(audioSrc){try{audioSrc.stop();}catch(e){}audioSrc=null;}}
 let starting=false;
-$('btnPlay').addEventListener('click',async()=>{if(!S||!S.ok||exporting||starting)return;if(playing){stopPlay();return;}
+$('btnPlay').addEventListener('click',async()=>{if(playing===false)track('preview_play');if(!S||!S.ok||exporting||starting)return;if(playing){stopPlay();return;}
   if(playT>=S.T_END-0.05)playT=0;starting=true;
   try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});audioCtx.resume();}catch(e){} // unlock audio inside the click
   if(!(AUDIO&&AUDIO_KEY===audioKey()))$('btnPlay').textContent=L('… 合成配乐','… scoring');const A=await ensureAudio();starting=false;if(!A||!S||!S.ok)return;
@@ -284,7 +284,7 @@ function qaAdd(){const d=$('qaDate').value,fa=resolveAirport($('qaFrom').value),
   const bad=m=>{h.className='qahint err';h.textContent=m;};
   if(!d)return bad(L('先选日期','Pick a date first'));if(!fa||!ta)return bad(L('出发和到达都要能认出（三字码最稳）','Both airports must be recognised (codes are the safest)'));if(fa===ta)return bad(L('出发和到达是同一个机场','From and to are the same airport'));
   if(SOURCE!=='file'){resetFixes();aiMsg('');RAW=[];SHEETS=[];SOURCE='file';natForUser();} // the sample makes way for the user's own flights
-  const fn=$('qaFn').value.toUpperCase().replace(/\s+/g,'');QA_N++;
+  const fn=$('qaFn').value.toUpperCase().replace(/\s+/g,'');QA_N++;track('import_manual');
   RAW.push({rawDate:d,al:'',fn,from:fa,to:ta,dt:'',at:'',km:'',st:'',sheetUp:false,sheetVoid:false,src:{sheet:L('手动添加','Added by hand'),row:QA_N,cols:{}}});
   playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';
   h.className='qahint ok';h.textContent=L(`已添加 ${fa} → ${ta}（共 ${RAW.length} 段）`,`Added ${fa} → ${ta} (${RAW.length} in total)`);
@@ -311,7 +311,7 @@ async function shotsAdd(files){if(SHOT_BUSY||!files.length)return;SHOT_BUSY=true
         if(have.has(key(row))){dup++;return;}have.add(key(row));RAW.push(row);added++;
         const fa=row.from&&resolveAirport(row.from),ta=row.to&&resolveAirport(row.to),bad=!row.rawDate||!fa||!ta;if(bad)need++;
         ul.append(el('li',{},el('span',{class:'d'},row.rawDate||(f.md?`??-${f.md}`:'日期?')),el('span',{},`${row.fn} ${row.from||'?'} → ${row.to||'?'}`),bad?el('span',{class:'w'},!row.rawDate?'缺年份':'地名没认出'):el('span',{class:'g'},`${fa} → ${ta}`)));});}
-    if(added){playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';rebuild();}
+    track(added?'import_shots':'shots_none');if(added){playT=0;RESET_YEARS=true;$('yFrom').innerHTML='';$('yTo').innerHTML='';rebuild();}
     say(fail&&!added?fail:`识别出 ${added} 段${dup?`，${dup} 段重复已跳过`:''}${need?`；${need} 段要在「检查表格」里补全`:''}${fail?`（${fail}）`:''}`,fail&&!added?'err':need?'':'ok');}
   finally{SHOT_BUSY=false;$('btnShots').disabled=false;$('shotFile').value='';}}
 if(SHOTS_ON&&!EN()){$('shotAdd').hidden=false;$('shotNotice').hidden=false;$('guideNote').hidden=false;$('shotNotice').addEventListener('click',()=>{$('shotAdd').open=true;setTimeout(()=>$('shotAdd').scrollIntoView({block:'center'}),120);});$('btnShots').addEventListener('click',()=>$('shotFile').click());$('shotFile').addEventListener('change',e=>shotsAdd([...e.target.files].slice(0,12)));}
@@ -342,7 +342,7 @@ document.querySelectorAll('.introBtn').forEach(b=>b.addEventListener('click',()=
 // the intro film (720p, loaded only when opened)
 /* three short kinetic cuts (A rapid fire, B one pass, C departures board): a different one each time */
 let INTRO_LAST=-1;
-$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV');let k=Math.floor(Math.random()*3);if(k===INTRO_LAST)k=(k+1)%3;INTRO_LAST=k;const src=`promo/intro-${'abc'[k]}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
+$('btnIntro').addEventListener('click',()=>{const d=$('intro'),v=$('introV');let k=Math.floor(Math.random()*3);if(k===INTRO_LAST)k=(k+1)%3;INTRO_LAST=k;track('intro_play');const src=`promo/intro-${'abc'[k]}.mp4`;if(!v.src.endsWith(src))v.src=src;if(d.showModal)d.showModal();else d.setAttribute('open','');v.play().catch(()=>{});});
 const closeIntro=()=>{$('introV').pause();$('intro').close?$('intro').close():$('intro').removeAttribute('open');};$('btnIntroX').addEventListener('click',closeIntro);$('intro').addEventListener('close',()=>$('introV').pause());
 $('btnMakeM').addEventListener('click',()=>{$('h3').scrollIntoView({behavior:'smooth',block:'start'});if(S&&S.ok&&!exporting)$('btnMake').click();});
 initSegs();initGuide();

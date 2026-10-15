@@ -1,0 +1,34 @@
+# Unit tests on every push; the browser smoke test (imports, views, medals, posters, a real MP4 export with sound)
+# on pushes to main and feat/v3-vercel. Fonts and flags are generated files, so the job builds them first.
+name: ci
+on:
+  push: { branches: [main, feat/v3-vercel] }
+  pull_request:
+  workflow_dispatch:
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: unit
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:data && npm run build:fonts
+      - run: pip install playwright==1.47.0
+      - run: (cd public && python3 -m http.server 5190 >/dev/null 2>&1 &) && sleep 2
+      - run: python web/tests/e2e/smoke.py http://localhost:5190
+        working-directory: .

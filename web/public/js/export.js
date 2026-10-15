@@ -33,9 +33,9 @@ $('btnMake').addEventListener('click',async()=>{
     if(!XD.check.ok&&XD.path==='webcodecs'&&!cancelExport){const r=await exportRealtime(A,setP,AC);if(!r[0])return;XD.check2=await soundCheck(r[0]);if(XD.check2.ok){[blob,ext]=r;}}
     const soundOk=(XD.check2||XD.check).ok;showDiag(!soundOk);
     lastBlob=blob;lastName=`${L('航迹手帐','sky-passport')}_${(S.P.latin||'flight').replace(/\s+/g,'_')}_${S.years[0].y}-${S.years[S.years.length-1].y}.${ext}`;
-    const v=$('outVideo');v.src=URL.createObjectURL(blob);$('result').hidden=false;$('saveBar').hidden=false;$('saveInfo').textContent=`${(blob.size/1048576).toFixed(1)} MB · ${ext.toUpperCase()}`;setP(1);setStatus(L(`完成：${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}。点「保存视频」下载。`,`Done: ${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}. Tap “Save video” to download it.`)+(soundOk?L(' 声音已检查 ✓',' Sound checked ✓'):''));
+    const v=$('outVideo');v.src=URL.createObjectURL(blob);$('result').hidden=false;$('saveBar').hidden=false;$('saveInfo').textContent=`${(blob.size/1048576).toFixed(1)} MB · ${ext.toUpperCase()}`;setP(1);track('export_ok');setStatus(L(`完成：${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}。点「保存视频」下载。`,`Done: ${(blob.size/1048576).toFixed(1)} MB · ${mmss(S.T_END)}. Tap “Save video” to download it.`)+(soundOk?L(' 声音已检查 ✓',' Sound checked ✓'):''));
     if(!soundOk)setStatus(L('视频已生成，但这台设备上检查不到声音。请把下面的诊断信息截图发给我们；用电脑上的 Chrome 生成一般有声音。','The film is ready, but no sound could be found in it on this device. Please send us a screenshot of the details below; Chrome on a computer usually works.'),true);
-  }catch(e){console.error(e);setStatus(L('生成失败：','Could not make the film: ')+(e.message||e)+L('。换用最新版 Chrome / Edge 一般能解决。','. The latest Chrome or Edge usually works.'),true);}
+  }catch(e){console.error(e);track('export_fail');setStatus(L('生成失败：','Could not make the film: ')+(e.message||e)+L('。换用最新版 Chrome / Edge 一般能解决。','. The latest Chrome or Edge usually works.'),true);}
   finally{exporting=false;$('btnMake').disabled=false;$('btnCancel').hidden=true;drawAt(playT);try{AC&&AC.close();}catch(e){}}
 });
 /* AudioSpecificConfig for AAC: object type, sample-rate index, channel layout */
