@@ -139,24 +139,24 @@ Page({
   natHide() { this.setData({ natOpen: false }); },
   natSearch(e) { const q = e.detail.value.trim().toLowerCase(), all = nats(); this.setData({ natQ: e.detail.value, natHits: (q ? all.filter(n => n.q.includes(q)) : all.slice(0, 40)).slice(0, 60).map(n => ({ k: n.k, t: n.t })) }); },
   natPick(e) { const k = e.currentTarget.dataset.k, i = nats().findIndex(n => n.k === k); if (i < 0) return; wx.setStorageSync(NAT, k); this.setData({ nat: k, natIdx: i, natOpen: false }); this.recompute(); },
-  /* passport photo (cropped 3:4, 360×480 JPEG ≈ 30–60 KB, kept on the phone) and the closing lines */
+  /* passport photo (the whole picture, never cropped: fitted into the photo box's shape on a light ground, 360×440 JPEG ≈ 30–60 KB, kept on the phone) and the closing lines */
   loadExtras() { let t = null; try { t = wx.getStorageSync(TAGS); } catch (e) {} const p = (() => { try { return wx.getStorageSync(PHOTO); } catch (e) { return ''; } })();
     this._photoB64 = p && p.b64 || ''; this.setData({ photo: p && p.path || '', tagZh: t && typeof t.zh === 'string' ? t.zh : TAG_ZH, tagEn: t && typeof t.en === 'string' ? t.en : TAG_EN });
     if (this._photoB64 && p.path) wx.getFileSystemManager().access({ path: p.path, fail: () => this.photoFile(this._photoB64) }); },
   photoFile(b64) { const f = `${wx.env.USER_DATA_PATH}/passport-photo.jpg`; try { wx.getFileSystemManager().writeFileSync(f, b64, 'base64'); this.setData({ photo: f }); return f; } catch (e) { return ''; } },
   pickPhoto() {
     wx.chooseMedia({ count: 1, mediaType: ['image'], sourceType: ['album', 'camera'], sizeType: ['compressed'], success: async r => {
-      const src = r.tempFiles[0].tempFilePath, crop = () => new Promise(res => (wx.cropImage ? wx.cropImage({ src, cropScale: '3:4', success: o => res(o.tempFilePath), fail: () => res(src) }) : res(src)));
-      try { const path = await crop(); this.setData({ busy: '正在处理照片…' }); const b64 = await this.shrink(path); this._photoB64 = b64; const f = this.photoFile(b64); wx.setStorageSync(PHOTO, { b64, path: f }); this.setData({ busy: '' }); this.resetVideo(); }
+      const path = r.tempFiles[0].tempFilePath;
+      try { this.setData({ busy: '正在处理照片…' }); const b64 = await this.shrink(path); this._photoB64 = b64; const f = this.photoFile(b64); wx.setStorageSync(PHOTO, { b64, path: f }); this.setData({ busy: '' }); this.resetVideo(); }
       catch (e) { this.setData({ busy: '', err: '照片处理失败：' + (e.errMsg || e.message || e) }); } },
       fail: e => { if (!/cancel/.test(e.errMsg || '')) this.setData({ err: '没能打开相册：' + (e.errMsg || '') }); } });
   },
-  // centre-crop to 3:4 and scale to 360×480 on the hidden canvas, then base64
+  // fit the whole picture into 360×440 (the film's photo box is 270×330, the same shape, so the film shows all of it), then base64
   shrink(path) {
     return new Promise((res, rej) => wx.createSelectorQuery().in(this).select('#card').fields({ node: true }).exec(q => {
-      const cv = q && q[0] && q[0].node; if (!cv) return rej(new Error('画布不可用')); cv.width = 360; cv.height = 480; const g = cv.getContext('2d'), im = cv.createImage();
-      im.onload = () => { const k = Math.max(360 / im.width, 480 / im.height), w = im.width * k, h = im.height * k; g.fillStyle = '#fff'; g.fillRect(0, 0, 360, 480); g.drawImage(im, (360 - w) / 2, (480 - h) / 2, w, h);
-        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: 360, height: 480, destWidth: 360, destHeight: 480, fileType: 'jpg', quality: 0.82, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
+      const cv = q && q[0] && q[0].node; if (!cv) return rej(new Error('画布不可用')); const W = 360, H = 440; cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = cv.createImage();
+      im.onload = () => { const k = Math.min(W / im.width, H / im.height), w = im.width * k, h = im.height * k; g.fillStyle = '#efe9e1'; g.fillRect(0, 0, W, H); g.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: W, height: H, destWidth: W, destHeight: H, fileType: 'jpg', quality: 0.82, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
       im.onerror = () => rej(new Error('读不了这张图')); im.src = path; }));
   },
   clearPhoto() { this._photoB64 = ''; try { wx.removeStorageSync(PHOTO); } catch (e) {} this.setData({ photo: '' }); this.resetVideo(); },

@@ -83,7 +83,7 @@
       <text class="small">国籍会印在护照封皮和内页上，也决定哪些航班算「出境」。</text>
       <view class="sub">护照照片（可不选）</view>
       <view class="photo">
-        <image wx:if="{{photo}}" class="pimg" src="{{photo}}" mode="aspectFill"/>
+        <image wx:if="{{photo}}" class="pimg" src="{{photo}}" mode="aspectFit"/>
         <view wx:else class="pimg ph">无照片</view>
         <view class="pbtns"><button class="ghost" bindtap="pickPhoto">{{photo?'换一张':'选一张照片'}}</button><button wx:if="{{photo}}" class="ghost" bindtap="clearPhoto">移除</button></view>
       </view>
