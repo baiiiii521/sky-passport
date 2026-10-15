@@ -3,7 +3,7 @@ const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const SS = require('../../libs/session.js');
 const CA = require('../../libs/cards.js');
-const PICK = 'skypassport.badgesOn', NAT = 'skypassport.nat', PHOTO = 'skypassport.photo', TAGS = 'skypassport.tags';
+const PICK = 'skypassport.badgesOn', NAT = 'skypassport.nat', PHOTO = 'skypassport.photo2',   /* v2: photos saved by 1.0.15–1.0.16 were cut by the export bug, drop them */ TAGS = 'skypassport.tags';
 const TAG_ZH = '一本护照，装下我的天空', TAG_EN = 'MY JOURNEY ACROSS THE GLOBE';   // the web page's defaults
 // nationality: the passport's issuing country in the film (cover, page, MRZ) and the home country for the stats (international flights, 首次出境)
 const TOP = ['CN', 'HK', 'MO', 'TW', 'JP', 'KR', 'SG', 'MY', 'TH', 'US', 'GB', 'CA', 'AU', 'NZ', 'DE', 'FR'];   // offered first, before the full list
@@ -151,12 +151,13 @@ Page({
       catch (e) { this.setData({ busy: '', err: '照片处理失败：' + (e.errMsg || e.message || e) }); } },
       fail: e => { if (!/cancel/.test(e.errMsg || '')) this.setData({ err: '没能打开相册：' + (e.errMsg || '') }); } });
   },
-  // fit the whole picture into 360×440 (the film's photo box is 270×330, the same shape, so the film shows all of it), then base64
+  // fit the whole picture into a 1080×1320 area of the 1080×1440 canvas (same size as its CSS box, see cards.js) and export it at 360×440:
+  // the film's photo box is 270×330, the same shape, so the film shows all of it. Then base64.
   shrink(path) {
     return new Promise((res, rej) => wx.createSelectorQuery().in(this).select('#card').fields({ node: true }).exec(q => {
-      const cv = q && q[0] && q[0].node; if (!cv) return rej(new Error('画布不可用')); const W = 360, H = 440; cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = cv.createImage();
+      const cv = q && q[0] && q[0].node; if (!cv) return rej(new Error('画布不可用')); const W = 1080, H = 1320; cv.width = 1080; cv.height = 1440; const g = cv.getContext('2d'), im = cv.createImage(); g.clearRect(0, 0, 1080, 1440);
       im.onload = () => { const k = Math.min(W / im.width, H / im.height), w = im.width * k, h = im.height * k; g.fillStyle = '#efe9e1'; g.fillRect(0, 0, W, H); g.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
-        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: W, height: H, destWidth: W, destHeight: H, fileType: 'jpg', quality: 0.82, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
+        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: W, height: H, destWidth: 360, destHeight: 440, fileType: 'jpg', quality: 0.82, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
       im.onerror = () => rej(new Error('读不了这张图')); im.src = path; }));
   },
   clearPhoto() { this._photoB64 = ''; try { wx.removeStorageSync(PHOTO); } catch (e) {} this.setData({ photo: '' }); this.resetVideo(); },

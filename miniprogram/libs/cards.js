@@ -105,7 +105,9 @@ function render(page, kind, d, img, extra) {
   const [W, H] = SIZE[kind];
   return new Promise((res, rej) => wx.createSelectorQuery().in(page).select('#card').fields({ node: true }).exec(r => {
     const cv = r && r[0] && r[0].node; if (!cv) return rej(new Error('画布不可用'));
-    cv.width = W; cv.height = H; const g = cv.getContext('2d'); g.clearRect(0, 0, W, H);
+    // the backing store must equal the element's CSS size (1080×1440): canvasToTempFilePath reads its region in CSS units, so a smaller
+    // canvas (the 1000×800 share card) would come out as a cut-out. Draw at the top-left, export only W×H.
+    cv.width = 1080; cv.height = 1440; const g = cv.getContext('2d'); g.clearRect(0, 0, 1080, 1440);
     let im = null; const go = () => { try { DRAW[kind](g, d, im, extra); } catch (e) { return rej(e); }
       wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: W, height: H, destWidth: W, destHeight: H, fileType: 'jpg', quality: 0.92, success: o => res(o.tempFilePath), fail: rej }); };
     if (img) { im = cv.createImage(); im.onload = go; im.onerror = () => { im = null; go(); }; im.src = img; } else go();
