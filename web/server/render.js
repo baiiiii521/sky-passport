@@ -56,7 +56,10 @@ function clean(body) {
   const o = body.opts || {};
   const opts = { name: s(o.name, 24), latin: s(o.latin, 24).toUpperCase().replace(/[^A-Z ]/g, ''), nat: /^[A-Z]{2}$/.test(o.nat) ? o.nat : 'CN',
     theme: ['burgundy', 'navy', 'green', 'black'].includes(o.theme) ? o.theme : 'burgundy', mstyle: o.mstyle === 'calm' ? 'calm' : 'groove',
-    len: ['24', '12.5', '5.5'].includes(String(o.len)) ? String(o.len) : '24', year: +o.year || 0, up: o.up !== false, manual: {} };
+    len: ['24', '12.5', '5.5'].includes(String(o.len)) ? String(o.len) : '24', year: +o.year || 0, up: o.up !== false, manual: {},
+    // closing lines (null = the page's defaults) and an optional passport photo (a small JPEG, base64, from the mini program)
+    tagZh: typeof o.tagZh === 'string' ? s(o.tagZh, 24) : null, tagEn: typeof o.tagEn === 'string' ? s(o.tagEn, 40) : null,
+    photo: typeof o.photo === 'string' && o.photo.length < 320e3 && /^[A-Za-z0-9+/=]+$/.test(o.photo) ? o.photo : '' };
   for (const [k, v] of Object.entries(o.manual || {}).slice(0, 80)) if (/^[A-Z]{3}$/.test(v)) opts.manual[s(k, 60)] = v;
   return { rows, opts };
 }
@@ -98,6 +101,9 @@ async function openScene(job) {
     press('segTheme', opts.theme); press('segMusic', opts.mstyle); press('segLen', opts.len);
     document.getElementById('name').value = opts.name; document.getElementById('latin').value = opts.latin; document.getElementById('nat').value = opts.nat;
     document.getElementById('optUp').checked = opts.up;
+    for (const [id, v] of [['tagZh', opts.tagZh], ['tagEn', opts.tagEn]]) { const el = document.getElementById(id); el.value = v === null ? el.defaultValue : v; }
+    // never carry the previous job's photo over
+    PHOTO = opts.photo ? await new Promise(r => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = 'data:image/jpeg;base64,' + opts.photo; }) : null;
     Object.assign(manual, opts.manual);
     RAW = rows; SOURCE = 'file'; RESET_YEARS = true; detectDateOrder(RAW);
     document.getElementById('yFrom').innerHTML = ''; document.getElementById('yTo').innerHTML = '';

@@ -81,6 +81,19 @@
         </view>
       </view>
       <text class="small">国籍会印在护照封皮和内页上，也决定哪些航班算「出境」。</text>
+      <view class="sub">护照照片（可不选）</view>
+      <view class="photo">
+        <image wx:if="{{photo}}" class="pimg" src="{{photo}}" mode="aspectFill"/>
+        <view wx:else class="pimg ph">无照片</view>
+        <view class="pbtns"><button class="ghost" bindtap="pickPhoto">{{photo?'换一张':'选一张照片'}}</button><button wx:if="{{photo}}" class="ghost" bindtap="clearPhoto">移除</button></view>
+      </view>
+      <text class="small">照片会印在护照内页的证件照位置，只用于这次生成视频，24 小时后随视频一起删除。</text>
+      <view class="sub">结尾文案（视频最后一屏）</view>
+      <view class="fields">
+        <input class="input" placeholder="中文，最多 24 字" value="{{tagZh}}" bindinput="onTagZh" maxlength="24"/>
+        <input class="input" placeholder="English, up to 40 letters" value="{{tagEn}}" bindinput="onTagEn" maxlength="40"/>
+      </view>
+      <view class="chips"><view class="chip" bindtap="resetTags">恢复默认文案</view></view>
       <image wx:if="{{card}}" class="cardimg" src="{{card}}" mode="widthFix"/>
       <text wx:if="{{card}}" class="small center">这是你的分享卡片，转发给朋友时会用它</text>
     </view>
@@ -105,7 +118,7 @@
         <text class="small center">{{video.state==='queued'&&video.ahead?'排队中，前面还有 '+video.ahead+' 个':'你的护照正在生成，通常 40 秒左右'}}</text>
         <button class="ghost" bindtap="toBadges">先去挑勋章、出长图 →</button>
       </view>
-      <text wx:if="{{!video.state}}" class="small center">在服务器上生成：会上传航段（日期、航班号、出发和到达地）和名字，24 小时后自动删除</text>
+      <text wx:if="{{!video.state}}" class="small center">在服务器上生成：会上传航段（日期、航班号、出发和到达地）、名字、结尾文案和照片（如果选了），24 小时后自动删除</text>
       <text wx:if="{{video.state==='error'}}" class="errline">{{video.err}}</text>
       <view wx:if="{{video.state!=='done'}}" class="webtip" bindtap="copySite">
         <text class="small">速度慢或生成失败？用手机浏览器打开网页版，在本机直接生成：</text>

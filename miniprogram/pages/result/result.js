@@ -3,7 +3,8 @@ const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const SS = require('../../libs/session.js');
 const CA = require('../../libs/cards.js');
-const PICK = 'skypassport.badgesOn', NAT = 'skypassport.nat';
+const PICK = 'skypassport.badgesOn', NAT = 'skypassport.nat', PHOTO = 'skypassport.photo', TAGS = 'skypassport.tags';
+const TAG_ZH = '一本护照，装下我的天空', TAG_EN = 'MY JOURNEY ACROSS THE GLOBE';   // the web page's defaults
 // nationality: the passport's issuing country in the film (cover, page, MRZ) and the home country for the stats (international flights, 首次出境)
 const TOP = ['CN', 'HK', 'MO', 'TW', 'JP', 'KR', 'SG', 'MY', 'TH', 'US', 'GB', 'CA', 'AU', 'NZ', 'DE', 'FR'];   // offered first, before the full list
 let NATS = null; const nats = () => NATS || (NATS = Object.entries(C.NAMES).filter(([k]) => /^[A-Z]{2}$/.test(k)).sort((a, b) => (TOP.indexOf(a[0]) + 1 || 99) - (TOP.indexOf(b[0]) + 1 || 99) || a[1][1].localeCompare(b[1][1], 'zh'))
@@ -21,10 +22,10 @@ Page({
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
     video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' }, saving: '',
     busy: '', err: '',
-    nat: 'CN', natIdx: 0, natList: [], natOpen: false, natQ: '', natHits: [], step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
+    photo: '', tagZh: TAG_ZH, tagEn: TAG_EN, nat: 'CN', natIdx: 0, natList: [], natOpen: false, natQ: '', natHits: [], step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
     manualOpen: false, legs: [], saved: 0, shotTodo: [], shotMsg: '', mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
-  onLoad() { const list = nats(), k = wx.getStorageSync(NAT) || 'CN', i = Math.max(0, list.findIndex(n => n.k === k)); this.setData({ natList: list.map(n => n.t), nat: list[i] ? list[i].k : 'CN', natIdx: i }); },
+  onLoad() { this.loadExtras(); const list = nats(), k = wx.getStorageSync(NAT) || 'CN', i = Math.max(0, list.findIndex(n => n.k === k)); this.setData({ natList: list.map(n => n.t), nat: list[i] ? list[i].k : 'CN', natIdx: i }); },
   onShow() {
     const g = getApp().globalData, want = g.openManual, shots = g.openShots; g.openManual = false; g.openShots = false; if (this.data.version !== g.version) this.setData({ version: g.version });
     if (!g.rows) this.setData({ has: false, saved: SS.savedManual().length }); else if (this._ver !== g.ver) { this._ver = g.ver; this.load(); }
@@ -138,12 +139,37 @@ Page({
   natHide() { this.setData({ natOpen: false }); },
   natSearch(e) { const q = e.detail.value.trim().toLowerCase(), all = nats(); this.setData({ natQ: e.detail.value, natHits: (q ? all.filter(n => n.q.includes(q)) : all.slice(0, 40)).slice(0, 60).map(n => ({ k: n.k, t: n.t })) }); },
   natPick(e) { const k = e.currentTarget.dataset.k, i = nats().findIndex(n => n.k === k); if (i < 0) return; wx.setStorageSync(NAT, k); this.setData({ nat: k, natIdx: i, natOpen: false }); this.recompute(); },
+  /* passport photo (cropped 3:4, 360×480 JPEG ≈ 30–60 KB, kept on the phone) and the closing lines */
+  loadExtras() { let t = null; try { t = wx.getStorageSync(TAGS); } catch (e) {} const p = (() => { try { return wx.getStorageSync(PHOTO); } catch (e) { return ''; } })();
+    this._photoB64 = p && p.b64 || ''; this.setData({ photo: p && p.path || '', tagZh: t && typeof t.zh === 'string' ? t.zh : TAG_ZH, tagEn: t && typeof t.en === 'string' ? t.en : TAG_EN });
+    if (this._photoB64 && p.path) wx.getFileSystemManager().access({ path: p.path, fail: () => this.photoFile(this._photoB64) }); },
+  photoFile(b64) { const f = `${wx.env.USER_DATA_PATH}/passport-photo.jpg`; try { wx.getFileSystemManager().writeFileSync(f, b64, 'base64'); this.setData({ photo: f }); return f; } catch (e) { return ''; } },
+  pickPhoto() {
+    wx.chooseMedia({ count: 1, mediaType: ['image'], sourceType: ['album', 'camera'], sizeType: ['compressed'], success: async r => {
+      const src = r.tempFiles[0].tempFilePath, crop = () => new Promise(res => (wx.cropImage ? wx.cropImage({ src, cropScale: '3:4', success: o => res(o.tempFilePath), fail: () => res(src) }) : res(src)));
+      try { const path = await crop(); this.setData({ busy: '正在处理照片…' }); const b64 = await this.shrink(path); this._photoB64 = b64; const f = this.photoFile(b64); wx.setStorageSync(PHOTO, { b64, path: f }); this.setData({ busy: '' }); this.resetVideo(); }
+      catch (e) { this.setData({ busy: '', err: '照片处理失败：' + (e.errMsg || e.message || e) }); } },
+      fail: e => { if (!/cancel/.test(e.errMsg || '')) this.setData({ err: '没能打开相册：' + (e.errMsg || '') }); } });
+  },
+  // centre-crop to 3:4 and scale to 360×480 on the hidden canvas, then base64
+  shrink(path) {
+    return new Promise((res, rej) => wx.createSelectorQuery().in(this).select('#card').fields({ node: true }).exec(q => {
+      const cv = q && q[0] && q[0].node; if (!cv) return rej(new Error('画布不可用')); cv.width = 360; cv.height = 480; const g = cv.getContext('2d'), im = cv.createImage();
+      im.onload = () => { const k = Math.max(360 / im.width, 480 / im.height), w = im.width * k, h = im.height * k; g.fillStyle = '#fff'; g.fillRect(0, 0, 360, 480); g.drawImage(im, (360 - w) / 2, (480 - h) / 2, w, h);
+        wx.canvasToTempFilePath({ canvas: cv, x: 0, y: 0, width: 360, height: 480, destWidth: 360, destHeight: 480, fileType: 'jpg', quality: 0.82, success: o => wx.getFileSystemManager().readFile({ filePath: o.tempFilePath, encoding: 'base64', success: f => res(f.data), fail: rej }), fail: rej }); };
+      im.onerror = () => rej(new Error('读不了这张图')); im.src = path; }));
+  },
+  clearPhoto() { this._photoB64 = ''; try { wx.removeStorageSync(PHOTO); } catch (e) {} this.setData({ photo: '' }); this.resetVideo(); },
+  saveTags() { try { wx.setStorageSync(TAGS, { zh: this.data.tagZh, en: this.data.tagEn }); } catch (e) {} this.resetVideo(); },
+  onTagZh(e) { this.setData({ tagZh: e.detail.value }); this.saveTags(); },
+  onTagEn(e) { this.setData({ tagEn: e.detail.value.toUpperCase() }); this.saveTags(); },
+  resetTags() { this.setData({ tagZh: TAG_ZH, tagEn: TAG_EN }); this.saveTags(); },
   onName(e) { this.setData({ name: e.detail.value.trim() }); this.share(); this.resetVideo(); this.cardSoon(); },
   onLatin(e) { this.setData({ latin: e.detail.value.toUpperCase().replace(/[^A-Z ]/g, '') }); this.share(); this.resetVideo(); this.cardSoon(); },
   pick(e) { const { k, v } = e.currentTarget.dataset; this.setData({ [k]: v }); this.resetVideo(); },
 
   /* ---------- video: rendered on the server with the web engine ---------- */
-  videoBody() { const d = this.data; return { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, nat: d.nat, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } }; },
+  videoBody() { const d = this.data; return { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, nat: d.nat, tagZh: d.tagZh, tagEn: d.tagEn, photo: this._photoB64 || '', theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } }; },
   // with consent, the server starts the film while the user is still reading the stats; tapping 生成视频 with the
   // same choices then picks up that render (or the finished file). Pre-renders only run when the server is idle.
   askPrerender() {
@@ -151,7 +177,7 @@ Page({
     if (wx.getStorageSync(CONSENT) || !this.data.sum || !this.data.sum.n) return this.prerender();
     wx.showModal({
       title: '先帮你把视频做好？',
-      content: '你看统计的时候，视频就在服务器上开始生成。会上传航段的日期、航班号、出发和到达地，以及你填的名字；24 小时后自动删除，不做其他用途。',
+      content: '你看统计的时候，视频就在服务器上开始生成。会上传航段的日期、航班号、出发和到达地，你填的名字、结尾文案和选的照片（如果有）；24 小时后自动删除，不做其他用途。',
       confirmText: '同意', cancelText: '先不用',
       success: r => { if (r.confirm) { wx.setStorageSync(CONSENT, 1); this.prerender(); } },
     });
@@ -167,7 +193,7 @@ Page({
     if (wx.getStorageSync(CONSENT)) return this.submitVideo();
     wx.showModal({
       title: '生成视频需要上传航段',
-      content: '视频在我们的服务器上渲染：会上传航段的日期、航班号、出发和到达地，以及你填的名字。视频生成 24 小时后自动删除，不做其他用途。',
+      content: '视频在我们的服务器上渲染：会上传航段的日期、航班号、出发和到达地，你填的名字和结尾文案，以及你选的照片（如果有）。视频生成 24 小时后自动删除，不做其他用途。',
       confirmText: '同意', cancelText: '不用了', // WeChat caps modal button text at 4 characters, or the modal silently fails
       success: r => { if (r.confirm) { wx.setStorageSync(CONSENT, 1); this.submitVideo(); } },
       fail: e => this.setData({ 'video.state': 'error', 'video.err': '弹窗打开失败：' + (e.errMsg || '') }),

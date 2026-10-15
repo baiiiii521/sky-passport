@@ -100,3 +100,5 @@ button[disabled] { opacity: .65; }
 .natbox { margin-top: -2rpx; padding: 16rpx; border: 1px solid rgba(94,234,255,.3); border-radius: 18rpx; background: rgba(4,11,28,.95); }
 .natlist { height: 520rpx; margin-top: 12rpx; } .nati { padding: 20rpx 12rpx; font-size: 28rpx; border-bottom: 1px solid rgba(94,234,255,.08); } .nati.on { color: #5eeaff; font-weight: 700; }
 .natx { margin-top: 10rpx; text-align: center; color: #5eeaff; font-size: 26rpx; padding: 8rpx; }
+.photo { display: flex; align-items: center; gap: 22rpx; } .pimg { width: 150rpx; height: 200rpx; border-radius: 12rpx; border: 1px solid rgba(94,234,255,.3); flex: none; background: #0b1630; }
+.pimg.ph { display: flex; align-items: center; justify-content: center; font-size: 22rpx; color: #6f819b; } .pbtns { flex: 1; } .pbtns .ghost { margin: 0 0 12rpx !important; }
