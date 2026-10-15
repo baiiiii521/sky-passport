@@ -3,7 +3,9 @@ const C = require('../../libs/core.js');
 const ST = require('../../libs/stats.js');
 const SS = require('../../libs/session.js');
 const CA = require('../../libs/cards.js');
-const PICK = 'skypassport.badgesOn';
+const PICK = 'skypassport.badgesOn', NAT = 'skypassport.nat';
+// nationality: the passport's issuing country in the film (cover, page, MRZ) and the home country for the stats (international flights, 首次出境)
+let NATS = null; const nats = () => NATS || (NATS = Object.entries(C.NAMES).filter(([k]) => /^[A-Z]{2}$/.test(k) && k !== 'TW').sort((a, b) => a[1][1].localeCompare(b[1][1], 'zh')).map(([k, v]) => ({ k, t: `${v[1]} · ${v[2]}` })));
 const CONSENT = 'skypassport.videoConsent', LAST = 'skypassport.lastVideo';
 const dataSig = rows => rows.length + '|' + (rows[0] ? rows[0].rawDate + rows[0].fn : '') + '|' + (rows.length ? rows[rows.length - 1].rawDate : '');
 
@@ -17,9 +19,10 @@ Page({
     lens: [{ v: '24', t: '完整' }, { v: '12.5', t: '约 45 秒' }, { v: '5.5', t: '约 30 秒' }],
     video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' }, saving: '',
     busy: '', err: '',
-    step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
+    nat: 'CN', natIdx: 0, natList: [], step: 1, steps: [{ n: 1, t: '航班' }, { n: 2, t: '名字' }, { n: 3, t: '风格与生成' }], next: null, card: '', version: '',
     manualOpen: false, legs: [], saved: 0, shotTodo: [], shotMsg: '', mDate: '', mFrom: '', mTo: '', mFn: '', mHint: '', mCls: '',
   },
+  onLoad() { const list = nats(), k = wx.getStorageSync(NAT) || 'CN', i = Math.max(0, list.findIndex(n => n.k === k)); this.setData({ natList: list.map(n => n.t), nat: list[i] ? list[i].k : 'CN', natIdx: i }); },
   onShow() {
     const g = getApp().globalData, want = g.openManual, shots = g.openShots; g.openManual = false; g.openShots = false; if (this.data.version !== g.version) this.setData({ version: g.version });
     if (!g.rows) this.setData({ has: false, saved: SS.savedManual().length }); else if (this._ver !== g.ver) { this._ver = g.ver; this.load(); }
@@ -96,7 +99,7 @@ Page({
   },
   onUnload() { clearTimeout(pollTimer); clearTimeout(specTimer); },
   recompute() {
-    const list = ST.pick(ALL, { up: this.data.up, year: this.data.year }), sum = ST.summarize(list, 'CN');
+    const list = ST.pick(ALL, { up: this.data.up, year: this.data.year }), sum = ST.summarize(list, this.data.nat);
     const label = !sum.n ? '' : sum.y0 === sum.y1 ? `${sum.y0} 年度` : `${sum.y0} — ${sum.y1}`;
     this.setData({ sum: { ...sum, kmText: ST.fmt(sum.km), hours: Math.round(sum.min / 60) }, label });
     this._list = list; this.share();
@@ -113,7 +116,7 @@ Page({
   cardSoon() { clearTimeout(this._cardT); this._cardT = setTimeout(() => this.makeCard(), 500); },
   async makeCard() {
     const d = this.data; if (!d.sum || !d.sum.n || !this._list) return;
-    const all = ST.allBadges(this._list, 'CN'), sel = wx.getStorageSync(PICK), picked = all.filter(b => !b.lock && (Array.isArray(sel) ? sel.includes(b.id) : ST.BADGE_DEFAULT.includes(b.id)));
+    const all = ST.allBadges(this._list, this.data.nat), sel = wx.getStorageSync(PICK), picked = all.filter(b => !b.lock && (Array.isArray(sel) ? sel.includes(b.id) : ST.BADGE_DEFAULT.includes(b.id)));
     try { const img = await SS.mapBase(), path = await CA.render(this, 'share', CA.cardData({ name: d.name, label: d.label }, d.sum, this._list, picked, all), img); this.setData({ card: path }); } catch (e) { /* the static card is used instead */ }
   },
   goStep(e) { const n = +e.currentTarget.dataset.n; if (n === this.data.step || (n > 1 && (!this.data.sum || !this.data.sum.n))) return; this.setData({ step: n }); wx.pageScrollTo({ scrollTop: 0, duration: 200 }); },
@@ -124,16 +127,17 @@ Page({
       SS.forgetLast(); SS.setManual([]); const g = getApp().globalData; g.rows = null; g.res = null; g.demo = false; g.ver++; this._ver = g.ver; this.setData({ has: false, saved: 0, card: '', step: 1 }); } });
   },
   /* the choices the 成就 tab also needs */
-  share() { const d = this.data, g = getApp().globalData; g.view = { year: d.year, up: d.up, name: d.name, latin: d.latin, label: d.label }; g.viewVer = (g.viewVer || 0) + 1; },
+  share() { const d = this.data, g = getApp().globalData; g.view = { year: d.year, up: d.up, name: d.name, latin: d.latin, label: d.label, nat: d.nat }; g.viewVer = (g.viewVer || 0) + 1; },
   resetVideo() { if (this.data.video.state && this.data.video.state !== 'done') return; this.setData({ video: { state: '', progress: 0, ahead: 0, url: '', size: '', err: '' } }); this.prerender(); },
   pickYear(e) { this.setData({ year: +e.currentTarget.dataset.y }); this.recompute(); },
   toggleUp() { this.setData({ up: !this.data.up }); this.recompute(); },
+  onNat(e) { const n = nats()[+e.detail.value]; if (!n) return; wx.setStorageSync(NAT, n.k); this.setData({ nat: n.k, natIdx: +e.detail.value }); this.recompute(); },
   onName(e) { this.setData({ name: e.detail.value.trim() }); this.share(); this.resetVideo(); this.cardSoon(); },
   onLatin(e) { this.setData({ latin: e.detail.value.toUpperCase().replace(/[^A-Z ]/g, '') }); this.share(); this.resetVideo(); this.cardSoon(); },
   pick(e) { const { k, v } = e.currentTarget.dataset; this.setData({ [k]: v }); this.resetVideo(); },
 
   /* ---------- video: rendered on the server with the web engine ---------- */
-  videoBody() { const d = this.data; return { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } }; },
+  videoBody() { const d = this.data; return { rows: SS.rowsForServer(), opts: { name: d.name, latin: d.latin, nat: d.nat, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } }; },
   // with consent, the server starts the film while the user is still reading the stats; tapping 生成视频 with the
   // same choices then picks up that render (or the finished file). Pre-renders only run when the server is idle.
   askPrerender() {
@@ -167,7 +171,7 @@ Page({
     this.setData({ video: { state: 'sending', progress: 0, ahead: 0, url: '', size: '', err: '' } });
     try {
       clearTimeout(specTimer); SS.track('video_req'); const d = this.data, r = await SS.api('/api/video', 'POST', this.videoBody());
-      wx.setStorageSync(LAST, { id: r.id, sig: dataSig(SS.rowsForServer()), opts: { name: d.name, latin: d.latin, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
+      wx.setStorageSync(LAST, { id: r.id, sig: dataSig(SS.rowsForServer()), opts: { name: d.name, latin: d.latin, nat: d.nat, natIdx: d.natIdx, theme: d.theme, mstyle: d.mstyle, len: d.len, year: d.year, up: d.up } });
       this.setData({ 'video.state': 'queued', 'video.ahead': r.ahead || 0 });
       this.poll(r.id);
     } catch (e) {

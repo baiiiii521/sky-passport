@@ -1,6 +1,6 @@
 // 航迹手帐 · 小程序：表格在手机上解析；视频由 passport.nybbq.art 的渲染服务生成（个人主体小程序不能内嵌网页）
 // ver: bumped whenever a spreadsheet (or the sample) is loaded, so the tab pages know to refresh; view: the choices shared by the tabs
-const VERSION = '1.0.13';   // bump with every upload; shown at the bottom of each tab (the release version wins when there is one)
+const VERSION = '1.0.14';   // bump with every upload; shown at the bottom of each tab (the release version wins when there is one)
 const FONT = 'https://sky-passport-1252289725.cos.ap-beijing.myqcloud.com/static/mp/hj-serif.woff';   // a 37 KB subset of Noto Serif SC Black (OFL): headline glyphs only
 App({
   onLaunch() {

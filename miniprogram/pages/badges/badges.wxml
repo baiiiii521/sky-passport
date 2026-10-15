@@ -14,7 +14,7 @@
     <text class="small">勋章由{{demo?'示例旅客':'你'}}的航班自动算出。点一下选中，选中的会印在长图上；<text class="hl">长按一枚，生成它的分享卡</text>；灰色的还没解锁，点它看怎么拿到。</text>
     <view class="meter"><text class="msum">已解锁 {{got}} / {{medals.length}} · 已选 {{picked}} 项印在长图上</text><view class="mtrack"><view class="mfill" style="width:{{medals.length?got*100/medals.length:0}}%"></view></view></view>
     <view class="chips tools">
-      <view class="chip" data-m="rec" bindtap="pickSet">推荐组合</view><view class="chip" data-m="all" bindtap="pickSet">选满 12 枚</view><view class="chip" data-m="none" bindtap="pickSet">清空</view>
+      <view class="chip" data-m="rec" bindtap="pickSet">推荐组合</view><view class="chip" data-m="all" bindtap="pickSet">全选</view><view class="chip" data-m="none" bindtap="pickSet">清空</view>
     </view>
     <view class="chips">
       <view wx:for="{{cats}}" wx:key="c" class="chip {{cat===item.c?'on':''}}" data-c="{{item.c}}" bindtap="pickCat">{{item.t}} <text class="cn">{{item.g}}/{{item.n}}</text></view>
@@ -60,6 +60,6 @@
   <view wx:if="{{busy}}" class="busy">{{busy}}</view>
   <view wx:if="{{err}}" class="err">{{err}}</view>
   <view class="ver">航迹手帐 · 版本 {{version}}</view>
-  <canvas type="2d" id="poster" class="offscreen" style="width:1080px;height:{{posterH}}px"></canvas>
+  <canvas type="2d" id="poster" class="offscreen" style="width:{{posterW}}px;height:{{posterH}}px"></canvas>
   <canvas type="2d" id="card" class="offscreen" style="width:1080px;height:1440px"></canvas>
 </view>

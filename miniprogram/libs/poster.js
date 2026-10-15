@@ -13,8 +13,8 @@ const SANS = 'sans-serif', MONO = 'monospace';
 const F = (w, s, mono) => `${w} ${s}px ${mono ? MONO : SANS}`;
 
 function layout(data) {
-  const rowsB = Math.ceil(data.badges.length / 2);
-  return { cover: 720, pass: 290, stats: 58 + 336, map: 58 + MAP_H + 64, badges: data.badges.length ? 40 + rowsB * 172 : 0, years: data.sum.years.length > 1 ? 358 : 0, foot: 360 };
+  const n = data.badges.length, three = n > 12, rowsB = Math.ceil(n / (three ? 3 : 2));   // more than 12 medals: three narrow columns, so all 33 fit
+  return { cover: 720, pass: 290, stats: 58 + 336, map: 58 + MAP_H + 64, badges: n ? 40 + rowsB * (three ? 166 : 172) : 0, years: data.sum.years.length > 1 ? 358 : 0, foot: 360 };
 }
 function height(data) { const L = layout(data); return L.cover + L.pass + L.foot + [L.stats, L.map, L.badges, L.years].filter(Boolean).reduce((a, b) => a + b + GAP, 0) + GAP; }
 
@@ -130,12 +130,18 @@ function draw(g, data, mapImg) {
   y += 42;
   /* medals */
   if (data.badges.length) { y += GAP; head(g, y, 'ACHIEVEMENTS', '飞行成就', `${data.badges.length} 枚勋章`); y += 58; const RAR = { legend: '传奇', gold: '金', silver: '银' };
-    data.badges.forEach((b, i) => { const cw = (W - 120 - 20) / 2, cx = 60 + (i % 2) * (cw + 20), cy = y + Math.floor(i / 2) * 172, ch = 154;
+    const three = data.badges.length > 12;
+    if (three) data.badges.forEach((b, i) => { const cw = (W - 120 - 32) / 3, cx = 60 + (i % 3) * (cw + 16), cy = y + Math.floor(i / 3) * 166, ch = 150;
+      panel(g, cx, cy, cw, ch, 18, b.rar === 'gold' ? 'rgba(233,197,142,.45)' : b.rar === 'legend' ? 'rgba(255,150,200,.7)' : 'rgba(94,234,255,.22)');
+      medal(g, cx + 44, cy + 46, 28, b.rar); g.font = F(400, 26); g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(b.i, cx + 44, cy + 56); g.textAlign = 'left';
+      g.font = F(400, 18); g.fillStyle = NP.mut; fit(g, b.k, cw - 96, 18, 400); g.fillText(b.k, cx + 84, cy + 52); const s = fit(g, b.v, cw - 32, 28, 800); g.fillStyle = NP.ink; g.font = F(800, s); g.fillText(b.v, cx + 16, cy + 104);
+      g.font = F(400, 15); g.fillStyle = NP.mut; fit(g, b.d, cw - 32, 15, 400); g.fillText(b.d, cx + 16, cy + 132); });
+    else data.badges.forEach((b, i) => { const cw = (W - 120 - 20) / 2, cx = 60 + (i % 2) * (cw + 20), cy = y + Math.floor(i / 2) * 172, ch = 154;
       panel(g, cx, cy, cw, ch, 20, b.rar === 'gold' ? 'rgba(233,197,142,.45)' : b.rar === 'legend' ? 'rgba(255,150,200,.7)' : 'rgba(94,234,255,.22)');
       medal(g, cx + 68, cy + ch / 2, 42, b.rar); g.font = F(400, 38); g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(b.i, cx + 68, cy + ch / 2 + 14); g.textAlign = 'left';
       const tx = cx + 134, tw = cw - 150; g.font = F(400, 19); g.fillStyle = NP.mut; g.fillText(b.k, tx, cy + 48); fit(g, b.v, tw, 32, 800); g.fillStyle = NP.ink; g.fillText(b.v, tx, cy + 90); fit(g, b.d, tw, 18, 400); g.fillStyle = NP.mut; g.fillText(b.d, tx, cy + 124);
       if (RAR[b.rar]) { g.font = F(700, 13, 1); const tw2 = g.measureText(RAR[b.rar]).width + 16; rr(g, cx + cw - tw2 - 16, cy + 14, tw2, 24, 6); g.fillStyle = b.rar === 'gold' ? NP.gold : b.rar === 'silver' ? '#cfd8e4' : '#ff9cc3'; g.fill(); g.fillStyle = '#02040b'; g.fillText(RAR[b.rar], cx + cw - tw2 - 8, cy + 31); } });
-    y += Math.ceil(data.badges.length / 2) * 172 - 18; }
+    y += three ? Math.ceil(data.badges.length / 3) * 166 - 16 : Math.ceil(data.badges.length / 2) * 172 - 18; }
   /* timeline */
   if (S.years.length > 1) { y += GAP; head(g, y, 'TIMELINE', '每年的航班'); y += 58; panel(g, 60, y, W - 120, 300, 22);
     const years = S.years, mx = Math.max(...years.map(v => v.n)), n = years.length, bw = Math.min(72, (W - 200) / n - 14), x0 = W / 2 - (n * (bw + 14) - 14) / 2, base = y + 236, hmax = 170;

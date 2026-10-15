@@ -70,7 +70,9 @@
       <view class="fields">
         <input class="input" placeholder="名字（如 林小舟）" value="{{name}}" bindinput="onName" maxlength="16"/>
         <input class="input" placeholder="拼音 / 英文名（如 LIN XIAOZHOU）" value="{{latin}}" bindinput="onLatin" maxlength="24"/>
+        <picker mode="selector" range="{{natList}}" value="{{natIdx}}" bindchange="onNat"><view class="input pick natp"><text class="nl">国籍</text>{{natList[natIdx]}}<text class="na2">更改 ›</text></view></picker>
       </view>
+      <text class="small">国籍会印在护照封皮和内页上，也决定哪些航班算「出境」。</text>
       <image wx:if="{{card}}" class="cardimg" src="{{card}}" mode="widthFix"/>
       <text wx:if="{{card}}" class="small center">这是你的分享卡片，转发给朋友时会用它</text>
     </view>
