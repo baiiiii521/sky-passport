@@ -178,5 +178,7 @@ test('every page script parses (a stray // inside a one-line statement once brok
 
 test('index.html stamps are current (run: npm run stamp)', () => {
   const { stamp } = require('../scripts/stamp.js'); const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
-  assert.equal(stamp(html), html);
+  // generated files (fonts/fonts.css) are not in a fresh checkout: their stamp cannot be checked there, so mask it on both sides
+  const gen = ['fonts/fonts.css'].filter(f => !fs.existsSync(path.join(PUB, f))), mask = h => gen.reduce((x, f) => x.split(f + '?v=').map((p, i) => (i ? p.replace(/^\w+/, '*') : p)).join(f + '?v='), h);
+  assert.equal(mask(stamp(html)), mask(html));
 });
